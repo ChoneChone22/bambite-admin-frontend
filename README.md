@@ -1,33 +1,181 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bambite Frontend
+
+Production-ready e-commerce frontend for Bambite Asian Cuisine delivery service.
+
+## Tech Stack
+
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript (strict mode)
+- **Styling**: Tailwind CSS
+- **HTTP Client**: Axios
+- **Form Management**: Formik
+- **Validation**: Yup
+- **State Management**: React Hooks
+
+## Project Structure
+
+```
+bambite-frontend/
+├── app/                      # Next.js App Router pages
+│   ├── layout.tsx           # Root layout
+│   ├── page.tsx             # Home page
+│   ├── loading.tsx          # Global loading state
+│   ├── error.tsx            # Global error handler
+│   └── not-found.tsx        # 404 page
+├── src/
+│   ├── types/               # TypeScript definitions
+│   │   ├── api.ts          # API types (enums, models, requests/responses)
+│   │   └── index.ts        # Central type exports
+│   ├── lib/                 # Core utilities
+│   │   ├── axios.ts        # Axios instance with interceptors
+│   │   ├── config.ts       # Environment configuration
+│   │   ├── utils.ts        # Helper functions
+│   │   └── validations.ts  # Yup schemas
+│   ├── services/            # API service layer
+│   │   └── api.ts          # All API endpoints
+│   └── hooks/               # Custom React hooks
+│       └── index.ts        # useAuth, useProducts, useCart, etc.
+├── public/                  # Static assets
+├── .env.local              # Environment variables
+└── package.json
+```
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- npm or yarn
+- Backend API running on `http://localhost:3000/api/v1`
+
+### Installation
+
+```bash
+npm install
+```
+
+### Environment Variables
+
+Create a `.env.local` file (already created):
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
+```
+
+### Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+## Key Features
 
-To learn more about Next.js, take a look at the following resources:
+### 🔒 Authentication
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- JWT token-based authentication
+- Automatic token injection via Axios interceptors
+- Protected routes and role-based access
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 📦 Type Safety
+
+- Strict TypeScript configuration
+- No `any` types allowed
+- Comprehensive API response typing
+
+### 🎨 Responsive Design
+
+- Mobile-first Tailwind CSS approach
+- Custom utility classes
+- Consistent color scheme and theming
+
+### 🔧 API Integration
+
+- Centralized Axios configuration
+- Request/response interceptors
+- Automatic error handling
+- Bearer token management from localStorage
+
+### 📝 Form Management
+
+- Formik for form state
+- Yup validation schemas
+- Type-safe form values
+
+### 🖼️ Image Handling
+
+- Single placeholder image: `https://placehold.co/600x400`
+- Consistent product imagery across the app
+
+## API Endpoints
+
+All API calls are defined in `src/services/api.ts`:
+
+- **Auth**: `/auth/login`, `/auth/register`, `/auth/profile`
+- **Products**: `/products` (CRUD operations)
+- **Cart**: `/cart` (add, update, remove items)
+- **Orders**: `/orders` (create, view, update status)
+- **Staff**: `/staff` (management)
+- **Inventory**: `/inventory` (logging)
+
+## Type Definitions
+
+### Enums
+
+- `ProductCategory`: SOUP, SALAD, NOODLE, SNACK
+- `OrderStatus`: PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED
+- `InventoryReason`: PURCHASE, RESTOCK, DAMAGE, ADJUSTMENT
+
+### Models
+
+- `User`: User account information
+- `Product`: Product details with category and pricing
+- `CartItem`: Shopping cart items
+- `Order`: Order with items and status
+- `Staff`: Staff member information
+
+## Custom Hooks
+
+- `useAuth()`: Authentication state and methods
+- `useProducts()`: Product listing with filters
+- `useProduct()`: Single product details
+- `useCart()`: Shopping cart management
+- `useOrders()`: Order history
+- `useOrder()`: Single order details
+
+## Styling
+
+Custom Tailwind utilities in `app/globals.css`:
+
+- `.container-custom`: Responsive container
+- `.btn-primary`: Primary button style
+- `.btn-secondary`: Secondary button style
+- `.input-field`: Form input style
+- `.card`: Card component style
+
+## Scripts
+
+```bash
+npm run dev          # Start development server
+npm run build        # Build for production
+npm start            # Start production server
+npm run lint         # Run ESLint
+```
+
+## Browser Support
+
+- Chrome (latest)
+- Firefox (latest)
+- Safari (latest)
+- Edge (latest)
 
 ## Deploy on Vercel
 
