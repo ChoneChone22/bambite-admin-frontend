@@ -147,19 +147,6 @@ export default function AdminLoginPage() {
                 </button>
               </div>
 
-              <div className="text-center text-sm">
-                <Link
-                  href="/login"
-                  className="text-gray-600 font-semibold"
-                  style={{ color: undefined }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.color = "#000000")
-                  }
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "")}
-                >
-                  ← Back to customer login
-                </Link>
-              </div>
             </Form>
           )}
         </Formik>

@@ -94,15 +94,11 @@ export default function AuthDebugPage() {
                     ⚠️ You are not logged in
                   </p>
                   <p className="text-sm text-yellow-700 mb-4">
-                    You need to login first to access protected features like
-                    cart and orders.
+                    You need to login first to access the admin dashboard.
                   </p>
                   <div className="flex gap-3">
-                    <Link href="/login" className="btn-primary">
-                      Login
-                    </Link>
-                    <Link href="/register" className="btn-secondary">
-                      Register
+                    <Link href="/admin/login" className="btn-primary">
+                      Admin Login
                     </Link>
                   </div>
                 </div>
@@ -149,11 +145,11 @@ app.use(cors({
 
           {/* Actions */}
           <div className="mt-8 flex gap-4">
-            <Link href="/" className="btn-primary">
-              Go Home
+            <Link href="/admin/dashboard" className="btn-primary">
+              Go to Admin Dashboard
             </Link>
-            <Link href="/products" className="btn-secondary">
-              Browse Products
+            <Link href="/admin/login" className="btn-secondary">
+              Admin Login
             </Link>
           </div>
         </div>

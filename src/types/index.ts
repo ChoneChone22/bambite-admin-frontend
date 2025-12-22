@@ -7,35 +7,11 @@ export * from "./api";
 
 // ==================== Component Props Types ====================
 
-export interface ProductCardProps {
-  product: import("./api").Product;
-  onAddToCart?: (productId: string, quantity: number) => void;
-}
-
-export interface CartItemProps {
-  item: import("./api").CartItem;
-  onUpdateQuantity?: (productId: string, quantity: number) => void;
-  onRemove?: (productId: string) => void;
-}
-
-export interface OrderCardProps {
-  order: import("./api").Order;
-  onViewDetails?: (orderId: string) => void;
-}
-
 // ==================== Form Types ====================
 
 export interface LoginFormValues {
   email: string;
   password: string;
-}
-
-export interface RegisterFormValues {
-  email: string;
-  password: string;
-  confirmPassword: string;
-  phoneNumber: string;
-  address: string;
 }
 
 export interface ProductFormValues {
@@ -46,12 +22,6 @@ export interface ProductFormValues {
   stockQuantity: number;
 }
 
-export interface CheckoutFormValues {
-  phoneNumber: string;
-  address: string;
-  notes?: string;
-}
-
 // ==================== State Types ====================
 
 export interface AuthState {
@@ -59,12 +29,6 @@ export interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-}
-
-export interface CartState {
-  items: import("./api").CartItem[];
-  total: number;
-  itemCount: number;
 }
 
 export interface AppError {

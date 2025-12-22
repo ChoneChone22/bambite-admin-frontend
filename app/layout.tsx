@@ -13,9 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bambite - Fresh Asian Cuisine Delivered",
-  description:
-    "Order delicious Asian food from Bambite. Fresh ingredients, fast delivery, and quality service guaranteed.",
+  title: "Bambite - Admin Dashboard",
+  description: "Bambite admin dashboard for managing products, orders, inventory, and staff.",
 };
 
 export default function RootLayout({
