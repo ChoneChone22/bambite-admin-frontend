@@ -7,14 +7,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import api from "@/src/services/api";
-import { Staff, CreateStaffRequest, PaymentMethod } from "@/src/types/api";
-import { formatPrice } from "@/src/lib/utils";
+import { Staff, CreateStaffRequest, Department } from "@/src/types/api";
+import { useTableSort, useTablePagination } from "@/src/hooks";
+import SortableTableHeader from "@/src/components/SortableTableHeader";
+import TablePagination from "@/src/components/TablePagination";
 
 // Validation Schema
 const staffSchema = Yup.object().shape({
+  name: Yup.string()
+    .min(3, "Name must be at least 3 characters")
+    .required("Name is required"),
   position: Yup.string()
     .min(3, "Position must be at least 3 characters")
     .required("Position is required"),
@@ -22,17 +28,18 @@ const staffSchema = Yup.object().shape({
     .positive("Salary must be greater than 0")
     .max(1000000, "Salary must not exceed $1,000,000")
     .required("Salary is required"),
-  overtimePayment: Yup.number()
-    .min(0, "Overtime payment cannot be negative")
-    .default(0),
   tax: Yup.number().min(0, "Tax cannot be negative").default(0),
-  paymentMethod: Yup.string()
-    .oneOf(Object.values(PaymentMethod), "Invalid payment method")
-    .required("Payment method is required"),
+  totalBonus: Yup.number().min(0, "Bonus cannot be negative").default(0),
+  departmentId: Yup.string().required("Department is required"),
+  status: Yup.string()
+    .oneOf(["active", "on_leave", "quit"], "Invalid status")
+    .default("active"),
 });
 
 export default function StaffManagementPage() {
   const [staff, setStaff] = useState<Staff[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [activeDepartments, setActiveDepartments] = useState<Department[]>([]);
   const [payrollSummary, setPayrollSummary] = useState({
     totalPayroll: 0,
     staffCount: 0,
@@ -40,6 +47,26 @@ export default function StaffManagementPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
+  const router = useRouter();
+
+  // Table sorting
+  const { sortedData, handleSort, getSortDirection, sortConfig } =
+    useTableSort<Staff>(staff, { key: null, direction: null });
+
+  // Table pagination
+  const {
+    paginatedData,
+    currentPage,
+    totalPages,
+    rowsPerPage,
+    totalRows,
+    handlePageChange,
+    handleRowsPerPageChange,
+  } = useTablePagination(sortedData, {
+    initialRowsPerPage: 10,
+    minRowsPerPage: 10,
+    maxRowsPerPage: 50,
+  });
 
   const fetchData = async () => {
     try {
@@ -51,14 +78,30 @@ export default function StaffManagementPage() {
         return [];
       });
 
+      const departmentData = await api.departments.getAll().catch((err) => {
+        console.error("Failed to fetch departments:", err);
+        return [];
+      });
+
+      // Fetch active departments for the modal dropdown
+      const activeDepartmentData = await api.departments
+        .getActive()
+        .catch((err) => {
+          console.error("Failed to fetch active departments:", err);
+          return [];
+        });
+
       const payroll = await api.staff.getPayrollSummary().catch((err) => {
         console.error("Failed to fetch payroll summary:", err);
         return { totalPayroll: 0, staffCount: 0 };
       });
 
       console.log("Staff data:", staffData);
+      console.log("Departments:", departmentData);
       console.log("Payroll summary:", payroll);
       setStaff(staffData);
+      setDepartments(departmentData);
+      setActiveDepartments(activeDepartmentData);
       setPayrollSummary(payroll);
     } catch (err) {
       console.error("Failed to fetch staff data:", err);
@@ -73,11 +116,6 @@ export default function StaffManagementPage() {
 
   const handleCreate = () => {
     setEditingStaff(null);
-    setShowModal(true);
-  };
-
-  const handleEdit = (staffMember: Staff) => {
-    setEditingStaff(staffMember);
     setShowModal(true);
   };
 
@@ -134,7 +172,7 @@ export default function StaffManagementPage() {
       </div>
 
       {/* Payroll Summary Card */}
-      <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white mb-8">
+      {/* <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white mb-8">
         <h2 className="text-xl font-semibold mb-4">Payroll Summary</h2>
         <div className="grid grid-cols-2 gap-6">
           <div>
@@ -150,79 +188,86 @@ export default function StaffManagementPage() {
             </p>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Staff Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                Position
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                Salary
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                Overtime Pay
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                Tax
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                Net Pay
-              </th>
+              <SortableTableHeader
+                label="Employee ID"
+                sortKey="employeeId"
+                currentSortKey={sortConfig.key ? String(sortConfig.key) : null}
+                sortDirection={getSortDirection("employeeId")}
+                onSort={(key) => handleSort(key as keyof Staff)}
+              />
+              <SortableTableHeader
+                label="Department"
+                sortKey="department.name"
+                currentSortKey={sortConfig.key ? String(sortConfig.key) : null}
+                sortDirection={getSortDirection(
+                  "department.name" as keyof Staff
+                )}
+                onSort={(key) => handleSort(key as keyof Staff)}
+              />
+              <SortableTableHeader
+                label="Name"
+                sortKey="name"
+                currentSortKey={sortConfig.key ? String(sortConfig.key) : null}
+                sortDirection={getSortDirection("name")}
+                onSort={(key) => handleSort(key as keyof Staff)}
+              />
+              <SortableTableHeader
+                label="Position"
+                sortKey="position"
+                currentSortKey={sortConfig.key ? String(sortConfig.key) : null}
+                sortDirection={getSortDirection("position")}
+                onSort={(key) => handleSort(key as keyof Staff)}
+              />
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {staff.map((member) => (
+            {paginatedData.map((member) => (
               <tr key={member.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div
                     className="text-sm font-medium"
                     style={{ color: "#000000" }}
                   >
-                    {member.position}
+                    {member.employeeId || "—"}
                   </div>
-                  {member.user && (
-                    <div className="text-sm text-gray-500">
-                      {member.user.email}
-                    </div>
-                  )}
                 </td>
                 <td
                   className="px-6 py-4 whitespace-nowrap text-sm"
                   style={{ color: "#000000" }}
                 >
-                  {formatPrice(member.salary)}
+                  {member.department?.name || "—"}
                 </td>
                 <td
                   className="px-6 py-4 whitespace-nowrap text-sm"
                   style={{ color: "#000000" }}
                 >
-                  {formatPrice(member.overtimePayment)}
+                  {member.name || member.user?.email || "—"}
                 </td>
                 <td
                   className="px-6 py-4 whitespace-nowrap text-sm"
                   style={{ color: "#000000" }}
                 >
-                  {formatPrice(member.tax)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-sm font-semibold text-green-600">
-                    {formatPrice(member.netPay)}
-                  </span>
+                  {member.position}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
-                    onClick={() => handleEdit(member)}
+                    onClick={() =>
+                      router.push(`/admin/dashboard/staff/${member.id}`)
+                    }
                     className="font-semibold hover:underline mr-4"
                     style={{ color: "#2C5BBB" }}
                   >
-                    Edit
+                    Manage
                   </button>
                   <button
                     onClick={() => handleDelete(member.id)}
@@ -236,6 +281,16 @@ export default function StaffManagementPage() {
             ))}
           </tbody>
         </table>
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          rowsPerPage={rowsPerPage}
+          totalRows={totalRows}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleRowsPerPageChange}
+          minRowsPerPage={10}
+          maxRowsPerPage={50}
+        />
       </div>
 
       {/* Staff Form Modal */}
@@ -251,18 +306,34 @@ export default function StaffManagementPage() {
 
             <Formik
               initialValues={{
+                name: editingStaff?.name || "",
                 position: editingStaff?.position || "",
                 salary: editingStaff?.salary || 0,
-                overtimePayment: editingStaff?.overtimePayment || 0,
                 tax: editingStaff?.tax || 0,
-                paymentMethod:
-                  editingStaff?.paymentMethod || ("" as PaymentMethod),
+                totalBonus: editingStaff?.totalBonus || 0,
+                departmentId: editingStaff?.departmentId || "",
+                status: editingStaff?.status || "active",
               }}
               validationSchema={staffSchema}
               onSubmit={handleSubmit}
             >
               {({ errors, touched, isSubmitting }) => (
                 <Form className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Full Name *
+                    </label>
+                    <Field
+                      name="name"
+                      type="text"
+                      className="input-field"
+                      placeholder="e.g., John Doe"
+                    />
+                    {errors.name && touched.name && (
+                      <p className="text-red-600 text-sm mt-1">{errors.name}</p>
+                    )}
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Position *
@@ -282,23 +353,23 @@ export default function StaffManagementPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Payment Method *
+                      Department *
                     </label>
                     <Field
                       as="select"
-                      name="paymentMethod"
+                      name="departmentId"
                       className="input-field"
                     >
-                      <option value="">Select payment method</option>
-                      <option value={PaymentMethod.CASH}>Cash</option>
-                      <option value={PaymentMethod.BANK_TRANSFER}>
-                        Bank Transfer
-                      </option>
-                      <option value={PaymentMethod.CHECK}>Check</option>
+                      <option value="">Select department</option>
+                      {activeDepartments.map((dept) => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.name} ({dept.shortName})
+                        </option>
+                      ))}
                     </Field>
-                    {errors.paymentMethod && touched.paymentMethod && (
+                    {errors.departmentId && touched.departmentId && (
                       <p className="text-red-600 text-sm mt-1">
-                        {errors.paymentMethod}
+                        {errors.departmentId}
                       </p>
                     )}
                   </div>
@@ -325,19 +396,19 @@ export default function StaffManagementPage() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Overtime Payment ($)
+                        Bonus ($)
                       </label>
                       <Field
-                        name="overtimePayment"
+                        name="totalBonus"
                         type="number"
                         step="0.01"
                         min="0"
                         className="input-field"
                         placeholder="0"
                       />
-                      {errors.overtimePayment && touched.overtimePayment && (
+                      {errors.totalBonus && touched.totalBonus && (
                         <p className="text-red-600 text-sm mt-1">
-                          {errors.overtimePayment}
+                          {errors.totalBonus}
                         </p>
                       )}
                     </div>
@@ -357,6 +428,22 @@ export default function StaffManagementPage() {
                     />
                     {errors.tax && touched.tax && (
                       <p className="text-red-600 text-sm mt-1">{errors.tax}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Status *
+                    </label>
+                    <Field as="select" name="status" className="input-field">
+                      <option value="active">Active</option>
+                      <option value="on_leave">On Leave</option>
+                      <option value="quit">Quit</option>
+                    </Field>
+                    {errors.status && touched.status && (
+                      <p className="text-red-600 text-sm mt-1">
+                        {errors.status}
+                      </p>
                     )}
                   </div>
 

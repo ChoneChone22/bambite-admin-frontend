@@ -2,21 +2,21 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Formik, Form, Field, ErrorMessage } from "formik";
-import axiosInstance from "@/src/lib/axios";
+import api from "@/src/services/api";
 import { tokenManager } from "@/src/lib/tokenManager";
 import { loginSchema } from "@/src/lib/validations";
-import { LoginFormValues, ApiResponse, AuthResponse } from "@/src/types";
+import { LoginFormValues } from "@/src/types";
+import { UserRole } from "@/src/types/api";
 import LoadingSpinner from "@/src/components/LoadingSpinner";
 import Toast from "@/src/components/Toast";
 import { getErrorMessage } from "@/src/lib/utils";
 
-export default function AdminLoginPage() {
+export default function StaffLoginPage() {
   const router = useRouter();
   const [toast, setToast] = useState<{
     message: string;
-    type: "success" | "error";
+    type: "success" | "error" | "info";
   } | null>(null);
 
   const initialValues: LoginFormValues = {
@@ -24,37 +24,54 @@ export default function AdminLoginPage() {
     password: "",
   };
 
-  const handleSubmit = async (values: LoginFormValues) => {
+  const handleSubmit = async (values: LoginFormValues, { setSubmitting }: { setSubmitting: (isSubmitting: boolean) => void }) => {
     try {
-      const response = await axiosInstance.post<ApiResponse<AuthResponse>>(
-        "/auth/admin/login",
-        values
-      );
-
-      const authData = response.data.data;
+      // Use API service method for consistency
+      // Cookies are automatically set by backend via Set-Cookie headers
+      const authData = await api.auth.staffLogin(values);
       
       // Tokens are now in httpOnly cookies (set by backend automatically)
-      // Response contains user/admin data only
-      const admin = authData.admin || authData.user;
+      // Response contains staff account data only
+      const staffAccount = authData.staffAccount || authData.user;
 
-      if (!admin) {
-        throw new Error("No admin data received from server");
+      if (!staffAccount) {
+        throw new Error("No staff account data received from server");
       }
 
-      // Add role to admin object
-      const adminWithRole = { ...admin, role: "admin" };
+      // Check if password change is required
+      // When mustChangePassword=true, login succeeds but tokens are NOT set
+      // User must change password first before getting tokens
+      if (staffAccount.mustChangePassword) {
+        // Store user data temporarily (without tokens, as they weren't set)
+        const staffWithRole = { ...staffAccount, role: UserRole.STAFF };
+        tokenManager.setUser(staffWithRole);
+        
+        // Redirect to password change page
+        setToast({ 
+          message: "Password change required. Please set a new password.", 
+          type: "info"
+        });
+        setTimeout(() => router.push("/staff/change-password"), 1000);
+        return;
+      }
 
-      // Store user data only (tokens are in httpOnly cookies)
-      tokenManager.setUser(adminWithRole);
+      // Normal login flow - tokens are in httpOnly cookies
+      // Add role to staff account object
+      const staffWithRole = { ...staffAccount, role: UserRole.STAFF };
+
+      // Store user data only (tokens are in httpOnly cookies, not accessible via JS)
+      tokenManager.setUser(staffWithRole);
 
       // Dispatch auth change event
       window.dispatchEvent(new Event("auth-change"));
 
-      setToast({ message: "Admin login successful!", type: "success" });
-      setTimeout(() => router.push("/admin/dashboard"), 1000);
-    } catch (error) {
-      console.error("Admin login error:", error);
-      setToast({ message: getErrorMessage(error), type: "error" });
+      setToast({ message: "Staff login successful!", type: "success" });
+      setTimeout(() => router.push("/staff/profile"), 1000);
+    } catch (error: any) {
+      console.error("Staff login error:", error);
+      const errorMessage = getErrorMessage(error);
+      setToast({ message: errorMessage, type: "error" });
+      setSubmitting(false); // Ensure form is not stuck in submitting state
     }
   };
 
@@ -71,10 +88,10 @@ export default function AdminLoginPage() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="text-center text-3xl font-bold text-white">
-            Admin Portal
+            Staff Portal
           </h2>
           <p className="mt-2 text-center text-sm text-gray-300">
-            Sign in to access the admin dashboard
+            Sign in to access your staff account
           </p>
         </div>
 
@@ -83,7 +100,7 @@ export default function AdminLoginPage() {
           validationSchema={loginSchema}
           onSubmit={handleSubmit}
         >
-          {({ isSubmitting }) => (
+          {({ isSubmitting, setSubmitting }) => (
             <Form className="mt-8 space-y-6 bg-white p-8 rounded-lg shadow-xl">
               <div className="space-y-4">
                 {/* Email */}
@@ -92,14 +109,14 @@ export default function AdminLoginPage() {
                     htmlFor="email"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Admin Email
+                    Staff Email
                   </label>
                   <Field
                     id="email"
                     name="email"
                     type="email"
                     className="input-field"
-                    placeholder="admin@bambite.com"
+                    placeholder="staff@bambite.com"
                   />
                   <ErrorMessage
                     name="email"
@@ -143,7 +160,7 @@ export default function AdminLoginPage() {
                       <span className="ml-2">Signing in...</span>
                     </>
                   ) : (
-                    "🔐 Admin Sign In"
+                    "🔐 Staff Sign In"
                   )}
                 </button>
               </div>
@@ -155,3 +172,4 @@ export default function AdminLoginPage() {
     </div>
   );
 }
+

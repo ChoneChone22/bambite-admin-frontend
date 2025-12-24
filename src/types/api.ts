@@ -101,16 +101,35 @@ export interface Order {
   updatedAt?: string;
 }
 
+// Department model (from Department Management API)
+export interface Department {
+  id: string;
+  name: string;
+  shortName: string;
+  status: "active" | "inactive";
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Staff {
   id: string;
+  // Core HR fields
+  employeeId?: string;
+  name?: string;
   position: string;
   salary: number;
-  overtimePayment: number;
-  tax: number;
-  netPay: number;
-  paymentMethod: PaymentMethod;
+  totalBonus?: number;
+  tax?: number;
+  status?: "active" | "on_leave" | "quit";
+  // Relations
+  departmentId?: string;
+  department?: Department;
   userId?: string;
   user?: User;
+  // Payroll-calculated fields (legacy / read-only from backend)
+  overtimePayment?: number;
+  netPay?: number;
+  paymentMethod?: PaymentMethod;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -125,6 +144,40 @@ export interface InventoryLog {
   newQuantity: number;
   notes?: string;
   createdAt?: string;
+}
+
+// Staff account & permissions
+export interface Permission {
+  id: string;
+  code: string; // Permission code from database (e.g., "staff_management")
+  permName?: string; // Optional permission name (not used for display)
+  // staffAccount relation exists in backend but not needed for frontend display
+}
+
+export interface StaffAccount {
+  id: string;
+  email: string;
+  isActive: boolean;
+  mustChangePassword: boolean;
+  staff?: Staff;
+  permissions?: Permission[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Payment {
+  id: string;
+  staffId: string;
+  staff?: Staff;
+  bonus: number;
+  tax: number;
+  note?: string;
+  paymentMethod: "mobile_banking" | "cash";
+  paidMonth: string; // YYYY-MM
+  isPaid: boolean;
+  totalPayment: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // ==================== API Request Types ====================
@@ -178,19 +231,23 @@ export interface UpdateOrderStatusRequest {
 }
 
 export interface CreateStaffRequest {
+  name: string;
   position: string;
   salary: number;
-  overtimePayment?: number;
   tax?: number;
-  paymentMethod: PaymentMethod;
+  totalBonus?: number;
+  status?: "active" | "on_leave" | "quit";
+  departmentId: string;
 }
 
 export interface UpdateStaffRequest {
+  name?: string;
   position?: string;
   salary?: number;
-  overtimePayment?: number;
   tax?: number;
-  paymentMethod?: PaymentMethod;
+  totalBonus?: number;
+  status?: "active" | "on_leave" | "quit";
+  departmentId?: string;
 }
 
 export interface CreateInventoryLogRequest {
@@ -200,11 +257,52 @@ export interface CreateInventoryLogRequest {
   notes?: string;
 }
 
+export interface CreateStaffAccountRequest {
+  staffId: string;
+  email: string;
+  password?: string;
+  permissionIds?: string[];
+}
+
+export interface UpdateStaffAccountRequest {
+  email?: string;
+  password?: string;
+  permissionIds?: string[];
+  isActive?: boolean;
+}
+
+export interface CreatePaymentRequest {
+  staffId: string;
+  bonus?: number;
+  tax?: number;
+  note?: string;
+  paymentMethod?: "mobile_banking" | "cash";
+  paidMonth: string; // YYYY-MM
+}
+
+export interface UpdatePaymentRequest {
+  bonus?: number;
+  tax?: number;
+  note?: string;
+  paymentMethod?: "mobile_banking" | "cash";
+  isPaid?: boolean;
+}
+
 // ==================== API Response Types ====================
 
 export interface AuthResponse {
-  token: string;
-  user: User;
+  // Tokens are now in httpOnly cookies, not in response body
+  // These fields are kept for backward compatibility but may be empty
+  accessToken?: string;
+  refreshToken?: string;
+  // Legacy support - some endpoints might still return 'token'
+  token?: string;
+  // User login returns 'user'
+  user?: User;
+  // Admin login returns 'admin'
+  admin?: User;
+  // Staff account login returns 'staffAccount'
+  staffAccount?: StaffAccount;
 }
 
 export interface ApiResponse<T> {
@@ -250,4 +348,9 @@ export interface OrderFilters extends PaginationParams {
   userId?: string;
   startDate?: string;
   endDate?: string;
+}
+
+export interface PaymentFilters extends PaginationParams {
+  paidMonth?: string;
+  isPaid?: boolean;
 }

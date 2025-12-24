@@ -180,6 +180,14 @@ export default function AdminDashboardPage() {
               Update Inventory
             </p>
           </a>
+          <a
+            href="/admin/dashboard/departments"
+            className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
+          >
+            <p className="font-semibold text-lg" style={{ color: "#000000" }}>
+              Manage Departments
+            </p>
+          </a>
         </div>
       </div>
     </div>
