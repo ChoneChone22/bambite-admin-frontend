@@ -157,7 +157,7 @@ export interface Permission {
 export interface StaffAccount {
   id: string;
   email: string;
-  isActive: boolean;
+  isActive?: boolean; // Optional - backend may not return this, use staff?.status instead
   mustChangePassword: boolean;
   staff?: Staff;
   permissions?: Permission[];

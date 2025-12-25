@@ -191,133 +191,125 @@ export default function StaffAccountManagementPage() {
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <SortableTableHeader
-                  label="Staff"
-                  sortKey="staff.name"
-                  currentSortKey={
-                    sortConfig.key ? String(sortConfig.key) : null
-                  }
-                  sortDirection={getSortDirection(
-                    "staff.name" as keyof StaffAccount
-                  )}
-                  onSort={(key) => handleSort(key as keyof StaffAccount)}
-                />
-                <SortableTableHeader
-                  label="Email"
-                  sortKey="email"
-                  currentSortKey={
-                    sortConfig.key ? String(sortConfig.key) : null
-                  }
-                  sortDirection={getSortDirection("email")}
-                  onSort={(key) => handleSort(key as keyof StaffAccount)}
-                />
-                <SortableTableHeader
-                  label="Status"
-                  sortKey="staff.status"
-                  currentSortKey={
-                    sortConfig.key ? String(sortConfig.key) : null
-                  }
-                  sortDirection={getSortDirection(
-                    "staff.status" as keyof StaffAccount
-                  )}
-                  onSort={(key) => handleSort(key as keyof StaffAccount)}
-                />
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Permissions
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {paginatedData.map((account) => (
-                <tr key={account.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div
-                      className="text-sm font-medium"
-                      style={{ color: "#000000" }}
-                    >
-                      {account.staff?.name || account.staff?.employeeId || "—"}
-                    </div>
-                    {account.staff?.department && (
-                      <div className="text-xs text-gray-500">
-                        {account.staff.department.name} (
-                        {account.staff.department.shortName})
-                      </div>
-                    )}
-                  </td>
-                  <td
-                    className="px-6 py-4 whitespace-nowrap text-sm"
+          <thead className="bg-gray-50">
+            <tr>
+              <SortableTableHeader
+                label="Staff"
+                sortKey="staff.name"
+                currentSortKey={sortConfig.key ? String(sortConfig.key) : null}
+                sortDirection={getSortDirection(
+                  "staff.name" as keyof StaffAccount
+                )}
+                onSort={(key) => handleSort(key as keyof StaffAccount)}
+              />
+              <SortableTableHeader
+                label="Email"
+                sortKey="email"
+                currentSortKey={sortConfig.key ? String(sortConfig.key) : null}
+                sortDirection={getSortDirection("email")}
+                onSort={(key) => handleSort(key as keyof StaffAccount)}
+              />
+              <SortableTableHeader
+                label="Status"
+                sortKey="staff.status"
+                currentSortKey={sortConfig.key ? String(sortConfig.key) : null}
+                sortDirection={getSortDirection(
+                  "staff.status" as keyof StaffAccount
+                )}
+                onSort={(key) => handleSort(key as keyof StaffAccount)}
+              />
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Permissions
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {paginatedData.map((account) => (
+              <tr key={account.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div
+                    className="text-sm font-medium"
                     style={{ color: "#000000" }}
                   >
-                    {account.email}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-3 py-1 text-xs font-medium rounded-full ${
-                        account.staff?.status === "active"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      {account.staff?.status === "active"
-                        ? "Active"
-                        : "Inactive"}
+                    {account.staff?.name || account.staff?.employeeId || "—"}
+                  </div>
+                  {account.staff?.department && (
+                    <div className="text-xs text-gray-500">
+                      {account.staff.department.name} (
+                      {account.staff.department.shortName})
+                    </div>
+                  )}
+                </td>
+                <td
+                  className="px-6 py-4 whitespace-nowrap text-sm"
+                  style={{ color: "#000000" }}
+                >
+                  {account.email}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span
+                    className={`px-3 py-1 text-xs font-medium rounded-full ${
+                      account.staff?.status === "active"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    {account.staff?.status === "active" ? "Active" : "Inactive"}
+                  </span>
+                  {account.mustChangePassword && (
+                    <span className="ml-2 text-xs text-yellow-700">
+                      Must change password
                     </span>
-                    {account.mustChangePassword && (
-                      <span className="ml-2 text-xs text-yellow-700">
-                        Must change password
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {account.permissions && account.permissions.length > 0 ? (
-                      <span>
-                        {account.permissions
-                          .map((p) => formatPermissionCode(p.code || ""))
-                          .slice(0, 3)
-                          .join(", ")}
-                        {account.permissions.length > 3 &&
-                          ` +${account.permissions.length - 3} more`}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400">None</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                    <button
-                      onClick={() =>
-                        router.push(
-                          `/admin/dashboard/staff-accounts/${account.id}`
-                        )
-                      }
-                      className="font-semibold hover:underline mr-4"
-                      style={{ color: "#2C5BBB" }}
-                    >
-                      View
-                    </button>
-                    <button
-                      onClick={() => handleEdit(account)}
-                      className="font-semibold hover:underline mr-4"
-                      style={{ color: "#2C5BBB" }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(account.id)}
-                      className="font-semibold hover:underline"
-                      style={{ color: "#DC2626" }}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  )}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  {account.permissions && account.permissions.length > 0 ? (
+                    <span>
+                      {account.permissions
+                        .map((p) => formatPermissionCode(p.code || ""))
+                        .slice(0, 3)
+                        .join(", ")}
+                      {account.permissions.length > 3 &&
+                        ` +${account.permissions.length - 3} more`}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400">None</span>
+                  )}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
+                  <button
+                    onClick={() =>
+                      router.push(
+                        `/staff/dashboard/staff-accounts/${account.id}`
+                      )
+                    }
+                    className="font-semibold hover:underline mr-4"
+                    style={{ color: "#2C5BBB" }}
+                  >
+                    View
+                  </button>
+                  <button
+                    onClick={() => handleEdit(account)}
+                    className="font-semibold hover:underline mr-4"
+                    style={{ color: "#2C5BBB" }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(account.id)}
+                    className="font-semibold hover:underline"
+                    style={{ color: "#DC2626" }}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
         </div>
 
         {accounts.length === 0 && (

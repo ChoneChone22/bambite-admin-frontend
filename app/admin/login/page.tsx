@@ -7,7 +7,8 @@ import { Formik, Form, Field, ErrorMessage } from "formik";
 import axiosInstance from "@/src/lib/axios";
 import { tokenManager } from "@/src/lib/tokenManager";
 import { loginSchema } from "@/src/lib/validations";
-import { LoginFormValues, ApiResponse, AuthResponse } from "@/src/types";
+import { LoginFormValues } from "@/src/types";
+import { ApiResponse, AuthResponse, UserRole } from "@/src/types/api";
 import LoadingSpinner from "@/src/components/LoadingSpinner";
 import Toast from "@/src/components/Toast";
 import { getErrorMessage } from "@/src/lib/utils";
@@ -42,7 +43,7 @@ export default function AdminLoginPage() {
       }
 
       // Add role to admin object
-      const adminWithRole = { ...admin, role: "admin" };
+      const adminWithRole = { ...admin, role: UserRole.ADMIN };
 
       // Store user data only (tokens are in httpOnly cookies)
       tokenManager.setUser(adminWithRole);
@@ -51,7 +52,12 @@ export default function AdminLoginPage() {
       window.dispatchEvent(new Event("auth-change"));
 
       setToast({ message: "Admin login successful!", type: "success" });
-      setTimeout(() => router.push("/admin/dashboard"), 1000);
+      
+      // Redirect after short delay to allow cookies to be set
+      // Backend automatically sets accessToken_admin and refreshToken_admin cookies
+      setTimeout(() => {
+        router.push("/admin/dashboard");
+      }, 1000);
     } catch (error) {
       console.error("Admin login error:", error);
       setToast({ message: getErrorMessage(error), type: "error" });

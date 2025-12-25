@@ -3,14 +3,22 @@
  * 
  * Security implementation:
  * - Tokens are stored in httpOnly cookies by the backend (not accessible via JavaScript)
+ * - Role-specific cookie names for multiple simultaneous logins:
+ *   - User: accessToken_user, refreshToken_user
+ *   - Admin: accessToken_admin, refreshToken_admin
+ *   - Staff: accessToken_staff, refreshToken_staff
  * - User data is stored in localStorage (non-sensitive, needed for UI)
  * - Automatic cookie handling by browser (withCredentials: true in axios)
  * - No token storage in localStorage (security best practice)
  * 
  * Note: httpOnly cookies cannot be read by JavaScript, so we rely on:
- * - Backend to set cookies automatically on login/refresh
- * - Browser to send cookies automatically with requests
- * - Backend to clear cookies on logout
+ * - Backend to set role-specific cookies automatically on login/refresh
+ * - Browser to send the correct role-specific cookies with requests
+ * - Backend to automatically detect which role's cookies to use
+ * - Backend to clear role-specific cookies on logout
+ * 
+ * Multiple simultaneous logins are supported - you can be logged in as
+ * admin, staff, and user at the same time, each with their own cookies.
  */
 
 // Storage keys (only for user data, not tokens)

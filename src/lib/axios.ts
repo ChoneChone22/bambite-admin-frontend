@@ -4,9 +4,19 @@
  * 
  * Security features:
  * - withCredentials: true to send/receive httpOnly cookies
+ * - Role-specific cookie names (accessToken_user, accessToken_admin, accessToken_staff)
  * - Automatic token refresh on 401 errors
  * - Request queuing during token refresh
  * - Proper error handling and redirects
+ * 
+ * Cookie Names (set by backend, httpOnly):
+ * - User: accessToken_user, refreshToken_user
+ * - Admin: accessToken_admin, refreshToken_admin
+ * - Staff: accessToken_staff, refreshToken_staff
+ * 
+ * Note: JavaScript cannot read httpOnly cookies. The browser automatically
+ * sends the correct cookies based on the request context. The backend
+ * automatically detects which role's cookies to use.
  */
 
 import axios, {
@@ -92,13 +102,23 @@ axiosInstance.interceptors.request.use(
       (response) => {
         // Note: Set-Cookie headers are NOT accessible to JavaScript (browser security feature)
         // Cookies are automatically set by the browser when Set-Cookie headers are present
+        // Role-specific cookies are set based on the login endpoint:
+        // - /auth/user/login → accessToken_user, refreshToken_user
+        // - /auth/admin/login → accessToken_admin, refreshToken_admin
+        // - /staff-accounts/login → accessToken_staff, refreshToken_staff
         // To verify cookies are set, check:
         // 1. DevTools → Application → Cookies → http://localhost:3000
         // 2. DevTools → Network → Request Headers → Cookie (on subsequent requests)
-        if (response.config.url?.includes("/login") || response.config.url?.includes("/staff-accounts/login")) {
+        const isLoginEndpoint = 
+          response.config.url?.includes("/login") || 
+          response.config.url?.includes("/staff-accounts/login") ||
+          response.config.url?.includes("/auth/admin/login");
+        
+        if (isLoginEndpoint) {
           if (response.status === 200 || response.status === 201) {
-            console.log("✅ Login successful - cookies should be set automatically by browser");
+            console.log("✅ Login successful - role-specific cookies should be set automatically by browser");
             console.log("📍 Verify cookies in: DevTools → Application → Cookies → http://localhost:3000");
+            console.log("📍 Cookie names: accessToken_user/admin/staff, refreshToken_user/admin/staff");
           }
         }
         return response;
@@ -140,23 +160,26 @@ axiosInstance.interceptors.request.use(
 
       try {
         // Attempt to refresh token - cookies are sent automatically
-        // Backend reads refresh token from httpOnly cookie
-        // Empty body or no body - backend uses cookie
+        // Backend automatically detects which role's refresh token cookie to use based on:
+        // 1. The endpoint being accessed (prioritizes correct cookie)
+        // 2. All available refreshToken_* cookies
+        // Empty body - backend reads from the appropriate role-specific cookie
         // Use axiosInstance instead of axios to ensure withCredentials is set
         const refreshResponse = await axiosInstance.post(
           "/auth/refresh",
-          {} // Empty body - refresh token comes from cookie
+          {} // Empty body - refresh token comes from role-specific cookie
           // withCredentials is already set at instance level
         );
 
-        // Refresh successful - new tokens are in httpOnly cookies
+        // Refresh successful - new role-specific tokens are in httpOnly cookies
+        // Backend automatically sets new cookies with the same role-specific names
         // No need to store tokens - they're in cookies
 
         // Process queued requests
         processQueue(null, null);
         isRefreshing = false;
 
-        // Retry original request - cookies will be sent automatically
+        // Retry original request - browser automatically sends the correct role-specific cookie
         return axiosInstance(originalRequest);
       } catch (refreshError) {
         // Refresh failed - clear user data and redirect

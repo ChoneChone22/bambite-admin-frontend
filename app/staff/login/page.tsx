@@ -66,7 +66,13 @@ export default function StaffLoginPage() {
       window.dispatchEvent(new Event("auth-change"));
 
       setToast({ message: "Staff login successful!", type: "success" });
-      setTimeout(() => router.push("/staff/profile"), 1000);
+      
+      // Redirect after short delay to allow cookies to be set
+      // Backend automatically sets accessToken_staff and refreshToken_staff cookies
+      // Redirect to staff dashboard (separate from admin dashboard)
+      setTimeout(() => {
+        router.push("/staff/dashboard");
+      }, 1000);
     } catch (error: any) {
       console.error("Staff login error:", error);
       const errorMessage = getErrorMessage(error);

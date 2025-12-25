@@ -20,15 +20,18 @@ export default function StaffLayout({
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Skip authentication check for login and change-password pages
+  // Skip authentication check for login, change-password, and dashboard pages
+  // Dashboard pages have their own layout with authentication
   const isLoginPage = pathname === "/staff/login";
   const isChangePasswordPage = pathname === "/staff/change-password";
+  const isDashboardPage = pathname?.startsWith("/staff/dashboard");
 
   useEffect(() => {
-    // If on login or change-password page, skip auth check and just render
-    if (isLoginPage || isChangePasswordPage) {
+    // If on login, change-password, or dashboard page, skip auth check and just render
+    // Dashboard has its own layout that handles authentication
+    if (isLoginPage || isChangePasswordPage || isDashboardPage) {
       setIsLoading(false);
-      setIsAuthenticated(false); // Not authenticated on these pages
+      setIsAuthenticated(false); // Not authenticated on these pages (or handled by dashboard layout)
       return;
     }
 
@@ -49,26 +52,30 @@ export default function StaffLayout({
       }
 
       // Verify authentication with backend by fetching profile
-      // This ensures cookies are valid
+      // Backend automatically prioritizes accessToken_staff cookie for staff endpoints
+      // When multiple roles are logged in, backend correctly selects the appropriate cookie
       try {
         const api = (await import("@/src/services/api")).default;
+        // Use getProfile() which is specifically for staff viewing their own profile
+        // Backend automatically detects and uses accessToken_staff cookie for this endpoint
         await api.staffAccounts.getProfile();
         setIsAuthenticated(true);
-      } catch (error) {
+        setIsLoading(false);
+      } catch (error: any) {
         // Profile fetch failed - cookies invalid or expired
+        console.error("Staff profile fetch failed:", error);
         tokenManager.clearUser();
         router.push("/staff/login");
         return;
       }
-
-      setIsLoading(false);
     };
 
     checkAuth();
-  }, [router, isLoginPage, isChangePasswordPage]);
+  }, [router, isLoginPage, isChangePasswordPage, isDashboardPage]);
 
-  // If on login or change-password page, render without layout (no sidebar)
-  if (isLoginPage || isChangePasswordPage) {
+  // If on login, change-password, or dashboard page, render without layout (no sidebar)
+  // Dashboard has its own layout with sidebar
+  if (isLoginPage || isChangePasswordPage || isDashboardPage) {
     return <>{children}</>;
   }
 

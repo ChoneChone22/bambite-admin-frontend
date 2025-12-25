@@ -41,16 +41,20 @@ import {
 // ==================== Auth API ====================
 
 export const authApi = {
-  /**
-   * Login user
-   */
-  login: async (data: LoginRequest): Promise<AuthResponse> => {
-    const response = await axiosInstance.post<ApiResponse<AuthResponse>>(
-      "/auth/user/login",
-      data
-    );
-    return response.data.data;
-  },
+      /**
+       * Login user
+       * Sets role-specific cookies: accessToken_user, refreshToken_user
+       * Cookies are automatically set by backend via Set-Cookie headers
+       * Multiple simultaneous logins are supported - user cookies won't interfere with admin/staff cookies
+       */
+      login: async (data: LoginRequest): Promise<AuthResponse> => {
+        const response = await axiosInstance.post<ApiResponse<AuthResponse>>(
+          "/auth/user/login",
+          data
+        );
+        // Role-specific cookies (accessToken_user, refreshToken_user) are automatically set by backend
+        return response.data.data;
+      },
 
   /**
    * Register new user
@@ -73,42 +77,56 @@ export const authApi = {
     return response.data.data;
   },
 
-  /**
-   * Refresh access token
-   * Refresh token comes from httpOnly cookie (preferred) or request body (backward compatibility)
-   */
-  refreshToken: async (refreshToken?: string): Promise<AuthResponse> => {
-    // If refreshToken provided, use it (backward compatibility)
-    // Otherwise, backend reads from httpOnly cookie
-    const body = refreshToken ? { refreshToken } : {};
-    const response = await axiosInstance.post<ApiResponse<AuthResponse>>(
-      "/auth/refresh",
-      body
-    );
-    // Tokens are in httpOnly cookies, response may not contain tokens
-    return response.data.data || ({} as AuthResponse);
-  },
+      /**
+       * Refresh access token
+       * Backend automatically detects which role's refresh token cookie to use:
+       * - refreshToken_user (for user requests)
+       * - refreshToken_admin (for admin requests)
+       * - refreshToken_staff (for staff requests)
+       * Refresh token comes from role-specific httpOnly cookie (preferred) or request body (backward compatibility)
+       */
+      refreshToken: async (refreshToken?: string): Promise<AuthResponse> => {
+        // If refreshToken provided, use it (backward compatibility)
+        // Otherwise, backend reads from role-specific httpOnly cookie
+        // Backend automatically detects which role's cookie to use based on request context
+        const body = refreshToken ? { refreshToken } : {};
+        const response = await axiosInstance.post<ApiResponse<AuthResponse>>(
+          "/auth/refresh",
+          body
+        );
+        // New role-specific tokens are in httpOnly cookies, response may not contain tokens
+        return response.data.data || ({} as AuthResponse);
+      },
 
-  /**
-   * Logout user
-   * Refresh token comes from httpOnly cookie (preferred) or request body (backward compatibility)
-   */
-  logout: async (refreshToken?: string): Promise<void> => {
-    // If refreshToken provided, use it (backward compatibility)
-    // Otherwise, backend reads from httpOnly cookie
-    const body = refreshToken ? { refreshToken } : {};
-    await axiosInstance.post("/auth/logout", body);
-    // Backend clears cookies automatically
-  },
+      /**
+       * Logout user
+       * Backend automatically detects which role's refresh token cookie to use and clears:
+       * - accessToken_user, refreshToken_user (for user logout)
+       * - accessToken_admin, refreshToken_admin (for admin logout)
+       * - accessToken_staff, refreshToken_staff (for staff logout)
+       * Refresh token comes from role-specific httpOnly cookie (preferred) or request body (backward compatibility)
+       */
+      logout: async (refreshToken?: string): Promise<void> => {
+        // If refreshToken provided, use it (backward compatibility)
+        // Otherwise, backend reads from role-specific httpOnly cookie
+        // Backend automatically detects which role's cookies to clear based on request context
+        const body = refreshToken ? { refreshToken } : {};
+        await axiosInstance.post("/auth/logout", body);
+        // Backend clears role-specific cookies automatically
+      },
 
   /**
    * Admin login
+   * Sets role-specific cookies: accessToken_admin, refreshToken_admin
+   * Cookies are automatically set by backend via Set-Cookie headers
+   * Multiple simultaneous logins are supported - admin cookies won't interfere with staff/user cookies
    */
   adminLogin: async (data: LoginRequest): Promise<AuthResponse> => {
     const response = await axiosInstance.post<ApiResponse<AuthResponse>>(
       "/auth/admin/login",
       data
     );
+    // Role-specific cookies (accessToken_admin, refreshToken_admin) are automatically set by backend
     return response.data.data;
   },
 
@@ -124,9 +142,11 @@ export const authApi = {
 
   /**
    * Staff Account Login
+   * Sets role-specific cookies: accessToken_staff, refreshToken_staff
    * Cookies are automatically set by backend via Set-Cookie headers
    * Note: Set-Cookie headers are NOT accessible to JavaScript (browser security feature)
    * Cookies are automatically stored by the browser when Set-Cookie headers are present
+   * Multiple simultaneous logins are supported - staff cookies won't interfere with admin/user cookies
    * To verify cookies: Check DevTools → Application → Cookies → http://localhost:3000
    */
   staffLogin: async (data: LoginRequest): Promise<AuthResponse> => {
@@ -137,7 +157,7 @@ export const authApi = {
       // This ensures cookies are sent/received automatically
     );
     
-    // Cookies are automatically set by backend via Set-Cookie headers
+    // Role-specific cookies (accessToken_staff, refreshToken_staff) are automatically set by backend
     // No need to manually store tokens - they're in httpOnly cookies
     // Cookies are set for the backend domain (localhost:3000), not frontend (localhost:3001)
     // Verify cookies in: DevTools → Application → Cookies → http://localhost:3000
@@ -762,31 +782,53 @@ export const paymentsApi = {
 export const staffAccountsApi = {
   /**
    * Get all staff accounts with permissions (Admin only)
+   * Fetches all staff accounts with a high limit for client-side pagination
    */
   getAll: async (): Promise<StaffAccount[]> => {
-    const response = await axiosInstance.get<any>("/staff-accounts", {
-      params: { page: 1, limit: 50 },
-    });
-    const data = response.data;
+    try {
+      const response = await axiosInstance.get<any>("/staff-accounts", {
+        params: { page: 1, limit: 1000 }, // High limit to get all accounts for client-side pagination
+      });
+      const data = response.data;
 
-    // Postman shows { data: { staffAccounts: [...] } } pattern
-    if (Array.isArray(data?.data?.staffAccounts)) {
-      return data.data.staffAccounts as StaffAccount[];
+      // Handle response structure: { status: "success", data: { accounts: [...], pagination: {...} } }
+      if (Array.isArray(data?.data?.accounts)) {
+        return data.data.accounts as StaffAccount[];
+      }
+      // Handle alternative structure: { data: { staffAccounts: [...] } }
+      if (Array.isArray(data?.data?.staffAccounts)) {
+        return data.data.staffAccounts as StaffAccount[];
+      }
+      // Handle non-paginated response: { data: { staffAccounts: [...] } }
+      if (Array.isArray(data?.staffAccounts)) {
+        return data.staffAccounts as StaffAccount[];
+      }
+      // Handle direct array in data: { data: [...] }
+      if (Array.isArray(data?.data)) {
+        return data.data as StaffAccount[];
+      }
+      // Handle direct array response: [...]
+      if (Array.isArray(data)) {
+        return data as StaffAccount[];
+      }
+      // Handle paginated response with items: { data: { items: [...], total: ... } }
+      if (Array.isArray(data?.data?.items)) {
+        return data.data.items as StaffAccount[];
+      }
+      // Log for debugging if no data found
+      console.warn("Unexpected staff accounts response structure:", JSON.stringify(data, null, 2));
+      return [];
+    } catch (error: any) {
+      console.error("Error fetching staff accounts:", error);
+      console.error("Error response:", error?.response?.data);
+      throw error;
     }
-    if (Array.isArray(data?.staffAccounts)) {
-      return data.staffAccounts as StaffAccount[];
-    }
-    if (Array.isArray(data?.data)) {
-      return data.data as StaffAccount[];
-    }
-    if (Array.isArray(data)) {
-      return data as StaffAccount[];
-    }
-    return [];
   },
 
   /**
-   * Get staff account by ID (Admin only)
+   * Get staff account by ID (Admin or Staff with staff_management permission)
+   * Use this endpoint when admins need to view a staff account profile
+   * DO NOT use getProfile() for admin viewing staff accounts - that's only for staff viewing their own profile
    */
   getById: async (id: string): Promise<StaffAccount> => {
     const response = await axiosInstance.get<any>(`/staff-accounts/${id}`);
@@ -872,6 +914,8 @@ export const staffAccountsApi = {
 
   /**
    * Get authenticated staff account profile with permissions
+   * ONLY for staff to view their own profile - do NOT use for admin viewing staff profiles
+   * For admin viewing staff profiles, use getById(id) instead
    */
   getProfile: async (): Promise<StaffAccount> => {
     const response = await axiosInstance.get<any>("/staff-accounts/profile");

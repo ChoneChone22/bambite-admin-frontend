@@ -1,6 +1,7 @@
 /**
- * Admin Dashboard Layout
- * Protected layout with sidebar navigation
+ * Staff Dashboard Layout
+ * Protected layout for staff accounts with sidebar navigation
+ * Separate from admin dashboard routes
  */
 
 "use client";
@@ -8,9 +9,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { tokenManager } from "@/src/lib/tokenManager";
-import AdminSidebar from "@/src/components/AdminSidebar";
+import StaffSidebar from "@/src/components/StaffSidebar";
 
-export default function AdminDashboardLayout({
+export default function StaffDashboardLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -21,41 +22,41 @@ export default function AdminDashboardLayout({
 
   useEffect(() => {
     const checkAuth = async () => {
-      // Check if user is authenticated as admin (ONLY admin, not staff)
+      // Check if user is authenticated as staff (ONLY staff, not admin)
       const user = tokenManager.getUser();
 
       if (!user) {
-        router.push("/admin/login");
+        router.push("/staff/login");
         return;
       }
 
-      // Check if user is admin (role can be "admin" or "ADMIN")
+      // Check if user is staff (role can be "staff" or "STAFF")
       const role = user.role?.toLowerCase();
-      if (role !== "admin") {
-        // If staff tries to access admin routes, redirect to staff dashboard
-        if (role === "staff") {
-          router.push("/staff/dashboard");
+      if (role !== "staff") {
+        // If admin tries to access staff routes, redirect to admin dashboard
+        if (role === "admin") {
+          router.push("/admin/dashboard");
         } else {
-          router.push("/admin/login");
+          router.push("/staff/login");
         }
         return;
       }
 
       // Verify authentication with backend by fetching profile
-      // Backend automatically prioritizes accessToken_admin cookie for admin endpoints
+      // Backend automatically prioritizes accessToken_staff cookie for staff endpoints
       // When multiple roles are logged in, backend correctly selects the appropriate cookie
       try {
         const api = (await import("@/src/services/api")).default;
-        // Use getAdminProfile() which is specifically for admin viewing their own profile
-        // Backend automatically detects and uses accessToken_admin cookie for this endpoint
-        await api.auth.getAdminProfile();
+        // Use getProfile() which is specifically for staff viewing their own profile
+        // Backend automatically detects and uses accessToken_staff cookie for this endpoint
+        await api.staffAccounts.getProfile();
         setIsAuthenticated(true);
         setIsLoading(false);
       } catch (error: any) {
         // Profile fetch failed - cookies invalid or expired
-        console.error("Admin profile fetch failed:", error);
+        console.error("Staff profile fetch failed:", error);
         tokenManager.clearUser();
-        router.push("/admin/login");
+        router.push("/staff/login");
         return;
       }
     };
@@ -84,9 +85,9 @@ export default function AdminDashboardLayout({
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar - Admin only */}
+      {/* Sidebar - Staff only */}
       <aside className="w-64 flex-shrink-0 hidden md:block">
-        <AdminSidebar />
+        <StaffSidebar />
       </aside>
 
       {/* Main Content */}
@@ -96,3 +97,4 @@ export default function AdminDashboardLayout({
     </div>
   );
 }
+
