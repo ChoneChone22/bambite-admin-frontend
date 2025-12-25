@@ -22,6 +22,7 @@ import {
 import { tokenManager } from "@/src/lib/tokenManager";
 import {
   User,
+  StaffAccount,
   Product,
   LoginRequest,
   RegisterRequest,
@@ -31,7 +32,7 @@ import {
 // ==================== Auth Hook ====================
 
 export const useAuth = () => {
-  const [user, setUserState] = useState<User | null>(null);
+  const [user, setUserState] = useState<User | StaffAccount | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();

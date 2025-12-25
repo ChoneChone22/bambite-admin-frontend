@@ -41,7 +41,8 @@ export default function StaffLoginPage() {
       // Check if password change is required
       // When mustChangePassword=true, login succeeds but tokens are NOT set
       // User must change password first before getting tokens
-      if (staffAccount.mustChangePassword) {
+      // Type guard: check if it's a StaffAccount (has mustChangePassword property)
+      if ('mustChangePassword' in staffAccount && staffAccount.mustChangePassword) {
         // Store user data temporarily (without tokens, as they weren't set)
         const staffWithRole = { ...staffAccount, role: UserRole.STAFF };
         tokenManager.setUser(staffWithRole);
