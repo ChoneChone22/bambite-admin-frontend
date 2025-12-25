@@ -4,6 +4,11 @@
 
 "use client";
 
+export { useTableSort } from "./useTableSort";
+export type { SortConfig, SortDirection } from "./useTableSort";
+export { useTablePagination } from "./useTablePagination";
+export type { PaginationConfig, UseTablePaginationOptions } from "./useTablePagination";
+
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/src/services/api";
@@ -14,8 +19,10 @@ import {
   setUser,
   clearAuth,
 } from "@/src/lib/axios";
+import { tokenManager } from "@/src/lib/tokenManager";
 import {
   User,
+  StaffAccount,
   Product,
   LoginRequest,
   RegisterRequest,
@@ -25,35 +32,41 @@ import {
 // ==================== Auth Hook ====================
 
 export const useAuth = () => {
-  const [user, setUserState] = useState<User | null>(null);
+  const [user, setUserState] = useState<User | StaffAccount | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   const checkAuth = useCallback(async () => {
-    const token = getAuthToken();
-    if (token) {
-      // Get user data from localStorage (saved during login)
-      const userJson = getUser();
-      if (userJson) {
-        try {
-          const userData = JSON.parse(userJson);
-          setUserState(userData);
-          setIsAuthenticated(true);
-        } catch (error) {
-          // Invalid user data, clear auth
-          clearAuth();
-          setUserState(null);
-          setIsAuthenticated(false);
+    // With httpOnly cookies, we can't check tokens directly
+    // Check user data - if it exists, user might be authenticated
+    // Actual authentication is validated by backend via cookies
+    const user = tokenManager.getUser();
+    
+    if (user) {
+      // User data exists - verify with backend by fetching profile
+      try {
+        // Try to fetch profile to verify cookies are valid
+        // This will fail with 401 if cookies are invalid/expired
+        // Determine which profile endpoint to use based on user role
+        if (user.role === "ADMIN" || user.role === "admin") {
+          await api.auth.getAdminProfile();
+        } else if (user.role === "STAFF" || user.role === "staff") {
+          await api.staffAccounts.getProfile();
+        } else {
+          await api.auth.getProfile();
         }
-      } else {
-        // Token exists but no user data, clear auth
+        setUserState(user);
+        setIsAuthenticated(true);
+      } catch (error) {
+        // Profile fetch failed - cookies invalid or expired
+        // Clear user data
         clearAuth();
         setUserState(null);
         setIsAuthenticated(false);
       }
     } else {
-      // No token
+      // No user data
       setUserState(null);
       setIsAuthenticated(false);
     }
@@ -69,15 +82,31 @@ export const useAuth = () => {
     };
 
     window.addEventListener("auth-change", handleAuthChange);
-    return () => window.removeEventListener("auth-change", handleAuthChange);
+
+    // Note: Proactive token refresh is handled by axios interceptor
+    // No need for interval-based refresh with httpOnly cookies
+
+    return () => {
+      window.removeEventListener("auth-change", handleAuthChange);
+    };
   }, [checkAuth]);
 
   const login = async (credentials: LoginRequest) => {
     const response = await api.auth.login(credentials);
-    setAuthToken(response.token);
-    setUser(JSON.stringify(response.user));
-    setUserState(response.user);
+    
+    // Tokens are in httpOnly cookies (set by backend automatically)
+    // Response contains user data only
+    const user = response.user || response.admin || response.staffAccount || null;
+    
+    if (!user) {
+      throw new Error("No user data received from server");
+    }
+    
+    // Store user data only (tokens are in httpOnly cookies)
+    tokenManager.setUser(user);
+    setUserState(user);
     setIsAuthenticated(true);
+    
     // Notify other components
     window.dispatchEvent(new Event("auth-change"));
     return response;
@@ -85,10 +114,20 @@ export const useAuth = () => {
 
   const register = async (data: RegisterRequest) => {
     const response = await api.auth.register(data);
-    setAuthToken(response.token);
-    setUser(JSON.stringify(response.user));
-    setUserState(response.user);
+    
+    // Tokens are in httpOnly cookies (set by backend automatically)
+    // Response contains user data only
+    const user = response.user || response.admin || response.staffAccount || null;
+    
+    if (!user) {
+      throw new Error("No user data received from server");
+    }
+    
+    // Store user data only (tokens are in httpOnly cookies)
+    tokenManager.setUser(user);
+    setUserState(user);
     setIsAuthenticated(true);
+    
     // Notify other components
     window.dispatchEvent(new Event("auth-change"));
     return response;
@@ -96,8 +135,14 @@ export const useAuth = () => {
 
   const logout = async () => {
     try {
+      // Logout - refresh token comes from httpOnly cookie
+      // Backend clears cookies automatically
       await api.auth.logout();
+    } catch (error) {
+      // Even if logout fails, clear local user data
+      console.error("Logout error:", error);
     } finally {
+      // Clear user data (cookies are cleared by backend)
       clearAuth();
       setUserState(null);
       setIsAuthenticated(false);

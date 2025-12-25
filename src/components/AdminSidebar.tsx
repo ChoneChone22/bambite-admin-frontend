@@ -13,6 +13,9 @@ const navigation = [
   { name: "Products", href: "/admin/dashboard/products" },
   { name: "Orders", href: "/admin/dashboard/orders" },
   { name: "Staff", href: "/admin/dashboard/staff" },
+  { name: "Staff Accounts", href: "/admin/dashboard/staff-accounts" },
+  { name: "Payments", href: "/admin/dashboard/payments" },
+  { name: "Departments", href: "/admin/dashboard/departments" },
   { name: "Inventory", href: "/admin/dashboard/inventory" },
 ];
 

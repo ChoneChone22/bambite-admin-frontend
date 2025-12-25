@@ -1,6 +1,22 @@
 /**
  * Axios Configuration for Bambite E-commerce API
- * Centralized HTTP client with authentication interceptors
+ * Production-ready with httpOnly cookie support and automatic token refresh
+ * 
+ * Security features:
+ * - withCredentials: true to send/receive httpOnly cookies
+ * - Role-specific cookie names (accessToken_user, accessToken_admin, accessToken_staff)
+ * - Automatic token refresh on 401 errors
+ * - Request queuing during token refresh
+ * - Proper error handling and redirects
+ * 
+ * Cookie Names (set by backend, httpOnly):
+ * - User: accessToken_user, refreshToken_user
+ * - Admin: accessToken_admin, refreshToken_admin
+ * - Staff: accessToken_staff, refreshToken_staff
+ * 
+ * Note: JavaScript cannot read httpOnly cookies. The browser automatically
+ * sends the correct cookies based on the request context. The backend
+ * automatically detects which role's cookies to use.
  */
 
 import axios, {
@@ -9,17 +25,38 @@ import axios, {
   InternalAxiosRequestConfig,
 } from "axios";
 import { ApiError } from "@/src/types/api";
+import { tokenManager } from "./tokenManager";
 
 // Base API URL
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
 
-// Token storage keys
-const TOKEN_KEY = "bambite_auth_token";
-const USER_KEY = "bambite_user";
+// Flag to prevent multiple simultaneous refresh requests
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: any) => void;
+  reject: (error?: any) => void;
+  config: InternalAxiosRequestConfig;
+}> = [];
+
+/**
+ * Process queued requests after token refresh
+ */
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      // Retry the request - cookies will be sent automatically
+      prom.resolve(axiosInstance(prom.config));
+    }
+  });
+  failedQueue = [];
+};
 
 /**
  * Create axios instance with default configuration
+ * withCredentials: true enables httpOnly cookie support
  */
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: BASE_URL,
@@ -27,20 +64,29 @@ const axiosInstance: AxiosInstance = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true, // CRITICAL: Enable httpOnly cookie support
 });
 
 /**
- * Request interceptor to inject Bearer token
+ * Request interceptor
+ * Note: Authorization header is optional - cookies are primary auth method
+ * Some backends may still accept Bearer tokens as fallback
  */
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Get token from localStorage
-    const token = getAuthToken();
+    // Skip Authorization header for auth endpoints (cookies handle auth)
+    const isAuthEndpoint =
+      config.url?.includes("/auth/") ||
+      config.url?.includes("/staff-accounts/login") ||
+      config.url?.includes("/staff-accounts/change-password");
 
-    // Inject Bearer token if available
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    // For non-auth endpoints, we could add Authorization header as fallback
+    // but since we're using httpOnly cookies, it's not necessary
+    // The backend will read tokens from cookies automatically
+
+    // Ensure withCredentials is set for all requests (REQUIRED for cookies)
+    // This ensures cookies are sent with every request
+    config.withCredentials = true;
 
     return config;
   },
@@ -49,45 +95,129 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-/**
- * Response interceptor for error handling
- */
-axiosInstance.interceptors.response.use(
-  (response) => {
-    // Return the response data directly
-    return response;
-  },
-  (error: AxiosError<ApiError>) => {
-    // Handle different error scenarios
+    /**
+     * Response interceptor for error handling and automatic token refresh
+     */
+    axiosInstance.interceptors.response.use(
+      (response) => {
+        // Note: Set-Cookie headers are NOT accessible to JavaScript (browser security feature)
+        // Cookies are automatically set by the browser when Set-Cookie headers are present
+        // Role-specific cookies are set based on the login endpoint:
+        // - /auth/user/login → accessToken_user, refreshToken_user
+        // - /auth/admin/login → accessToken_admin, refreshToken_admin
+        // - /staff-accounts/login → accessToken_staff, refreshToken_staff
+        // To verify cookies are set, check:
+        // 1. DevTools → Application → Cookies → http://localhost:3000
+        // 2. DevTools → Network → Request Headers → Cookie (on subsequent requests)
+        const isLoginEndpoint = 
+          response.config.url?.includes("/login") || 
+          response.config.url?.includes("/staff-accounts/login") ||
+          response.config.url?.includes("/auth/admin/login");
+        
+        if (isLoginEndpoint) {
+          if (response.status === 200 || response.status === 201) {
+            console.log("✅ Login successful - role-specific cookies should be set automatically by browser");
+            console.log("📍 Verify cookies in: DevTools → Application → Cookies → http://localhost:3000");
+            console.log("📍 Cookie names: accessToken_user/admin/staff, refreshToken_user/admin/staff");
+          }
+        }
+        return response;
+      },
+  async (error: AxiosError<ApiError>) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & {
+      _retry?: boolean;
+    };
+
+    // Handle 401 Unauthorized - attempt token refresh
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      // Skip refresh for auth endpoints (login, register, etc.)
+      const isAuthEndpoint =
+        originalRequest.url?.includes("/auth/login") ||
+        originalRequest.url?.includes("/auth/register") ||
+        originalRequest.url?.includes("/auth/admin/login") ||
+        originalRequest.url?.includes("/auth/admin/register") ||
+        originalRequest.url?.includes("/staff-accounts/login") ||
+        originalRequest.url?.includes("/staff-accounts/change-password");
+
+      if (isAuthEndpoint) {
+        // Auth endpoint failed (login/register failed)
+        // Don't redirect - let the login page handle the error
+        // The login page will show the error message to the user
+        tokenManager.clearUser();
+        return Promise.reject(error);
+      }
+
+      // Prevent multiple simultaneous refresh attempts
+      if (isRefreshing) {
+        // Queue this request to retry after refresh
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject, config: originalRequest });
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        // Attempt to refresh token - cookies are sent automatically
+        // Backend automatically detects which role's refresh token cookie to use based on:
+        // 1. The endpoint being accessed (prioritizes correct cookie)
+        // 2. All available refreshToken_* cookies
+        // Empty body - backend reads from the appropriate role-specific cookie
+        // Use axiosInstance instead of axios to ensure withCredentials is set
+        const refreshResponse = await axiosInstance.post(
+          "/auth/refresh",
+          {} // Empty body - refresh token comes from role-specific cookie
+          // withCredentials is already set at instance level
+        );
+
+        // Refresh successful - new role-specific tokens are in httpOnly cookies
+        // Backend automatically sets new cookies with the same role-specific names
+        // No need to store tokens - they're in cookies
+
+        // Process queued requests
+        processQueue(null, null);
+        isRefreshing = false;
+
+        // Retry original request - browser automatically sends the correct role-specific cookie
+        return axiosInstance(originalRequest);
+      } catch (refreshError) {
+        // Refresh failed - clear user data and redirect
+        tokenManager.clearUser();
+        processQueue(refreshError, null);
+        isRefreshing = false;
+
+        if (typeof window !== "undefined") {
+          const currentPath = window.location.pathname;
+          if (!["/login", "/register", "/admin/login", "/staff/login"].includes(currentPath)) {
+            const isAdminPath = currentPath.startsWith("/admin");
+            const isStaffPath = currentPath.startsWith("/staff");
+            if (isAdminPath) {
+              window.location.href = "/admin/login";
+            } else if (isStaffPath) {
+              window.location.href = "/staff/login";
+            } else {
+              window.location.href = "/login";
+            }
+          }
+        }
+
+        return Promise.reject(refreshError);
+      }
+    }
+
+    // Handle other error status codes
     if (error.response) {
-      // Server responded with error status
       const { status, data } = error.response;
 
       switch (status) {
-        case 401:
-          // Unauthorized - clear token and redirect to login
-          clearAuth();
-          if (typeof window !== "undefined") {
-            // Only redirect if not already on an auth page
-            const currentPath = window.location.pathname;
-            if (
-              !["/login", "/register", "/admin/login"].includes(currentPath)
-            ) {
-              // Redirect to admin login if on admin path, otherwise to user login
-              const isAdminPath = currentPath.startsWith("/admin");
-              window.location.href = isAdminPath ? "/admin/login" : "/login";
-            }
-          }
-          break;
         case 403:
-          // Forbidden - user doesn't have permission
           console.error("Access forbidden:", data?.message);
           break;
         case 404:
-          // Not found
+          // Not found - handled by caller
           break;
         case 500:
-          // Server error
           console.error("Server error:", data?.message);
           break;
         default:
@@ -130,57 +260,59 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-// ==================== Auth Helper Functions ====================
+// ==================== Legacy Auth Helper Functions (for backward compatibility) ====================
 
 /**
- * Get authentication token from localStorage
+ * Get authentication token
+ * @deprecated Tokens are in httpOnly cookies, cannot be read
  */
 export const getAuthToken = (): string | null => {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
+  return null;
 };
 
 /**
- * Set authentication token in localStorage
+ * Set authentication token
+ * @deprecated Tokens are set by backend in httpOnly cookies
  */
 export const setAuthToken = (token: string): void => {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(TOKEN_KEY, token);
+  // Tokens are in cookies - no action needed
 };
 
 /**
- * Get user data from localStorage
+ * Get user data
  */
 export const getUser = (): string | null => {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(USER_KEY);
+  const user = tokenManager.getUser();
+  return user ? JSON.stringify(user) : null;
 };
 
 /**
- * Set user data in localStorage
+ * Set user data
  */
 export const setUser = (user: string): void => {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(USER_KEY, user);
+  try {
+    const userObj = JSON.parse(user);
+    tokenManager.setUser(userObj);
+  } catch {
+    // Invalid JSON - ignore
+  }
 };
 
 /**
- * Clear authentication data from localStorage
+ * Clear authentication data
  */
 export const clearAuth = (): void => {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
+  tokenManager.clearUser();
 };
 
 /**
  * Check if user is authenticated
  */
 export const isAuthenticated = (): boolean => {
-  return !!getAuthToken();
+  return tokenManager.hasUser();
 };
 
 // ==================== Export ====================
 
 export default axiosInstance;
-export { BASE_URL, TOKEN_KEY, USER_KEY };
+export { BASE_URL };
