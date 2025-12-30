@@ -71,13 +71,13 @@ export default function StaffDetailPage() {
     return (
       <div className="max-w-3xl">
         <button
-          className="mb-4 text-sm font-semibold"
-          style={{ color: "#2C5BBB" }}
-          onClick={() => router.push("/admin/dashboard/staff")}
+          className="mb-4 text-sm font-semibold cursor-pointer"
+          style={{ color: "#2C5BBB", cursor: "pointer" }}
+          onClick={() => router.push("/staff/dashboard/staff")}
         >
           ← Back to Staff List
         </button>
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
+        <div className="bg-red-50 border border-red-200 p-4 rounded-lg" style={{ color: "#b91c1c" }}>
           {error || "Staff member not found."}
         </div>
       </div>
@@ -87,9 +87,9 @@ export default function StaffDetailPage() {
   return (
     <div className="space-y-6">
       <button
-        className="text-sm font-semibold"
-        style={{ color: "#2C5BBB" }}
-        onClick={() => router.push("/admin/dashboard/staff")}
+        className="text-sm font-semibold cursor-pointer"
+        style={{ color: "#2C5BBB", cursor: "pointer" }}
+        onClick={() => router.push("/staff/dashboard/staff")}
       >
         ← Back to Staff List
       </button>
@@ -99,14 +99,14 @@ export default function StaffDetailPage() {
           <h1 className="text-3xl font-bold" style={{ color: "#000000" }}>
             {staff.name || staff.user?.email || "Staff Detail"}
           </h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm mt-1" style={{ color: "#4b5563" }}>
             Employee ID: {staff.employeeId || "—"}
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow p-6 space-y-3">
+        <div className="bg-white rounded-lg shadow p-6 space-y-3" style={{ backgroundColor: "#ffffff" }}>
           <h2 className="text-lg font-semibold mb-2" style={{ color: "#000000" }}>
             Basic Information
           </h2>
@@ -137,7 +137,7 @@ export default function StaffDetailPage() {
           />
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6 space-y-3">
+        <div className="bg-white rounded-lg shadow p-6 space-y-3" style={{ backgroundColor: "#ffffff" }}>
           <h2 className="text-lg font-semibold mb-2" style={{ color: "#000000" }}>
             Compensation
           </h2>
@@ -177,10 +177,18 @@ function DetailRow({
   value: string | number;
   valueClassName?: string;
 }) {
+  // Determine value color based on valueClassName or default
+  const getValueColor = () => {
+    if (valueClassName?.includes("green")) return "#16a34a";
+    if (valueClassName?.includes("yellow")) return "#ca8a04";
+    if (valueClassName?.includes("gray")) return "#4b5563";
+    return "#000000"; // Default black
+  };
+
   return (
     <div className="flex justify-between text-sm">
-      <span className="text-gray-600">{label}</span>
-      <span className={`font-medium ${valueClassName || ""}`}>{value}</span>
+      <span style={{ color: "#4b5563" }}>{label}</span>
+      <span className="font-medium" style={{ color: getValueColor() }}>{value}</span>
     </div>
   );
 }

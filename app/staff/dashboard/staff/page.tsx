@@ -15,6 +15,8 @@ import { Staff, CreateStaffRequest, Department } from "@/src/types/api";
 import { useTableSort, useTablePagination } from "@/src/hooks";
 import SortableTableHeader from "@/src/components/SortableTableHeader";
 import TablePagination from "@/src/components/TablePagination";
+import { useModal } from "@/src/hooks/useModal";
+import FormModal from "@/src/components/FormModal";
 
 // Validation Schema
 const staffSchema = Yup.object().shape({
@@ -48,6 +50,7 @@ export default function StaffManagementPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const router = useRouter();
+  const modal = useModal();
 
   // Table sorting
   const { sortedData, handleSort, getSortDirection, sortConfig } =
@@ -120,13 +123,17 @@ export default function StaffManagementPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this staff member?")) return;
+    const confirmed = await modal.confirm(
+      "Are you sure you want to delete this staff member? This action cannot be undone and will remove all associated records.",
+      "Delete Staff Member"
+    );
+    if (!confirmed) return;
 
     try {
       await api.staff.delete(id);
       await fetchData();
-    } catch (err) {
-      alert("Failed to delete staff member");
+    } catch (err: any) {
+      await modal.alert(err.message || "Failed to delete staff member", "Error", "error");
       console.error(err);
     }
   };
@@ -145,7 +152,7 @@ export default function StaffManagementPage() {
       setShowModal(false);
       await fetchData();
     } catch (err: any) {
-      alert(err.message || "Failed to save staff member");
+      await modal.alert(err.message || "Failed to save staff member", "Error", "error");
     } finally {
       setSubmitting(false);
     }
@@ -161,6 +168,7 @@ export default function StaffManagementPage() {
 
   return (
     <div>
+      {modal.ModalComponent}
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold" style={{ color: "#000000" }}>
@@ -262,17 +270,17 @@ export default function StaffManagementPage() {
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
                     onClick={() =>
-                      router.push(`/admin/dashboard/staff/${member.id}`)
+                      router.push(`/staff/dashboard/staff/${member.id}`)
                     }
-                    className="font-semibold hover:underline mr-4"
-                    style={{ color: "#2C5BBB" }}
+                    className="font-semibold hover:underline mr-4 cursor-pointer"
+                    style={{ color: "#2C5BBB", cursor: "pointer" }}
                   >
                     Manage
                   </button>
                   <button
                     onClick={() => handleDelete(member.id)}
-                    className="font-semibold hover:underline"
-                    style={{ color: "#DC2626" }}
+                    className="font-semibold hover:underline cursor-pointer"
+                    style={{ color: "#DC2626", cursor: "pointer" }}
                   >
                     Delete
                   </button>
@@ -294,17 +302,13 @@ export default function StaffManagementPage() {
       </div>
 
       {/* Staff Form Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h2
-              className="text-2xl font-bold mb-6"
-              style={{ color: "#000000" }}
-            >
-              {editingStaff ? "Edit Staff Member" : "Add New Staff Member"}
-            </h2>
-
-            <Formik
+      <FormModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={editingStaff ? "Edit Staff Member" : "Add New Staff Member"}
+        maxWidth="2xl"
+      >
+        <Formik
               initialValues={{
                 name: editingStaff?.name || "",
                 position: editingStaff?.position || "",
@@ -470,9 +474,7 @@ export default function StaffManagementPage() {
                 </Form>
               )}
             </Formik>
-          </div>
-        </div>
-      )}
+      </FormModal>
     </div>
   );
 }

@@ -17,6 +17,8 @@ import {
 } from "@/src/types/api";
 import { formatPrice, getCategoryColor } from "@/src/lib/utils";
 import { PLACEHOLDER_IMAGE } from "@/src/types";
+import { useModal } from "@/src/hooks/useModal";
+import FormModal from "@/src/components/FormModal";
 
 // Validation Schema
 const productSchema = Yup.object().shape({
@@ -46,6 +48,7 @@ export default function ProductsManagementPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const modal = useModal();
 
   const fetchProducts = async () => {
     try {
@@ -75,13 +78,17 @@ export default function ProductsManagementPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this product?")) return;
+    const confirmed = await modal.confirm(
+      "Are you sure you want to delete this product? This action cannot be undone.",
+      "Delete Product"
+    );
+    if (!confirmed) return;
 
     try {
       await api.products.delete(id);
       await fetchProducts();
-    } catch (err) {
-      alert("Failed to delete product");
+    } catch (err: any) {
+      await modal.alert(err.message || "Failed to delete product", "Error", "error");
       console.error(err);
     }
   };
@@ -100,7 +107,7 @@ export default function ProductsManagementPage() {
       setShowModal(false);
       await fetchProducts();
     } catch (err: any) {
-      alert(err.message || "Failed to save product");
+      await modal.alert(err.message || "Failed to save product", "Error", "error");
     } finally {
       setSubmitting(false);
     }
@@ -116,6 +123,7 @@ export default function ProductsManagementPage() {
 
   return (
     <div>
+      {modal.ModalComponent}
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold" style={{ color: "#000000" }}>
@@ -206,15 +214,15 @@ export default function ProductsManagementPage() {
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
                     onClick={() => handleEdit(product)}
-                    className="font-semibold hover:underline mr-4"
-                    style={{ color: "#2C5BBB" }}
+                    className="font-semibold hover:underline mr-4 cursor-pointer"
+                    style={{ color: "#2C5BBB", cursor: "pointer" }}
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(product.id)}
-                    className="font-semibold hover:underline"
-                    style={{ color: "#DC2626" }}
+                    className="font-semibold hover:underline cursor-pointer"
+                    style={{ color: "#DC2626", cursor: "pointer" }}
                   >
                     Delete
                   </button>
@@ -226,17 +234,13 @@ export default function ProductsManagementPage() {
       </div>
 
       {/* Product Form Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h2
-              className="text-2xl font-bold mb-6"
-              style={{ color: "#000000" }}
-            >
-              {editingProduct ? "Edit Product" : "Add New Product"}
-            </h2>
-
-            <Formik
+      <FormModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={editingProduct ? "Edit Product" : "Add New Product"}
+        maxWidth="2xl"
+      >
+        <Formik
               initialValues={{
                 name: editingProduct?.name || "",
                 category: editingProduct?.category || ("" as ProductCategory),
@@ -363,9 +367,7 @@ export default function ProductsManagementPage() {
                 </Form>
               )}
             </Formik>
-          </div>
-        </div>
-      )}
+      </FormModal>
     </div>
   );
 }

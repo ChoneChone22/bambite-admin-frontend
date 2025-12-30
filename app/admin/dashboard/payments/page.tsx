@@ -12,6 +12,8 @@ import * as Yup from "yup";
 import api from "@/src/services/api";
 import { Payment, Staff } from "@/src/types/api";
 import { formatPrice } from "@/src/lib/utils";
+import { useModal } from "@/src/hooks/useModal";
+import FormModal from "@/src/components/FormModal";
 
 const paymentSchema = Yup.object().shape({
   staffId: Yup.string().required("Staff is required"),
@@ -37,6 +39,7 @@ export default function PaymentManagementPage() {
     paidMonth?: string;
     isPaid?: string;
   }>({});
+  const modal = useModal();
 
   const fetchData = async () => {
     try {
@@ -71,15 +74,10 @@ export default function PaymentManagementPage() {
 
   const summary = useMemo(() => {
     const totalPayments = payments.length;
-    const totalAmount = payments.reduce(
-      (sum, p) => sum + (p.totalPayment || 0),
-      0
-    );
     const paidCount = payments.filter((p) => p.isPaid).length;
 
     return {
       totalPayments,
-      totalAmount,
       paidCount,
     };
   }, [payments]);
@@ -95,18 +93,17 @@ export default function PaymentManagementPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this payment record? This will affect payroll summaries."
-      )
-    )
-      return;
+    const confirmed = await modal.confirm(
+      "Are you sure you want to delete this payment record? This action cannot be undone and will affect payroll summaries and reports.",
+      "Delete Payment Record"
+    );
+    if (!confirmed) return;
 
     try {
       await api.payments.delete(id);
       await fetchData();
     } catch (err: any) {
-      alert(err.message || "Failed to delete payment");
+      await modal.alert(err.message || "Failed to delete payment", "Error", "error");
     }
   };
 
@@ -145,7 +142,7 @@ export default function PaymentManagementPage() {
       setShowModal(false);
       await fetchData();
     } catch (err: any) {
-      alert(err.message || "Failed to save payment");
+      await modal.alert(err.message || "Failed to save payment", "Error", "error");
     } finally {
       setSubmitting(false);
     }
@@ -161,6 +158,7 @@ export default function PaymentManagementPage() {
 
   return (
     <div>
+      {modal.ModalComponent}
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -181,17 +179,11 @@ export default function PaymentManagementPage() {
       )}
 
       {/* Summary + Filters */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
           <p className="text-sm text-gray-600 mb-1">Total Payments</p>
           <p className="text-2xl font-bold" style={{ color: "#000000" }}>
             {summary.totalPayments}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-          <p className="text-sm text-gray-600 mb-1">Total Amount</p>
-          <p className="text-2xl font-bold" style={{ color: "#000000" }}>
-            {formatPrice(summary.totalAmount)}
           </p>
         </div>
         <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
@@ -342,15 +334,15 @@ export default function PaymentManagementPage() {
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
                   <button
                     onClick={() => handleEdit(payment)}
-                    className="font-semibold hover:underline"
-                    style={{ color: "#2C5BBB" }}
+                    className="font-semibold hover:underline cursor-pointer"
+                    style={{ color: "#2C5BBB", cursor: "pointer" }}
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(payment.id)}
-                    className="font-semibold hover:underline"
-                    style={{ color: "#DC2626" }}
+                    className="font-semibold hover:underline cursor-pointer"
+                    style={{ color: "#DC2626", cursor: "pointer" }}
                   >
                     Delete
                   </button>
@@ -368,17 +360,13 @@ export default function PaymentManagementPage() {
       </div>
 
       {/* Payment Form Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h2
-              className="text-2xl font-bold mb-6"
-              style={{ color: "#000000" }}
-            >
-              {editingPayment ? "Edit Payment" : "Create Payment"}
-            </h2>
-
-            <Formik
+      <FormModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={editingPayment ? "Edit Payment" : "Create Payment"}
+        maxWidth="2xl"
+      >
+        <Formik
               initialValues={{
                 staffId: editingPayment?.staffId || "",
                 bonus: editingPayment?.bonus || 0,
@@ -540,9 +528,7 @@ export default function PaymentManagementPage() {
                 </Form>
               )}
             </Formik>
-          </div>
-        </div>
-      )}
+      </FormModal>
     </div>
   );
 }

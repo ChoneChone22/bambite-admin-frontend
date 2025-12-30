@@ -12,6 +12,7 @@ import * as Yup from "yup";
 import api from "@/src/services/api";
 import { Product, InventoryLog, InventoryReason } from "@/src/types/api";
 import { formatDateTime } from "@/src/lib/utils";
+import { useModal } from "@/src/hooks/useModal";
 
 // Validation Schema
 const inventorySchema = Yup.object().shape({
@@ -31,6 +32,7 @@ export default function InventoryControlPage() {
   const [changes, setChanges] = useState<InventoryLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const modal = useModal();
 
   const fetchData = async () => {
     try {
@@ -67,7 +69,7 @@ export default function InventoryControlPage() {
       setShowForm(false);
       await fetchData();
     } catch (err: any) {
-      alert(err.message || "Failed to create inventory log");
+      await modal.alert(err.message || "Failed to create inventory log", "Error", "error");
     } finally {
       setSubmitting(false);
     }
@@ -83,6 +85,7 @@ export default function InventoryControlPage() {
 
   return (
     <div>
+      {modal.ModalComponent}
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold" style={{ color: "#000000" }}>
@@ -339,9 +342,13 @@ export default function InventoryControlPage() {
                     {change.product?.name || "Unknown"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-800">
-                      {change.reason}
-                    </span>
+                    {change.reason ? (
+                      <span className="px-2 py-1 text-xs font-medium rounded bg-gray-100" style={{ color: "#1f2937" }}>
+                        {change.reason}
+                      </span>
+                    ) : (
+                      <span className="text-sm" style={{ color: "#6b7280" }}>-</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
@@ -367,7 +374,7 @@ export default function InventoryControlPage() {
                   >
                     {change.newQuantity}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
+                  <td className="px-6 py-4 text-sm" style={{ color: "#6b7280" }}>
                     {change.notes || "-"}
                   </td>
                 </tr>

@@ -102,7 +102,14 @@ export default function StaffAccountDetailPage() {
         <div className="mb-6">
           <button
             onClick={() => router.back()}
-            className="text-sm text-gray-600 hover:text-gray-900 mb-4"
+            className="text-sm mb-4 cursor-pointer"
+            style={{ color: "#4b5563", cursor: "pointer" }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "#111827";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "#4b5563";
+            }}
           >
             ← Back to Staff Accounts
           </button>
@@ -111,7 +118,7 @@ export default function StaffAccountDetailPage() {
           </h1>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-red-600 text-sm">{error || "Staff account not found."}</p>
+          <p className="text-sm" style={{ color: "#dc2626" }}>{error || "Staff account not found."}</p>
         </div>
       </div>
     );
@@ -124,14 +131,21 @@ export default function StaffAccountDetailPage() {
       <div className="mb-6">
         <button
           onClick={() => router.back()}
-          className="text-sm text-gray-600 hover:text-gray-900 mb-4"
+          className="text-sm mb-4 cursor-pointer"
+          style={{ color: "#4b5563", cursor: "pointer" }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = "#111827";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = "#4b5563";
+          }}
         >
           ← Back to Staff Accounts
         </button>
         <h1 className="text-3xl font-bold mb-1" style={{ color: "#000000" }}>
           Staff Account Details
         </h1>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm" style={{ color: "#4b5563" }}>
           View staff account information and permissions
         </p>
       </div>
@@ -195,17 +209,17 @@ export default function StaffAccountDetailPage() {
           Permissions
         </h2>
         {account.permissions && account.permissions.length > 0 ? (
-          <ul className="list-disc list-inside text-sm text-gray-800 space-y-2">
+          <ul className="list-disc list-inside text-sm space-y-2" style={{ color: "#1f2937" }}>
             {account.permissions.map((perm) => (
               <li key={perm.id}>
-                <span className="font-medium">
+                <span className="font-medium" style={{ color: "#1f2937" }}>
                   {formatPermissionCode(perm.code || "")}
                 </span>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-gray-600">
+          <p className="text-sm" style={{ color: "#4b5563" }}>
             No explicit permissions assigned.
           </p>
         )}
@@ -222,7 +236,7 @@ export default function StaffAccountDetailPage() {
 
           {/* Date Filter */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium mb-2" style={{ color: "#374151" }}>
               Filter by Paid Month (YYYY-MM)
             </label>
             <div className="flex gap-2">
@@ -260,28 +274,28 @@ export default function StaffAccountDetailPage() {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
                           Paid Month
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
                           Payment Method
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
                           Salary
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
                           Bonus
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
                           Tax
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
                           Total Payment
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
                           Status
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
                           Note
                         </th>
                       </tr>
@@ -338,7 +352,8 @@ export default function StaffAccountDetailPage() {
                               </span>
                             </td>
                             <td
-                              className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate"
+                              className="px-6 py-4 text-sm max-w-xs truncate"
+                              style={{ color: "#4b5563" }}
                               title={payment.note || ""}
                             >
                               {payment.note || "—"}
@@ -390,13 +405,18 @@ function DetailRow({
   value: string;
   valueClassName?: string;
 }) {
+  // Determine value color based on valueClassName or default
+  const getValueColor = () => {
+    if (valueClassName?.includes("green")) return "#16a34a";
+    if (valueClassName?.includes("yellow")) return "#ca8a04";
+    if (valueClassName?.includes("gray")) return "#4b5563";
+    return "#000000"; // Default black
+  };
+
   return (
     <div className="flex justify-between text-sm">
-      <span className="text-gray-600">{label}</span>
-      <span
-        className={`font-medium ${valueClassName || ""}`}
-        style={!valueClassName ? { color: "#000000" } : {}}
-      >
+      <span style={{ color: "#4b5563" }}>{label}</span>
+      <span className="font-medium" style={{ color: getValueColor() }}>
         {value}
       </span>
     </div>

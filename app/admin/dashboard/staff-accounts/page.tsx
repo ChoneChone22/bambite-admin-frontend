@@ -15,6 +15,8 @@ import { Staff, StaffAccount, Permission } from "@/src/types/api";
 import { useTableSort, useTablePagination } from "@/src/hooks";
 import SortableTableHeader from "@/src/components/SortableTableHeader";
 import TablePagination from "@/src/components/TablePagination";
+import { useModal } from "@/src/hooks/useModal";
+import FormModal from "@/src/components/FormModal";
 
 const staffAccountSchema = Yup.object().shape({
   staffId: Yup.string().required("Staff is required"),
@@ -49,6 +51,7 @@ export default function StaffAccountManagementPage() {
     null
   );
   const [error, setError] = useState<string | null>(null);
+  const modal = useModal();
 
   // Table sorting
   const { sortedData, handleSort, getSortDirection, sortConfig } =
@@ -106,18 +109,17 @@ export default function StaffAccountManagementPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this staff account? This only removes login access, not the staff record."
-      )
-    )
-      return;
+    const confirmed = await modal.confirm(
+      "Are you sure you want to delete this staff account? This will permanently remove login access for this staff member. The staff record itself will remain intact.",
+      "Delete Staff Account"
+    );
+    if (!confirmed) return;
 
     try {
       await api.staffAccounts.delete(id);
       await fetchData();
     } catch (err: any) {
-      alert(err.message || "Failed to delete staff account");
+      await modal.alert(err.message || "Failed to delete staff account", "Error", "error");
     }
   };
 
@@ -155,7 +157,7 @@ export default function StaffAccountManagementPage() {
       setShowModal(false);
       await fetchData();
     } catch (err: any) {
-      alert(err.message || "Failed to save staff account");
+      await modal.alert(err.message || "Failed to save staff account", "Error", "error");
     } finally {
       setSubmitting(false);
     }
@@ -171,6 +173,7 @@ export default function StaffAccountManagementPage() {
 
   return (
     <div>
+      {modal.ModalComponent}
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold" style={{ color: "#000000" }}>
@@ -294,22 +297,22 @@ export default function StaffAccountManagementPage() {
                           `/admin/dashboard/staff-accounts/${account.id}`
                         )
                       }
-                      className="font-semibold hover:underline mr-4"
-                      style={{ color: "#2C5BBB" }}
+                      className="font-semibold hover:underline mr-4 cursor-pointer"
+                      style={{ color: "#2C5BBB", cursor: "pointer" }}
                     >
                       View
                     </button>
                     <button
                       onClick={() => handleEdit(account)}
-                      className="font-semibold hover:underline mr-4"
-                      style={{ color: "#2C5BBB" }}
+                      className="font-semibold hover:underline mr-4 cursor-pointer"
+                      style={{ color: "#2C5BBB", cursor: "pointer" }}
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(account.id)}
-                      className="font-semibold hover:underline"
-                      style={{ color: "#DC2626" }}
+                      className="font-semibold hover:underline cursor-pointer"
+                      style={{ color: "#DC2626", cursor: "pointer" }}
                     >
                       Delete
                     </button>
@@ -342,17 +345,13 @@ export default function StaffAccountManagementPage() {
       )}
 
       {/* Staff Account Form Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h2
-              className="text-2xl font-bold mb-6"
-              style={{ color: "#000000" }}
-            >
-              {editingAccount ? "Edit Staff Account" : "Create Staff Account"}
-            </h2>
-
-            <Formik
+      <FormModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={editingAccount ? "Edit Staff Account" : "Create Staff Account"}
+        maxWidth="2xl"
+      >
+        <Formik
               initialValues={{
                 staffId:
                   editingAccount?.staff?.id ||
@@ -505,9 +504,7 @@ export default function StaffAccountManagementPage() {
                 </Form>
               )}
             </Formik>
-          </div>
-        </div>
-      )}
+      </FormModal>
     </div>
   );
 }

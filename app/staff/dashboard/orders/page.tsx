@@ -10,12 +10,15 @@ import { useEffect, useState } from "react";
 import api from "@/src/services/api";
 import { Order, OrderStatus } from "@/src/types/api";
 import { formatPrice, formatDateTime, getStatusColor } from "@/src/lib/utils";
+import { useModal } from "@/src/hooks/useModal";
+import FormModal from "@/src/components/FormModal";
 
 export default function OrdersManagementPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<OrderStatus | "ALL">("ALL");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const modal = useModal();
 
   const fetchOrders = async () => {
     try {
@@ -42,7 +45,11 @@ export default function OrdersManagementPage() {
       await fetchOrders();
       setSelectedOrder(null);
     } catch (err: any) {
-      alert(err.message || "Failed to update order status");
+      await modal.alert(
+        err.message || "Failed to update order status",
+        "Error",
+        "error"
+      );
     }
   };
 
@@ -61,6 +68,7 @@ export default function OrdersManagementPage() {
 
   return (
     <div>
+      {modal.ModalComponent}
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-4" style={{ color: "#000000" }}>
@@ -184,8 +192,8 @@ export default function OrdersManagementPage() {
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
                     onClick={() => setSelectedOrder(order)}
-                    className="font-semibold hover:underline"
-                    style={{ color: "#2C5BBB" }}
+                    className="font-semibold hover:underline cursor-pointer"
+                    style={{ color: "#2C5BBB", cursor: "pointer" }}
                   >
                     Update Status
                   </button>
@@ -203,18 +211,16 @@ export default function OrdersManagementPage() {
       </div>
 
       {/* Status Update Modal */}
-      {selectedOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full">
-            <h2
-              className="text-2xl font-bold mb-4"
-              style={{ color: "#000000" }}
-            >
-              Update Order Status
-            </h2>
-
+      <FormModal
+        isOpen={!!selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+        title="Update Order Status"
+        maxWidth="md"
+      >
+        {selectedOrder && (
+          <>
             <div className="mb-6">
-              <p className="text-sm text-gray-600 mb-2">Order ID</p>
+              <p className="text-sm text-gray-600! mb-2">Order ID</p>
               <p className="font-semibold">#{selectedOrder.id.slice(0, 8)}</p>
             </div>
 
@@ -263,9 +269,9 @@ export default function OrdersManagementPage() {
             >
               Cancel
             </button>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </FormModal>
     </div>
   );
 }
