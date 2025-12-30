@@ -10,7 +10,9 @@ import { useEffect, useState } from "react";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import api from "@/src/services/api";
-import { Department } from "@/src/types/api";
+import { Department, Staff } from "@/src/types/api";
+import { useModal } from "@/src/hooks/useModal";
+import FormModal from "@/src/components/FormModal";
 
 const departmentSchema = Yup.object().shape({
   name: Yup.string()
@@ -29,9 +31,11 @@ const departmentSchema = Yup.object().shape({
 
 export default function DepartmentManagementPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [staff, setStaff] = useState<Staff[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const modal = useModal();
 
   const fetchDepartments = async () => {
     try {
@@ -47,8 +51,21 @@ export default function DepartmentManagementPage() {
     }
   };
 
+  const fetchStaff = async () => {
+    try {
+      const staffData = await api.staff.getAll();
+      setStaff(staffData);
+    } catch (err) {
+      console.error("Failed to fetch staff:", err);
+      // Don't set error state, just log it - staff fetch failure shouldn't block department management
+    }
+  };
+
   useEffect(() => {
-    fetchDepartments();
+    const loadData = async () => {
+      await Promise.all([fetchDepartments(), fetchStaff()]);
+    };
+    loadData();
   }, []);
 
   const handleCreate = () => {
@@ -57,11 +74,36 @@ export default function DepartmentManagementPage() {
 
   const handleToggleStatus = async (dept: Department) => {
     const newStatus = dept.status === "active" ? "inactive" : "active";
+    
+    // If trying to deactivate, check if department has staff
+    if (newStatus === "inactive") {
+      const departmentStaff = staff.filter((s) => s.departmentId === dept.id);
+      
+      if (departmentStaff.length > 0) {
+        await modal.alert(
+          `Cannot deactivate department "${dept.name}". This department has ${departmentStaff.length} staff member(s) assigned. Please reassign or remove all staff members before deactivating the department.`,
+          "Cannot Deactivate Department",
+          "error"
+        );
+        return;
+      }
+      
+      // Department has no staff - show confirmation modal
+      const confirmed = await modal.confirm(
+        `Are you sure you want to deactivate the department "${dept.name}"? This action can be reversed by activating it again.`,
+        "Deactivate Department"
+      );
+      
+      if (!confirmed) {
+        return;
+      }
+    }
+    
     try {
       await api.departments.updateStatus(dept.id, newStatus);
       await fetchDepartments();
     } catch (err: any) {
-      alert(err.message || "Failed to update department status");
+      await modal.alert(err.message || "Failed to update department status", "Error", "error");
     }
   };
 
@@ -79,7 +121,7 @@ export default function DepartmentManagementPage() {
       setShowModal(false);
       await fetchDepartments();
     } catch (err: any) {
-      alert(err.message || "Failed to create department");
+      await modal.alert(err.message || "Failed to create department", "Error", "error");
     } finally {
       setSubmitting(false);
     }
@@ -95,6 +137,7 @@ export default function DepartmentManagementPage() {
 
   return (
     <div>
+      {modal.ModalComponent}
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold" style={{ color: "#000000" }}>
@@ -106,7 +149,7 @@ export default function DepartmentManagementPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-700 p-4 rounded-lg mb-6">{error}</div>
+        <div className="bg-red-50 p-4 rounded-lg mb-6" style={{ color: "#b91c1c" }}>{error}</div>
       )}
 
       {/* Departments Table */}
@@ -114,16 +157,16 @@ export default function DepartmentManagementPage() {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
                 Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
                 Short Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
                 Status
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
                 Actions
               </th>
             </tr>
@@ -149,9 +192,12 @@ export default function DepartmentManagementPage() {
                   <span
                     className={`px-3 py-1 text-xs font-medium rounded-full ${
                       dept.status === "active"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-700"
+                        ? "bg-green-100"
+                        : "bg-gray-100"
                     }`}
+                    style={{ 
+                      color: dept.status === "active" ? "#166534" : "#374151"
+                    }}
                   >
                     {dept.status === "active" ? "Active" : "Inactive"}
                   </span>
@@ -159,13 +205,13 @@ export default function DepartmentManagementPage() {
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
                     onClick={() => handleToggleStatus(dept)}
-                    className="font-semibold hover:underline"
+                    className="font-semibold hover:underline cursor-pointer"
+                    style={{ 
+                      cursor: "pointer",
+                      color: dept.status === "active" ? "#a16207" : "#16a34a"
+                    }}
                   >
-                    {dept.status === "active" ? (
-                      <span className="text-yellow-700">Deactivate</span>
-                    ) : (
-                      <span className="text-green-700">Activate</span>
-                    )}
+                    {dept.status === "active" ? "Deactivate" : "Activate"}
                   </button>
                 </td>
               </tr>
@@ -175,23 +221,19 @@ export default function DepartmentManagementPage() {
 
         {departments.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500">No departments found.</p>
+            <p style={{ color: "#6b7280" }}>No departments found.</p>
           </div>
         )}
       </div>
 
       {/* Department Form Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <h2
-              className="text-2xl font-bold mb-6"
-              style={{ color: "#000000" }}
-            >
-              Add New Department
-            </h2>
-
-            <Formik
+      <FormModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title="Add New Department"
+        maxWidth="lg"
+      >
+        <Formik
               initialValues={{
                 name: "",
                 shortName: "",
@@ -203,7 +245,7 @@ export default function DepartmentManagementPage() {
               {({ errors, touched, isSubmitting }) => (
                 <Form className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium mb-1" style={{ color: "#374151" }}>
                       Department Name *
                     </label>
                     <Field
@@ -213,12 +255,12 @@ export default function DepartmentManagementPage() {
                       placeholder="e.g., Kitchen"
                     />
                     {errors.name && touched.name && (
-                      <p className="text-red-600 text-sm mt-1">{errors.name}</p>
+                      <p className="text-sm mt-1" style={{ color: "#dc2626" }}>{errors.name}</p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium mb-1" style={{ color: "#374151" }}>
                       Short Name (ID Prefix) *
                     </label>
                     <Field
@@ -227,18 +269,18 @@ export default function DepartmentManagementPage() {
                       className="input-field"
                       placeholder="e.g., KIT"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs mt-1" style={{ color: "#6b7280" }}>
                       Used as prefix for employee IDs (e.g., KIT-0001).
                     </p>
                     {errors.shortName && touched.shortName && (
-                      <p className="text-red-600 text-sm mt-1">
+                      <p className="text-sm mt-1" style={{ color: "#dc2626" }}>
                         {errors.shortName}
                       </p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium mb-1" style={{ color: "#374151" }}>
                       Status *
                     </label>
                     <Field as="select" name="status" className="input-field">
@@ -246,7 +288,7 @@ export default function DepartmentManagementPage() {
                       <option value="inactive">Inactive</option>
                     </Field>
                     {errors.status && touched.status && (
-                      <p className="text-red-600 text-sm mt-1">
+                      <p className="text-sm mt-1" style={{ color: "#dc2626" }}>
                         {errors.status}
                       </p>
                     )}
@@ -263,7 +305,8 @@ export default function DepartmentManagementPage() {
                     <button
                       type="button"
                       onClick={() => setShowModal(false)}
-                      className="btn-secondary flex-1"
+                      className="btn-secondary flex-1 cursor-pointer"
+                      style={{ cursor: "pointer" }}
                     >
                       Cancel
                     </button>
@@ -271,9 +314,7 @@ export default function DepartmentManagementPage() {
                 </Form>
               )}
             </Formik>
-          </div>
-        </div>
-      )}
+      </FormModal>
     </div>
   );
 }

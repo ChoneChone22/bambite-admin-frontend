@@ -12,7 +12,6 @@ interface Stats {
   totalProducts: number;
   totalOrders: number;
   totalStaff: number;
-  totalPayroll: number;
 }
 
 export default function AdminDashboardPage() {
@@ -20,7 +19,6 @@ export default function AdminDashboardPage() {
     totalProducts: 0,
     totalOrders: 0,
     totalStaff: 0,
-    totalPayroll: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +50,6 @@ export default function AdminDashboardPage() {
           totalProducts: Array.isArray(products) ? products.length : 0,
           totalOrders: Array.isArray(orders) ? orders.length : 0,
           totalStaff: payroll.staffCount || 0,
-          totalPayroll: payroll.totalPayroll || 0,
         });
 
         // Check if any requests failed
@@ -115,7 +112,7 @@ export default function AdminDashboardPage() {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <p className="text-sm font-medium text-gray-600 mb-2">
             Total Products
@@ -136,15 +133,6 @@ export default function AdminDashboardPage() {
           <p className="text-sm font-medium text-gray-600 mb-2">Total Staff</p>
           <p className="text-3xl font-bold" style={{ color: "#000000" }}>
             {stats.totalStaff}
-          </p>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <p className="text-sm font-medium text-gray-600 mb-2">
-            Total Payroll
-          </p>
-          <p className="text-3xl font-bold" style={{ color: "#000000" }}>
-            ${stats.totalPayroll.toLocaleString()}
           </p>
         </div>
       </div>

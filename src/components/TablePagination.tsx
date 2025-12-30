@@ -28,7 +28,7 @@ export default function TablePagination({
   const getPageNumbers = (): number[] => {
     const pages: number[] = [];
     const maxVisible = 5;
-    
+
     if (totalPages <= maxVisible) {
       // Show all pages if total is less than max visible
       for (let i = 1; i <= totalPages; i++) {
@@ -37,18 +37,18 @@ export default function TablePagination({
     } else {
       // Show pages around current page
       let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-      let end = Math.min(totalPages, start + maxVisible - 1);
-      
+      const end = Math.min(totalPages, start + maxVisible - 1);
+
       // Adjust start if we're near the end
       if (end - start < maxVisible - 1) {
         start = Math.max(1, end - maxVisible + 1);
       }
-      
+
       for (let i = start; i <= end; i++) {
         pages.push(i);
       }
     }
-    
+
     return pages;
   };
 
@@ -68,9 +68,9 @@ export default function TablePagination({
           value={rowsPerPage}
           onChange={(e) => onRowsPerPageChange(Number(e.target.value))}
           className="border border-gray-300 rounded-md px-3 py-1.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-[--primary] focus:border-transparent"
-          style={{ 
-            minWidth: '70px',
-            cursor: 'pointer'
+          style={{
+            minWidth: "70px",
+            cursor: "pointer",
           }}
           aria-label="Rows per page"
         >
@@ -97,8 +97,8 @@ export default function TablePagination({
           disabled={!canGoPrevious}
           className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
             canGoPrevious
-              ? "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 cursor-pointer"
-              : "text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed"
+              ? "!text-gray-500 bg-white border border-gray-300 hover:bg-gray-50 cursor-pointer"
+              : "!text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed"
           }`}
           aria-label="Previous page"
         >
@@ -116,13 +116,9 @@ export default function TablePagination({
                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                   isActive
                     ? "text-white cursor-pointer"
-                    : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 cursor-pointer"
+                    : "!text-gray-500 bg-white border border-gray-300 hover:bg-gray-50 cursor-pointer"
                 }`}
-                style={
-                  isActive
-                    ? { backgroundColor: "#2C5BBB" }
-                    : {}
-                }
+                style={isActive ? { backgroundColor: "#2C5BBB" } : {}}
                 aria-label={`Go to page ${pageNum}`}
                 aria-current={isActive ? "page" : undefined}
               >
@@ -138,8 +134,8 @@ export default function TablePagination({
           disabled={!canGoNext}
           className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
             canGoNext
-              ? "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 cursor-pointer"
-              : "text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed"
+              ? "!text-gray-500 bg-white border border-gray-300 hover:bg-gray-50 cursor-pointer"
+              : "!text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed"
           }`}
           aria-label="Next page"
         >
@@ -149,4 +145,3 @@ export default function TablePagination({
     </div>
   );
 }
-
