@@ -188,13 +188,17 @@ export const getStatusColor = (status: string): string => {
 
 /**
  * Get category badge color
+ * @deprecated Use dynamic category colors based on category name or status
  */
 export const getCategoryColor = (category: string): string => {
-  const colors: Record<string, string> = {
+  // Legacy support for enum-based categories
+  const legacyColors: Record<string, string> = {
     SOUP: "bg-orange-100 text-orange-800",
     SALAD: "bg-green-100 text-green-800",
     NOODLE: "bg-yellow-100 text-yellow-800",
     SNACK: "bg-purple-100 text-purple-800",
   };
-  return colors[category] || "bg-gray-100 text-gray-800";
+  
+  // Return legacy color if it exists, otherwise default
+  return legacyColors[category] || "bg-blue-100 text-blue-800";
 };

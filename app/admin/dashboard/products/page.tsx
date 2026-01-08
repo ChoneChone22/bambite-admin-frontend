@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Admin Product Management Page
- * CRUD operations for products
+ * CRUD operations for products with image uploads, dynamic categories, and options
  */
 
 "use client";
@@ -12,10 +12,12 @@ import * as Yup from "yup";
 import api from "@/src/services/api";
 import {
   Product,
-  ProductCategory,
+  Category,
+  Option,
   CreateProductRequest,
+  UpdateProductRequest,
 } from "@/src/types/api";
-import { formatPrice, getCategoryColor } from "@/src/lib/utils";
+import { formatPrice, getErrorMessage } from "@/src/lib/utils";
 import { PLACEHOLDER_IMAGE } from "@/src/types";
 import { useModal } from "@/src/hooks/useModal";
 import FormModal from "@/src/components/FormModal";
@@ -23,38 +25,73 @@ import FormModal from "@/src/components/FormModal";
 // Validation Schema
 const productSchema = Yup.object().shape({
   name: Yup.string()
-    .min(3, "Product name must be at least 3 characters")
-    .max(100, "Product name must not exceed 100 characters")
+    .min(2, "Product name must be at least 2 characters")
+    .max(200, "Product name must not exceed 200 characters")
     .required("Product name is required"),
-  category: Yup.string()
-    .oneOf(Object.values(ProductCategory), "Invalid category")
-    .required("Category is required"),
-  ingredients: Yup.string()
-    .min(10, "Ingredients must be at least 10 characters")
-    .required("Ingredients are required"),
+  categoryId: Yup.string().required("Category is required"),
+  description: Yup.string().max(1000, "Description must not exceed 1000 characters"),
+  ingredients: Yup.string().max(500, "Ingredients must not exceed 500 characters"),
   price: Yup.number()
     .positive("Price must be greater than 0")
-    .max(10000, "Price must not exceed $10,000")
     .required("Price is required"),
   stockQuantity: Yup.number()
     .integer("Stock quantity must be a whole number")
     .min(0, "Stock quantity cannot be negative")
     .required("Stock quantity is required"),
+  images: Yup.mixed()
+    .test("required", "At least one image is required", function (value) {
+      const { parent } = this;
+      // For create, images are required
+      if (!parent.isEdit && (!value || (Array.isArray(value) && value.length === 0))) {
+        return false;
+      }
+      return true;
+    })
+    .test("fileType", "Only JPEG, PNG, and WebP images are allowed", function (value) {
+      if (!value || !Array.isArray(value)) return true;
+      const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+      return value.every((file: File) => validTypes.includes(file.type));
+    })
+    .test("fileSize", "Each image must be less than 5MB", function (value) {
+      if (!value || !Array.isArray(value)) return true;
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      return value.every((file: File) => file.size <= maxSize);
+    }),
+  optionIds: Yup.array().of(Yup.string()),
 });
+
+interface ImagePreview {
+  url: string;
+  file?: File;
+  isExisting?: boolean;
+}
 
 export default function ProductsManagementPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [options, setOptions] = useState<Option[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const modal = useModal();
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (pageNum = 1) => {
     try {
       setIsLoading(true);
-      const response = await api.products.getAll();
-      setProducts(response);
+      const response = await api.products.getAll({
+        page: pageNum,
+        limit: 10,
+        sortBy: "createdAt",
+        sortOrder: "desc",
+      });
+      setProducts(response.data);
+      if (response.meta) {
+        setTotalPages(Math.ceil(response.meta.total / response.meta.limit));
+      }
     } catch (err) {
       setError("Failed to fetch products");
       console.error(err);
@@ -63,17 +100,45 @@ export default function ProductsManagementPage() {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const activeCategories = await api.categories.getActive();
+      setCategories(activeCategories);
+    } catch (err) {
+      console.error("Failed to fetch categories:", err);
+    }
+  };
+
+  const fetchOptions = async () => {
+    try {
+      const allOptions = await api.options.getAll();
+      setOptions(allOptions);
+    } catch (err) {
+      console.error("Failed to fetch options:", err);
+    }
+  };
+
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
+    fetchOptions();
   }, []);
 
   const handleCreate = () => {
     setEditingProduct(null);
+    setImagePreviews([]);
     setShowModal(true);
   };
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
+    // Set existing images as previews
+    const existingPreviews: ImagePreview[] =
+      product.imageUrls?.map((url) => ({
+        url,
+        isExisting: true,
+      })) || [];
+    setImagePreviews(existingPreviews);
     setShowModal(true);
   };
 
@@ -86,34 +151,112 @@ export default function ProductsManagementPage() {
 
     try {
       await api.products.delete(id);
-      await fetchProducts();
+      await fetchProducts(page);
     } catch (err: any) {
-      await modal.alert(err.message || "Failed to delete product", "Error", "error");
+      await modal.alert(
+        getErrorMessage(err) || "Failed to delete product",
+        "Error",
+        "error"
+      );
       console.error(err);
     }
   };
 
+  const handleImageChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setFieldValue: any
+  ) => {
+    const files = Array.from(e.target.files || []);
+    const newPreviews: ImagePreview[] = files.map((file) => ({
+      url: URL.createObjectURL(file),
+      file,
+    }));
+
+    // Combine with existing previews (for edit mode)
+    const combinedPreviews = editingProduct
+      ? [...imagePreviews.filter((p) => p.isExisting), ...newPreviews]
+      : newPreviews;
+
+    setImagePreviews(combinedPreviews);
+    setFieldValue("images", files);
+  };
+
+  const removeImagePreview = (index: number, setFieldValue: any) => {
+    const newPreviews = imagePreviews.filter((_, i) => i !== index);
+    setImagePreviews(newPreviews);
+    
+    // Update form field - only keep files that are not removed
+    const remainingFiles = newPreviews
+      .filter((p) => !p.isExisting && p.file)
+      .map((p) => p.file!);
+    setFieldValue("images", remainingFiles);
+  };
+
   const handleSubmit = async (
-    values: CreateProductRequest,
+    values: any,
     { setSubmitting, resetForm }: any
   ) => {
     try {
       if (editingProduct) {
-        await api.products.update(editingProduct.id, values);
+        // Update product
+        const updateData: UpdateProductRequest = {
+          name: values.name,
+          description: values.description,
+          categoryId: values.categoryId,
+          ingredients: values.ingredients,
+          price: values.price,
+          stockQuantity: values.stockQuantity,
+          optionIds: values.optionIds || [],
+        };
+
+        // Only include images if new ones were added
+        const newImages = imagePreviews
+          .filter((p) => !p.isExisting && p.file)
+          .map((p) => p.file!);
+        
+        if (newImages.length > 0) {
+          updateData.images = newImages;
+          // If user removed existing images, replace all
+          const hasRemovedExisting = imagePreviews.some((p) => p.isExisting);
+          updateData.deleteOldImages = !hasRemovedExisting;
+        }
+
+        await api.products.update(editingProduct.id, updateData);
       } else {
-        await api.products.create(values);
+        // Create product
+        const createData: CreateProductRequest = {
+          name: values.name,
+          description: values.description,
+          categoryId: values.categoryId,
+          ingredients: values.ingredients,
+          price: values.price,
+          stockQuantity: values.stockQuantity,
+          optionIds: values.optionIds || [],
+          images: imagePreviews
+            .filter((p) => p.file)
+            .map((p) => p.file!),
+        };
+
+        await api.products.create(createData);
       }
+
       resetForm();
       setShowModal(false);
-      await fetchProducts();
+      setImagePreviews([]);
+      await fetchProducts(page);
+      await fetchCategories(); // Refresh categories in case counts changed
     } catch (err: any) {
-      await modal.alert(err.message || "Failed to save product", "Error", "error");
+      await modal.alert(
+        getErrorMessage(err) || "Failed to save product",
+        "Error",
+        "error"
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (isLoading) {
+  if (isLoading && products.length === 0) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[--primary]"></div>
@@ -135,9 +278,7 @@ export default function ProductsManagementPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-700 p-4 rounded-lg mb-6">
-          {error}
-        </div>
+        <div className="bg-red-50 text-red-700 p-4 rounded-lg mb-6">{error}</div>
       )}
 
       {/* Products Table */}
@@ -150,6 +291,9 @@ export default function ProductsManagementPage() {
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                 Category
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Options
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                 Price
@@ -168,7 +312,11 @@ export default function ProductsManagementPage() {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <img
-                      src={PLACEHOLDER_IMAGE}
+                      src={
+                        product.imageUrls && product.imageUrls.length > 0
+                          ? product.imageUrls[0]
+                          : PLACEHOLDER_IMAGE
+                      }
                       alt={product.name}
                       className="h-10 w-10 rounded object-cover"
                     />
@@ -180,19 +328,30 @@ export default function ProductsManagementPage() {
                         {product.name}
                       </div>
                       <div className="text-sm text-gray-500 truncate max-w-xs">
-                        {product.ingredients}
+                        {product.description || product.ingredients || "No description"}
                       </div>
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`px-2 py-1 text-xs font-medium rounded ${getCategoryColor(
-                      product.category
-                    )}`}
-                  >
-                    {product.category}
+                  <span className="px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-800">
+                    {product.category?.name || "N/A"}
                   </span>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex flex-wrap gap-1">
+                    {product.productOptions?.map((po) => (
+                      <span
+                        key={po.id}
+                        className="px-2 py-1 text-xs font-medium rounded bg-purple-100 text-purple-800"
+                      >
+                        {po.option.displayName}
+                      </span>
+                    ))}
+                    {(!product.productOptions || product.productOptions.length === 0) && (
+                      <span className="text-xs text-gray-400">No options</span>
+                    )}
+                  </div>
                 </td>
                 <td
                   className="px-6 py-4 whitespace-nowrap text-sm"
@@ -233,140 +392,265 @@ export default function ProductsManagementPage() {
         </table>
       </div>
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6 flex justify-center gap-2">
+          <button
+            onClick={() => {
+              const newPage = page - 1;
+              if (newPage >= 1) {
+                setPage(newPage);
+                fetchProducts(newPage);
+              }
+            }}
+            disabled={page === 1}
+            className="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          <span className="px-4 py-2">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            onClick={() => {
+              const newPage = page + 1;
+              if (newPage <= totalPages) {
+                setPage(newPage);
+                fetchProducts(newPage);
+              }
+            }}
+            disabled={page === totalPages}
+            className="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
+        </div>
+      )}
+
       {/* Product Form Modal */}
       <FormModal
         isOpen={showModal}
-        onClose={() => setShowModal(false)}
+        onClose={() => {
+          setShowModal(false);
+          setImagePreviews([]);
+        }}
         title={editingProduct ? "Edit Product" : "Add New Product"}
         maxWidth="2xl"
       >
         <Formik
-              initialValues={{
-                name: editingProduct?.name || "",
-                category: editingProduct?.category || ("" as ProductCategory),
-                ingredients: editingProduct?.ingredients || "",
-                price: editingProduct?.price || 0,
-                stockQuantity: editingProduct?.stockQuantity || 0,
-              }}
-              validationSchema={productSchema}
-              onSubmit={handleSubmit}
-            >
-              {({ errors, touched, isSubmitting }) => (
-                <Form className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Product Name *
-                    </label>
-                    <Field
-                      name="name"
-                      type="text"
-                      className="input-field"
-                      placeholder="e.g., Tom Yum Soup"
-                    />
-                    {errors.name && touched.name && (
-                      <p className="text-red-600 text-sm mt-1">{errors.name}</p>
-                    )}
-                  </div>
+          initialValues={{
+            name: editingProduct?.name || "",
+            description: editingProduct?.description || "",
+            categoryId: editingProduct?.categoryId || "",
+            ingredients: editingProduct?.ingredients || "",
+            price: editingProduct?.price || 0,
+            stockQuantity: editingProduct?.stockQuantity || 0,
+            optionIds: editingProduct?.optionIds || [],
+            images: [],
+            isEdit: !!editingProduct,
+          }}
+          validationSchema={productSchema}
+          onSubmit={handleSubmit}
+        >
+          {({ errors, touched, isSubmitting, setFieldValue, values }) => (
+            <Form className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Product Name *
+                </label>
+                <Field
+                  name="name"
+                  type="text"
+                  className="input-field"
+                  placeholder="e.g., Tom Yum Soup"
+                />
+                {errors.name && touched.name && (
+                  <p className="text-red-600 text-sm mt-1">{errors.name}</p>
+                )}
+              </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Category *
-                    </label>
-                    <Field as="select" name="category" className="input-field">
-                      <option value="">Select a category</option>
-                      {Object.values(ProductCategory).map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </Field>
-                    {errors.category && touched.category && (
-                      <p className="text-red-600 text-sm mt-1">
-                        {errors.category}
-                      </p>
-                    )}
-                  </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <Field
+                  as="textarea"
+                  name="description"
+                  rows={3}
+                  className="input-field"
+                  placeholder="Product description..."
+                />
+                {errors.description && touched.description && (
+                  <p className="text-red-600 text-sm mt-1">{errors.description}</p>
+                )}
+              </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Ingredients *
-                    </label>
-                    <Field
-                      as="textarea"
-                      name="ingredients"
-                      rows={3}
-                      className="input-field"
-                      placeholder="List main ingredients..."
-                    />
-                    {errors.ingredients && touched.ingredients && (
-                      <p className="text-red-600 text-sm mt-1">
-                        {errors.ingredients}
-                      </p>
-                    )}
-                  </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Category *
+                </label>
+                <Field as="select" name="categoryId" className="input-field">
+                  <option value="">Select a category</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name} {cat._count?.products !== undefined && `(${cat._count.products} products)`}
+                    </option>
+                  ))}
+                </Field>
+                {errors.categoryId && touched.categoryId && (
+                  <p className="text-red-600 text-sm mt-1">{errors.categoryId}</p>
+                )}
+              </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Price ($) *
-                      </label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Ingredients
+                </label>
+                <Field
+                  as="textarea"
+                  name="ingredients"
+                  rows={3}
+                  className="input-field"
+                  placeholder="List main ingredients..."
+                />
+                {errors.ingredients && touched.ingredients && (
+                  <p className="text-red-600 text-sm mt-1">{errors.ingredients}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Options
+                </label>
+                <div className="space-y-2">
+                  {options.map((option) => (
+                    <label key={option.id} className="flex items-center">
                       <Field
-                        name="price"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        className="input-field"
-                        placeholder="9.99"
+                        type="checkbox"
+                        name="optionIds"
+                        value={option.id}
+                        className="mr-2"
                       />
-                      {errors.price && touched.price && (
-                        <p className="text-red-600 text-sm mt-1">
-                          {errors.price}
-                        </p>
-                      )}
-                    </div>
+                      <span className="text-sm">
+                        {option.displayName} ({option.optionLists.join(", ")})
+                      </span>
+                    </label>
+                  ))}
+                  {options.length === 0 && (
+                    <p className="text-sm text-gray-500">No options available. Create options first.</p>
+                  )}
+                </div>
+              </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Stock Quantity *
-                      </label>
-                      <Field
-                        name="stockQuantity"
-                        type="number"
-                        min="0"
-                        className="input-field"
-                        placeholder="50"
-                      />
-                      {errors.stockQuantity && touched.stockQuantity && (
-                        <p className="text-red-600 text-sm mt-1">
-                          {errors.stockQuantity}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Price ($) *
+                  </label>
+                  <Field
+                    name="price"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="input-field"
+                    placeholder="9.99"
+                  />
+                  {errors.price && touched.price && (
+                    <p className="text-red-600 text-sm mt-1">{errors.price}</p>
+                  )}
+                </div>
 
-                  <div className="flex gap-4 pt-4">
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="btn-primary flex-1 cursor-pointer"
-                    >
-                      {isSubmitting
-                        ? "Saving..."
-                        : editingProduct
-                        ? "Update"
-                        : "Create"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowModal(false)}
-                      className="btn-secondary flex-1"
-                    >
-                      Cancel
-                    </button>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Stock Quantity *
+                  </label>
+                  <Field
+                    name="stockQuantity"
+                    type="number"
+                    min="0"
+                    className="input-field"
+                    placeholder="50"
+                  />
+                  {errors.stockQuantity && touched.stockQuantity && (
+                    <p className="text-red-600 text-sm mt-1">
+                      {errors.stockQuantity}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Images {!editingProduct && "*"}
+                </label>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  onChange={(e) => handleImageChange(e, setFieldValue)}
+                  className="input-field"
+                />
+                {errors.images && touched.images && (
+                  <p className="text-red-600 text-sm mt-1">{errors.images}</p>
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  Accepted formats: JPEG, PNG, WebP. Max size: 5MB per image.
+                </p>
+
+                {/* Image Previews */}
+                {imagePreviews.length > 0 && (
+                  <div className="mt-4 grid grid-cols-4 gap-4">
+                    {imagePreviews.map((preview, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={preview.url}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-24 object-cover rounded border"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImagePreview(index, setFieldValue)}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                        >
+                          ×
+                        </button>
+                        {preview.isExisting && (
+                          <span className="absolute bottom-1 left-1 bg-blue-500 text-white text-xs px-1 rounded">
+                            Existing
+                          </span>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                </Form>
-              )}
-            </Formik>
+                )}
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="btn-primary flex-1 cursor-pointer"
+                >
+                  {isSubmitting
+                    ? "Saving..."
+                    : editingProduct
+                    ? "Update"
+                    : "Create"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowModal(false);
+                    setImagePreviews([]);
+                  }}
+                  className="btn-secondary flex-1"
+                >
+                  Cancel
+                </button>
+              </div>
+            </Form>
+          )}
+        </Formik>
       </FormModal>
     </div>
   );

@@ -11,6 +11,8 @@ import { clearAuth } from "@/src/lib/axios";
 const navigation = [
   { name: "Dashboard", href: "/admin/dashboard" },
   { name: "Products", href: "/admin/dashboard/products" },
+  { name: "Categories", href: "/admin/dashboard/categories" },
+  { name: "Options", href: "/admin/dashboard/options" },
   { name: "Orders", href: "/admin/dashboard/orders" },
   { name: "Staff", href: "/admin/dashboard/staff" },
   { name: "Staff Accounts", href: "/admin/dashboard/staff-accounts" },

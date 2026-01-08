@@ -5,6 +5,8 @@
 
 // ==================== Enums ====================
 
+// ProductCategory enum is deprecated - use Category model instead
+// Keeping for backward compatibility during migration
 export enum ProductCategory {
   SOUP = "SOUP",
   SALAD = "SALAD",
@@ -51,14 +53,50 @@ export interface User {
   updatedAt?: string;
 }
 
+// ==================== Category Model ====================
+
+export interface Category {
+  id: string;
+  name: string;
+  status: "active" | "inactive";
+  createdAt?: string;
+  updatedAt?: string;
+  _count?: {
+    products: number;
+  };
+}
+
+// ==================== Option Model ====================
+
+export interface Option {
+  id: string;
+  name: string; // unique identifier (lowercase, no spaces)
+  displayName: string; // user-friendly display name
+  optionLists: string[]; // array of option values
+  createdAt?: string;
+  updatedAt?: string;
+  _count?: {
+    products: number;
+  };
+}
+
+// ==================== Product Model ====================
+
 export interface Product {
   id: string;
   name: string;
-  category: ProductCategory;
-  ingredients: string;
+  description?: string;
+  categoryId: string; // Changed from category enum to categoryId UUID
+  category?: Category; // Nested category object
+  ingredients?: string;
   price: number;
   stockQuantity: number;
-  imageUrl?: string;
+  imageUrls?: string[]; // Changed from imageUrl to imageUrls array
+  productOptions?: Array<{
+    id: string;
+    option: Option;
+  }>;
+  optionIds?: string[]; // Array of option UUIDs
   createdAt?: string;
   updatedAt?: string;
 }
@@ -72,7 +110,8 @@ export interface CartItem {
   quantity: number;
   subtotal: number;
   stockQuantity: number;
-  category: ProductCategory;
+  category?: string; // Category name (for display) - optional for backward compatibility
+  categoryId?: string; // Category ID (UUID) - optional for backward compatibility
 }
 
 export interface OrderItem {
@@ -196,18 +235,25 @@ export interface RegisterRequest {
 
 export interface CreateProductRequest {
   name: string;
-  category: ProductCategory;
-  ingredients: string;
+  description?: string;
+  categoryId: string; // UUID of category
+  ingredients?: string;
   price: number;
   stockQuantity: number;
+  optionIds?: string[]; // Array of option UUIDs
+  images: File[]; // Array of image files (required, at least 1)
 }
 
 export interface UpdateProductRequest {
   name?: string;
-  category?: ProductCategory;
+  description?: string;
+  categoryId?: string; // UUID of category
   ingredients?: string;
   price?: number;
   stockQuantity?: number;
+  optionIds?: string[]; // Array of option UUIDs
+  images?: File[]; // New images to add
+  deleteOldImages?: boolean; // If true, replace all images; if false, add to existing
 }
 
 export interface AddToCartRequest {
@@ -337,10 +383,40 @@ export interface PaginationParams {
 }
 
 export interface ProductFilters extends PaginationParams {
-  category?: ProductCategory;
-  minPrice?: number;
-  maxPrice?: number;
+  category?: string; // categoryId (UUID) instead of enum
   search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+// ==================== Category API Types ====================
+
+export interface CreateCategoryRequest {
+  name: string;
+  status?: "active" | "inactive";
+}
+
+export interface UpdateCategoryRequest {
+  name?: string;
+  status?: "active" | "inactive";
+}
+
+export interface CategoryFilters {
+  status?: "active" | "inactive";
+}
+
+// ==================== Option API Types ====================
+
+export interface CreateOptionRequest {
+  name: string; // unique identifier (lowercase, no spaces)
+  displayName: string; // user-friendly display name
+  optionLists: string[]; // array of option values
+}
+
+export interface UpdateOptionRequest {
+  name?: string;
+  displayName?: string;
+  optionLists?: string[];
 }
 
 export interface OrderFilters extends PaginationParams {

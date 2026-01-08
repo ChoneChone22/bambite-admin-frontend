@@ -36,6 +36,13 @@ import {
   CreatePaymentRequest,
   UpdatePaymentRequest,
   PaymentFilters,
+  Category,
+  CreateCategoryRequest,
+  UpdateCategoryRequest,
+  CategoryFilters,
+  Option,
+  CreateOptionRequest,
+  UpdateOptionRequest,
 } from "@/src/types/api";
 
 // ==================== Auth API ====================
@@ -173,22 +180,171 @@ export const authApi = {
   },
 };
 
+// ==================== Categories API ====================
+
+export const categoriesApi = {
+  /**
+   * Get active categories (Public - for dropdowns)
+   */
+  getActive: async (): Promise<Category[]> => {
+    const response = await axiosInstance.get<ApiResponse<Category[]>>(
+      "/categories/active"
+    );
+    return response.data.data || [];
+  },
+
+  /**
+   * Get all categories (Admin)
+   */
+  getAll: async (filters?: CategoryFilters): Promise<Category[]> => {
+    const response = await axiosInstance.get<ApiResponse<Category[]>>(
+      "/categories",
+      { params: filters }
+    );
+    return response.data.data || [];
+  },
+
+  /**
+   * Get category by ID (Admin)
+   */
+  getById: async (id: string): Promise<Category> => {
+    const response = await axiosInstance.get<ApiResponse<Category>>(
+      `/categories/${id}`
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Create category (Admin)
+   */
+  create: async (data: CreateCategoryRequest): Promise<Category> => {
+    const response = await axiosInstance.post<ApiResponse<Category>>(
+      "/categories",
+      data
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Update category (Admin)
+   */
+  update: async (
+    id: string,
+    data: UpdateCategoryRequest
+  ): Promise<Category> => {
+    const response = await axiosInstance.put<ApiResponse<Category>>(
+      `/categories/${id}`,
+      data
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Update category status only (Admin)
+   */
+  updateStatus: async (
+    id: string,
+    status: "active" | "inactive"
+  ): Promise<Category> => {
+    const response = await axiosInstance.patch<ApiResponse<Category>>(
+      `/categories/${id}/status`,
+      { status }
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Delete category (Admin)
+   */
+  delete: async (id: string): Promise<void> => {
+    await axiosInstance.delete(`/categories/${id}`);
+  },
+};
+
+// ==================== Options API ====================
+
+export const optionsApi = {
+  /**
+   * Get all options (Admin)
+   */
+  getAll: async (): Promise<Option[]> => {
+    const response = await axiosInstance.get<ApiResponse<Option[]>>("/options");
+    return response.data.data || [];
+  },
+
+  /**
+   * Get option by ID (Admin)
+   */
+  getById: async (id: string): Promise<Option> => {
+    const response = await axiosInstance.get<ApiResponse<Option>>(
+      `/options/${id}`
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Create option (Admin)
+   */
+  create: async (data: CreateOptionRequest): Promise<Option> => {
+    const response = await axiosInstance.post<ApiResponse<Option>>(
+      "/options",
+      data
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Update option (Admin)
+   */
+  update: async (
+    id: string,
+    data: UpdateOptionRequest
+  ): Promise<Option> => {
+    const response = await axiosInstance.put<ApiResponse<Option>>(
+      `/options/${id}`,
+      data
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Delete option (Admin)
+   */
+  delete: async (id: string): Promise<void> => {
+    await axiosInstance.delete(`/options/${id}`);
+  },
+};
+
 // ==================== Products API ====================
 
 export const productsApi = {
   /**
-   * Get all products with filters
+   * Get all products with filters and pagination
    */
-  getAll: async (filters?: ProductFilters): Promise<Product[]> => {
-    console.log("API: Fetching products with params:", filters);
+  getAll: async (filters?: ProductFilters): Promise<{
+    data: Product[];
+    meta?: {
+      page: number;
+      limit: number;
+      total: number;
+    };
+  }> => {
     const response = await axiosInstance.get<any>("/products", {
       params: filters,
     });
-    console.log("API: Products response:", response.data);
-    // Backend returns data directly in response.data, not nested
-    return Array.isArray(response.data)
-      ? response.data
-      : response.data.data || [];
+    
+    // Handle paginated response
+    if (response.data?.data && Array.isArray(response.data.data)) {
+      return {
+        data: response.data.data,
+        meta: response.data.meta,
+      };
+    }
+    
+    // Handle non-paginated response
+    return {
+      data: Array.isArray(response.data) ? response.data : response.data.data || [],
+    };
   },
 
   /**
@@ -202,23 +358,106 @@ export const productsApi = {
   },
 
   /**
-   * Create new product (Admin only)
+   * Create new product with images (Admin only)
+   * Uses multipart/form-data for image uploads
    */
   create: async (data: CreateProductRequest): Promise<Product> => {
+    const formData = new FormData();
+    
+    // Add text fields
+    formData.append("name", data.name);
+    formData.append("categoryId", data.categoryId);
+    formData.append("price", data.price.toString());
+    formData.append("stockQuantity", data.stockQuantity.toString());
+    
+    // Add optional fields
+    if (data.description) {
+      formData.append("description", data.description);
+    }
+    if (data.ingredients) {
+      formData.append("ingredients", data.ingredients);
+    }
+    
+    // Add optionIds as array
+    if (data.optionIds && data.optionIds.length > 0) {
+      data.optionIds.forEach((id) => {
+        formData.append("optionIds[]", id);
+      });
+    }
+    
+    // Add image files (required, at least 1)
+    data.images.forEach((file) => {
+      formData.append("images", file);
+    });
+    
     const response = await axiosInstance.post<ApiResponse<Product>>(
       "/products",
-      data
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
     );
     return response.data.data;
   },
 
   /**
-   * Update product (Admin only)
+   * Update product with optional images (Admin only)
+   * Uses multipart/form-data for image uploads
    */
-  update: async (id: string, data: UpdateProductRequest): Promise<Product> => {
+  update: async (
+    id: string,
+    data: UpdateProductRequest
+  ): Promise<Product> => {
+    const formData = new FormData();
+    
+    // Add text fields if provided
+    if (data.name) formData.append("name", data.name);
+    if (data.categoryId) formData.append("categoryId", data.categoryId);
+    if (data.price !== undefined) {
+      formData.append("price", data.price.toString());
+    }
+    if (data.stockQuantity !== undefined) {
+      formData.append("stockQuantity", data.stockQuantity.toString());
+    }
+    if (data.description) {
+      formData.append("description", data.description);
+    }
+    if (data.ingredients) {
+      formData.append("ingredients", data.ingredients);
+    }
+    
+    // Add optionIds as array if provided
+    if (data.optionIds) {
+      data.optionIds.forEach((id) => {
+        formData.append("optionIds[]", id);
+      });
+    }
+    
+    // Add image files if provided
+    if (data.images && data.images.length > 0) {
+      data.images.forEach((file) => {
+        formData.append("images", file);
+      });
+    }
+    
+    // Add deleteOldImages flag if provided
+    if (data.deleteOldImages !== undefined) {
+      formData.append("deleteOldImages", data.deleteOldImages.toString());
+    }
+    
+    // Build URL with query params
+    const url = `/products/${id}${data.deleteOldImages !== undefined ? `?deleteOldImages=${data.deleteOldImages}` : ""}`;
+    
     const response = await axiosInstance.put<ApiResponse<Product>>(
-      `/products/${id}`,
-      data
+      url,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
     );
     return response.data.data;
   },
@@ -972,6 +1211,8 @@ export const permissionsApi = {
 
 const api = {
   auth: authApi,
+  categories: categoriesApi,
+  options: optionsApi,
   products: productsApi,
   cart: cartApi,
   orders: ordersApi,
@@ -980,7 +1221,7 @@ const api = {
   inventory: inventoryApi,
   staffAccounts: staffAccountsApi,
   permissions: permissionsApi,
-   payments: paymentsApi,
+  payments: paymentsApi,
 };
 
 export default api;
