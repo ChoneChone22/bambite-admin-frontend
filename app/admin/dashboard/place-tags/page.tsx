@@ -125,7 +125,7 @@ export default function PlaceTagsManagementPage() {
   ) => {
     try {
       if (editingPlaceTag) {
-        await api.placeTags.update(editingPlaceTag.id, values);
+        await api.placeTags.update(editingPlaceTag.id, values as UpdatePlaceTagRequest);
         setSubmitting(false); // Stop loading state
         resetForm();
         setShowModal(false); // Close modal immediately
@@ -133,7 +133,7 @@ export default function PlaceTagsManagementPage() {
         await fetchPlaceTags();
         await modal.alert("Place tag updated successfully", "Success", "success");
       } else {
-        await api.placeTags.create(values);
+        await api.placeTags.create(values as CreatePlaceTagRequest);
         setSubmitting(false); // Stop loading state
         resetForm();
         setShowModal(false); // Close modal immediately

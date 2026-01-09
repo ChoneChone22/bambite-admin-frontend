@@ -136,12 +136,14 @@ export default function JobPostsManagementPage() {
       // Format closeDate to ISO 8601 if it's not already
       const formattedValues = {
         ...values,
-        jobDetails: {
+        jobDetails: values.jobDetails ? {
           ...values.jobDetails,
-          closeDate: values.jobDetails.closeDate.includes("T")
+          closeDate: values.jobDetails.closeDate?.includes("T")
             ? values.jobDetails.closeDate
-            : `${values.jobDetails.closeDate}T23:59:59Z`,
-        },
+            : values.jobDetails.closeDate
+            ? `${values.jobDetails.closeDate}T23:59:59Z`
+            : undefined,
+        } : undefined,
       };
 
       if (editingJobPost) {
@@ -291,7 +293,7 @@ export default function JobPostsManagementPage() {
           setEditingJobPost(null);
         }}
         title={editingJobPost ? "Edit Job Post" : "Add New Job Post"}
-        maxWidth="3xl"
+        maxWidth="2xl"
       >
         <Formik
           initialValues={{

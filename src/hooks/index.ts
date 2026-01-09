@@ -174,7 +174,7 @@ export const useProducts = (filters?: ProductFilters) => {
     setError(null);
     try {
       const response = await api.products.getAll(filters);
-      setProducts(response);
+      setProducts(response.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch products");
     } finally {
