@@ -36,6 +36,34 @@ import {
   CreatePaymentRequest,
   UpdatePaymentRequest,
   PaymentFilters,
+  Category,
+  CreateCategoryRequest,
+  UpdateCategoryRequest,
+  CategoryFilters,
+  Option,
+  CreateOptionRequest,
+  UpdateOptionRequest,
+  PlaceTag,
+  CreatePlaceTagRequest,
+  UpdatePlaceTagRequest,
+  PlaceTagFilters,
+  JobPost,
+  CreateJobPostRequest,
+  UpdateJobPostRequest,
+  JobPostFilters,
+  JobApplication,
+  CreateJobApplicationRequest,
+  UpdateJobApplicationStatusRequest,
+  SendEmailToApplicantRequest,
+  JobApplicationFilters,
+  Interview,
+  CreateInterviewRequest,
+  UpdateInterviewRequest,
+  InterviewFilters,
+  Contact,
+  CreateContactRequest,
+  ContactFilters,
+  ContactReason,
 } from "@/src/types/api";
 
 // ==================== Auth API ====================
@@ -173,22 +201,171 @@ export const authApi = {
   },
 };
 
+// ==================== Categories API ====================
+
+export const categoriesApi = {
+  /**
+   * Get active categories (Public - for dropdowns)
+   */
+  getActive: async (): Promise<Category[]> => {
+    const response = await axiosInstance.get<ApiResponse<Category[]>>(
+      "/categories/active"
+    );
+    return response.data.data || [];
+  },
+
+  /**
+   * Get all categories (Admin)
+   */
+  getAll: async (filters?: CategoryFilters): Promise<Category[]> => {
+    const response = await axiosInstance.get<ApiResponse<Category[]>>(
+      "/categories",
+      { params: filters }
+    );
+    return response.data.data || [];
+  },
+
+  /**
+   * Get category by ID (Admin)
+   */
+  getById: async (id: string): Promise<Category> => {
+    const response = await axiosInstance.get<ApiResponse<Category>>(
+      `/categories/${id}`
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Create category (Admin)
+   */
+  create: async (data: CreateCategoryRequest): Promise<Category> => {
+    const response = await axiosInstance.post<ApiResponse<Category>>(
+      "/categories",
+      data
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Update category (Admin)
+   */
+  update: async (
+    id: string,
+    data: UpdateCategoryRequest
+  ): Promise<Category> => {
+    const response = await axiosInstance.put<ApiResponse<Category>>(
+      `/categories/${id}`,
+      data
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Update category status only (Admin)
+   */
+  updateStatus: async (
+    id: string,
+    status: "active" | "inactive"
+  ): Promise<Category> => {
+    const response = await axiosInstance.patch<ApiResponse<Category>>(
+      `/categories/${id}/status`,
+      { status }
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Delete category (Admin)
+   */
+  delete: async (id: string): Promise<void> => {
+    await axiosInstance.delete(`/categories/${id}`);
+  },
+};
+
+// ==================== Options API ====================
+
+export const optionsApi = {
+  /**
+   * Get all options (Admin)
+   */
+  getAll: async (): Promise<Option[]> => {
+    const response = await axiosInstance.get<ApiResponse<Option[]>>("/options");
+    return response.data.data || [];
+  },
+
+  /**
+   * Get option by ID (Admin)
+   */
+  getById: async (id: string): Promise<Option> => {
+    const response = await axiosInstance.get<ApiResponse<Option>>(
+      `/options/${id}`
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Create option (Admin)
+   */
+  create: async (data: CreateOptionRequest): Promise<Option> => {
+    const response = await axiosInstance.post<ApiResponse<Option>>(
+      "/options",
+      data
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Update option (Admin)
+   */
+  update: async (
+    id: string,
+    data: UpdateOptionRequest
+  ): Promise<Option> => {
+    const response = await axiosInstance.put<ApiResponse<Option>>(
+      `/options/${id}`,
+      data
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Delete option (Admin)
+   */
+  delete: async (id: string): Promise<void> => {
+    await axiosInstance.delete(`/options/${id}`);
+  },
+};
+
 // ==================== Products API ====================
 
 export const productsApi = {
   /**
-   * Get all products with filters
+   * Get all products with filters and pagination
    */
-  getAll: async (filters?: ProductFilters): Promise<Product[]> => {
-    console.log("API: Fetching products with params:", filters);
+  getAll: async (filters?: ProductFilters): Promise<{
+    data: Product[];
+    meta?: {
+      page: number;
+      limit: number;
+      total: number;
+    };
+  }> => {
     const response = await axiosInstance.get<any>("/products", {
       params: filters,
     });
-    console.log("API: Products response:", response.data);
-    // Backend returns data directly in response.data, not nested
-    return Array.isArray(response.data)
-      ? response.data
-      : response.data.data || [];
+    
+    // Handle paginated response
+    if (response.data?.data && Array.isArray(response.data.data)) {
+      return {
+        data: response.data.data,
+        meta: response.data.meta,
+      };
+    }
+    
+    // Handle non-paginated response
+    return {
+      data: Array.isArray(response.data) ? response.data : response.data.data || [],
+    };
   },
 
   /**
@@ -202,23 +379,121 @@ export const productsApi = {
   },
 
   /**
-   * Create new product (Admin only)
+   * Create new product with images (Admin only)
+   * Uses multipart/form-data for image uploads
    */
   create: async (data: CreateProductRequest): Promise<Product> => {
+    const formData = new FormData();
+    
+    // Add text fields
+    formData.append("name", data.name);
+    formData.append("categoryId", data.categoryId);
+    formData.append("price", data.price.toString());
+    formData.append("stockQuantity", data.stockQuantity.toString());
+    
+    // Add optional fields
+    if (data.thaiName) {
+      formData.append("thaiName", data.thaiName);
+    }
+    if (data.description) {
+      formData.append("description", data.description);
+    }
+    if (data.ingredients) {
+      formData.append("ingredients", data.ingredients);
+    }
+    
+    // Add optionIds as array
+    if (data.optionIds && data.optionIds.length > 0) {
+      data.optionIds.forEach((id) => {
+        formData.append("optionIds[]", id);
+      });
+    }
+    
+    // Add image files (required, at least 1)
+    data.images.forEach((file) => {
+      formData.append("images", file);
+    });
+    
     const response = await axiosInstance.post<ApiResponse<Product>>(
       "/products",
-      data
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
     );
     return response.data.data;
   },
 
   /**
-   * Update product (Admin only)
+   * Update product with optional images (Admin only)
+   * Uses multipart/form-data for image uploads
+   * Supports: adding new images, removing specific images, replacing all images
    */
-  update: async (id: string, data: UpdateProductRequest): Promise<Product> => {
+  update: async (
+    id: string,
+    data: UpdateProductRequest
+  ): Promise<Product> => {
+    const formData = new FormData();
+    
+    // Add text fields if provided
+    if (data.name) formData.append("name", data.name);
+    if (data.thaiName) {
+      formData.append("thaiName", data.thaiName);
+    }
+    if (data.categoryId) formData.append("categoryId", data.categoryId);
+    if (data.price !== undefined) {
+      formData.append("price", data.price.toString());
+    }
+    if (data.stockQuantity !== undefined) {
+      formData.append("stockQuantity", data.stockQuantity.toString());
+    }
+    if (data.description) {
+      formData.append("description", data.description);
+    }
+    if (data.ingredients) {
+      formData.append("ingredients", data.ingredients);
+    }
+    
+    // Add optionIds as array if provided
+    if (data.optionIds) {
+      data.optionIds.forEach((id) => {
+        formData.append("optionIds[]", id);
+      });
+    }
+    
+    // Add new image files if provided
+    if (data.images && data.images.length > 0) {
+      data.images.forEach((file) => {
+        formData.append("images", file);
+      });
+    }
+    
+    // Add removeImageUrls if provided (array of URLs to remove)
+    if (data.removeImageUrls && data.removeImageUrls.length > 0) {
+      formData.append("removeImageUrls", JSON.stringify(data.removeImageUrls));
+    }
+    
+    // Add imageUrls if provided (final list of URLs to keep)
+    if (data.imageUrls && data.imageUrls.length > 0) {
+      formData.append("imageUrls", JSON.stringify(data.imageUrls));
+    }
+    
+    // Build URL with query params for deleteOldImages
+    let url = `/products/${id}`;
+    if (data.deleteOldImages !== undefined) {
+      url += `?deleteOldImages=${data.deleteOldImages}`;
+    }
+    
     const response = await axiosInstance.put<ApiResponse<Product>>(
-      `/products/${id}`,
-      data
+      url,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
     );
     return response.data.data;
   },
@@ -968,10 +1243,377 @@ export const permissionsApi = {
   },
 };
 
+// ==================== Place Tags API ====================
+
+export const placeTagsApi = {
+  /**
+   * Get all place tags
+   */
+  getAll: async (filters?: PlaceTagFilters): Promise<PlaceTag[]> => {
+    const response = await axiosInstance.get<ApiResponse<PlaceTag[]>>(
+      "/place-tags",
+      { params: filters }
+    );
+    return response.data.data || [];
+  },
+
+  /**
+   * Get active place tags only
+   */
+  getActive: async (): Promise<PlaceTag[]> => {
+    const response = await axiosInstance.get<ApiResponse<PlaceTag[]>>(
+      "/place-tags/active"
+    );
+    return response.data.data || [];
+  },
+
+  /**
+   * Get place tag by ID
+   */
+  getById: async (id: string): Promise<PlaceTag> => {
+    const response = await axiosInstance.get<ApiResponse<PlaceTag>>(
+      `/place-tags/${id}`
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Create place tag
+   */
+  create: async (data: CreatePlaceTagRequest): Promise<PlaceTag> => {
+    const response = await axiosInstance.post<ApiResponse<{ placeTag: PlaceTag }>>(
+      "/place-tags",
+      data
+    );
+    return response.data.data?.placeTag || response.data.data || response.data;
+  },
+
+  /**
+   * Update place tag
+   */
+  update: async (
+    id: string,
+    data: UpdatePlaceTagRequest
+  ): Promise<PlaceTag> => {
+    const response = await axiosInstance.put<ApiResponse<PlaceTag>>(
+      `/place-tags/${id}`,
+      data
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Update place tag status
+   */
+  updateStatus: async (
+    id: string,
+    status: "active" | "inactive"
+  ): Promise<PlaceTag> => {
+    const response = await axiosInstance.patch<ApiResponse<PlaceTag>>(
+      `/place-tags/${id}/status`,
+      { status }
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Delete place tag
+   */
+  delete: async (id: string): Promise<void> => {
+    await axiosInstance.delete(`/place-tags/${id}`);
+  },
+};
+
+// ==================== Job Posts API ====================
+
+export const jobPostsApi = {
+  /**
+   * Get all job posts
+   */
+  getAll: async (filters?: JobPostFilters): Promise<JobPost[]> => {
+    const response = await axiosInstance.get<ApiResponse<JobPost[]>>(
+      "/job-posts",
+      { params: filters }
+    );
+    return response.data.data || [];
+  },
+
+  /**
+   * Get job post by ID
+   */
+  getById: async (id: string): Promise<JobPost> => {
+    const response = await axiosInstance.get<ApiResponse<JobPost>>(
+      `/job-posts/${id}`
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Create job post
+   */
+  create: async (data: CreateJobPostRequest): Promise<JobPost> => {
+    const response = await axiosInstance.post<ApiResponse<{ jobPost: JobPost }>>(
+      "/job-posts",
+      data
+    );
+    return response.data.data?.jobPost || response.data.data || response.data;
+  },
+
+  /**
+   * Update job post
+   */
+  update: async (
+    id: string,
+    data: UpdateJobPostRequest
+  ): Promise<JobPost> => {
+    const response = await axiosInstance.put<ApiResponse<JobPost>>(
+      `/job-posts/${id}`,
+      data
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Delete job post
+   */
+  delete: async (id: string): Promise<void> => {
+    await axiosInstance.delete(`/job-posts/${id}`);
+  },
+};
+
+// ==================== Job Applications API ====================
+
+export const jobApplicationsApi = {
+  /**
+   * Get all job applications
+   */
+  getAll: async (filters?: JobApplicationFilters): Promise<JobApplication[]> => {
+    const response = await axiosInstance.get<ApiResponse<JobApplication[]>>(
+      "/apply-jobs",
+      { params: filters }
+    );
+    return response.data.data || [];
+  },
+
+  /**
+   * Get job application by ID
+   */
+  getById: async (id: string): Promise<JobApplication> => {
+    const response = await axiosInstance.get<any>(`/apply-jobs/${id}`);
+    const data = response.data;
+
+    // Handle different response structures
+    if (data?.data?.application) {
+      return data.data.application as JobApplication;
+    }
+    if (data?.application) {
+      return data.application as JobApplication;
+    }
+    if (data?.data) {
+      return data.data as JobApplication;
+    }
+    return data as JobApplication;
+  },
+
+  /**
+   * Create job application (public endpoint)
+   */
+  create: async (data: CreateJobApplicationRequest): Promise<JobApplication> => {
+    const formData = new FormData();
+    formData.append("jobPostId", data.jobPostId);
+    formData.append("name", data.name);
+    formData.append("email", data.email);
+    if (data.joiningReason) {
+      formData.append("joiningReason", data.joiningReason);
+    }
+    if (data.additionalQuestion) {
+      formData.append("additionalQuestion", data.additionalQuestion);
+    }
+    if (data.coverLetter) {
+      formData.append("coverLetter", data.coverLetter);
+    }
+    if (data.uploadedFile) {
+      formData.append("uploadedFile", data.uploadedFile);
+    }
+
+    const response = await axiosInstance.post<ApiResponse<{ application: JobApplication }>>(
+      "/apply-jobs",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response.data.data?.application || response.data.data || response.data;
+  },
+
+  /**
+   * Update job application status
+   */
+  updateStatus: async (
+    id: string,
+    data: UpdateJobApplicationStatusRequest
+  ): Promise<JobApplication> => {
+    const response = await axiosInstance.patch<ApiResponse<JobApplication>>(
+      `/apply-jobs/${id}/status`,
+      data
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Send email to applicant
+   */
+  sendEmail: async (
+    id: string,
+    data: SendEmailToApplicantRequest
+  ): Promise<void> => {
+    await axiosInstance.post(`/apply-jobs/${id}/send-email`, data);
+  },
+
+  /**
+   * Delete job application
+   */
+  delete: async (id: string): Promise<void> => {
+    await axiosInstance.delete(`/apply-jobs/${id}`);
+  },
+};
+
+// ==================== Interviews API ====================
+
+export const interviewsApi = {
+  /**
+   * Get all interviews
+   */
+  getAll: async (filters?: InterviewFilters): Promise<Interview[]> => {
+    const response = await axiosInstance.get<ApiResponse<Interview[]>>(
+      "/interviews",
+      { params: filters }
+    );
+    return response.data.data || [];
+  },
+
+  /**
+   * Get interview by ID
+   */
+  getById: async (id: string): Promise<Interview> => {
+    const response = await axiosInstance.get<ApiResponse<Interview>>(
+      `/interviews/${id}`
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Get interview by apply job ID
+   */
+  getByApplyJobId: async (applyJobId: string): Promise<Interview | null> => {
+    try {
+      const response = await axiosInstance.get<ApiResponse<Interview>>(
+        `/interviews/by-apply-job/${applyJobId}`
+      );
+      return response.data.data || response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  },
+
+  /**
+   * Create interview
+   */
+  create: async (data: CreateInterviewRequest): Promise<Interview> => {
+    const response = await axiosInstance.post<ApiResponse<{ interview: Interview }>>(
+      "/interviews",
+      data
+    );
+    return response.data.data?.interview || response.data.data || response.data;
+  },
+
+  /**
+   * Update interview
+   */
+  update: async (
+    id: string,
+    data: UpdateInterviewRequest
+  ): Promise<Interview> => {
+    const response = await axiosInstance.put<ApiResponse<Interview>>(
+      `/interviews/${id}`,
+      data
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Delete interview
+   */
+  delete: async (id: string): Promise<void> => {
+    await axiosInstance.delete(`/interviews/${id}`);
+  },
+};
+
+// ==================== Contacts API ====================
+
+export const contactsApi = {
+  /**
+   * Get all contacts
+   */
+  getAll: async (filters?: ContactFilters): Promise<Contact[]> => {
+    const response = await axiosInstance.get<ApiResponse<Contact[]>>(
+      "/contacts",
+      { params: filters }
+    );
+    return response.data.data || [];
+  },
+
+  /**
+   * Get contact by ID
+   */
+  getById: async (id: string): Promise<Contact> => {
+    const response = await axiosInstance.get<ApiResponse<Contact>>(
+      `/contacts/${id}`
+    );
+    const data = response.data;
+    // Handle various response structures
+    if (data?.data?.contact) {
+      return data.data.contact as Contact;
+    }
+    if (data?.contact) {
+      return data.contact as Contact;
+    }
+    if (data?.data) {
+      return data.data as Contact;
+    }
+    return data as Contact;
+  },
+
+  /**
+   * Create contact (public endpoint)
+   */
+  create: async (data: CreateContactRequest): Promise<Contact> => {
+    const response = await axiosInstance.post<ApiResponse<{ contact: Contact }>>(
+      "/contacts",
+      data
+    );
+    return response.data.data?.contact || response.data.data || response.data;
+  },
+
+  /**
+   * Delete contact
+   */
+  delete: async (id: string): Promise<void> => {
+    await axiosInstance.delete(`/contacts/${id}`);
+  },
+};
+
 // ==================== Export All APIs ====================
 
 const api = {
   auth: authApi,
+  categories: categoriesApi,
+  options: optionsApi,
   products: productsApi,
   cart: cartApi,
   orders: ordersApi,
@@ -980,7 +1622,12 @@ const api = {
   inventory: inventoryApi,
   staffAccounts: staffAccountsApi,
   permissions: permissionsApi,
-   payments: paymentsApi,
+  payments: paymentsApi,
+  placeTags: placeTagsApi,
+  jobPosts: jobPostsApi,
+  jobApplications: jobApplicationsApi,
+  interviews: interviewsApi,
+  contacts: contactsApi,
 };
 
 export default api;

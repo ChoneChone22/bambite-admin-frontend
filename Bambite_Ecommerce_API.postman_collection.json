@@ -1,0 +1,3152 @@
+{
+  "info": {
+    "name": "Bambite E-commerce API",
+    "description": "Complete API collection for Bambite E-commerce Backend with Authentication (httpOnly cookies), Orders, Inventory, Staff Management, Staff Accounts, Permissions, Departments, Payment Management, Job Post Management, Place Tag Management, Job Application Management (with PDF uploads and email notifications), Interview Management, Contact Management, and Product Image Uploads (Cloudinary). All authentication uses httpOnly cookies for security. Postman automatically handles cookies. For API clients, Authorization header with Bearer token is also supported. Product images and job application PDFs are uploaded via multipart/form-data to Cloudinary.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "bambite-api",
+    "version": "2.6.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string",
+      "description": "User access token (short-lived, 15 minutes)"
+    },
+    {
+      "key": "userRefreshToken",
+      "value": "",
+      "type": "string",
+      "description": "User refresh token (long-lived, 7 days)"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string",
+      "description": "Admin access token (short-lived, 15 minutes)"
+    },
+    {
+      "key": "adminRefreshToken",
+      "value": "",
+      "type": "string",
+      "description": "Admin refresh token (long-lived, 7 days)"
+    },
+    {
+      "key": "staffAccountToken",
+      "value": "",
+      "type": "string",
+      "description": "Staff account access token (short-lived, 15 minutes)"
+    },
+    {
+      "key": "staffRefreshToken",
+      "value": "",
+      "type": "string",
+      "description": "Staff account refresh token (long-lived, 7 days)"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orderId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "staffId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "departmentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "staffAccountId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "permissionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "paymentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "placeTagId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "jobPostId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "applyJobId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "interviewId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "contactId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Check if the API is running and database is connected"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "User Authentication",
+      "item": [
+        {
+          "name": "User Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    // Tokens are now in httpOnly cookies, not in response body",
+                  "    // Postman automatically handles cookies, but for Authorization header:",
+                  "    // You can manually set token from cookie or use Authorization header",
+                  "    pm.collectionVariables.set('userId', response.data.user.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/user/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "user", "register"]
+            },
+            "description": "Register a new user account. Password must contain uppercase, lowercase, number, and special character. Tokens are set in httpOnly cookies automatically (accessToken and refreshToken). For API clients, you can still use Authorization header with Bearer token."
+          },
+          "response": []
+        },
+        {
+          "name": "User Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    // Tokens are now in httpOnly cookies, not in response body",
+                  "    // Postman automatically handles cookies for subsequent requests",
+                  "    pm.collectionVariables.set('userId', response.data.user.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/user/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "user", "login"]
+            },
+            "description": "Login with user credentials. Tokens are set in httpOnly cookies automatically (accessToken and refreshToken). Postman automatically handles cookies. For API clients, you can still use Authorization header with Bearer token."
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/user/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "user", "profile"]
+            },
+            "description": "Get authenticated user profile. Uses access token."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Token Management",
+      "item": [
+        {
+          "name": "Refresh Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    // Tokens are now in httpOnly cookies, not in response body",
+                  "    // Postman automatically handles cookies for subsequent requests",
+                  "    // No need to manually set tokens - they're in cookies",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh"]
+            },
+            "description": "Refresh access token using refresh token. Refresh token can come from httpOnly cookie (preferred, automatic) or request body (backward compatibility). New tokens are set in httpOnly cookies automatically. Use this when access token expires (every 15 minutes)."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Logout and revoke refresh token. Refresh token can come from httpOnly cookie (preferred, automatic - Postman handles this) or request body (backward compatibility). Cookies are cleared automatically. Request body can be empty {} if using cookies."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout All Devices",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout-all",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout-all"]
+            },
+            "description": "Logout from all devices. Revokes all refresh tokens for the authenticated user/admin/staff. Requires access token."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin Authentication",
+      "item": [
+        {
+          "name": "Admin Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    // Tokens are now in httpOnly cookies, not in response body",
+                  "    // Postman automatically handles cookies for subsequent requests",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@bambite.com\",\n  \"password\": \"AdminPass123!\",\n  \"name\": \"Admin User\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/admin/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "admin", "register"]
+            },
+            "description": "Register a new admin account. Tokens are set in httpOnly cookies automatically (accessToken and refreshToken). For API clients, you can still use Authorization header with Bearer token."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    // Tokens are now in httpOnly cookies, not in response body",
+                  "    // Postman automatically handles cookies for subsequent requests",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@bambite.com\",\n  \"password\": \"AdminPass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/admin/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "admin", "login"]
+            },
+            "description": "Login with admin credentials. Tokens are set in httpOnly cookies automatically (accessToken and refreshToken). Postman automatically handles cookies. For API clients, you can still use Authorization header with Bearer token."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Admin Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/admin/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "admin", "profile"]
+            },
+            "description": "Get authenticated admin profile"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Staff Account Authentication",
+      "item": [
+        {
+          "name": "Staff Account Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    // Tokens are now in httpOnly cookies, not in response body",
+                  "    // Postman automatically handles cookies for subsequent requests",
+                  "    pm.collectionVariables.set('staffAccountId', response.data.staffAccount.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"staff@bambite.com\",\n  \"password\": \"StaffPass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/staff-accounts/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff-accounts", "login"]
+            },
+            "description": "Login with staff account credentials. Staff must be active to login. Tokens are set in httpOnly cookies automatically (accessToken - 15 min, refreshToken - 7 days). Postman automatically handles cookies. If account has mustChangePassword=true (first login with auto-generated password), login will succeed (200) but tokens will NOT be set in cookies. Instead, response indicates password change is required. Use POST /staff-accounts/change-password endpoint to set a new password, then login again."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Staff Account Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{staffAccountToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/staff-accounts/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff-accounts", "profile"]
+            },
+            "description": "Get authenticated staff account profile with permissions"
+          },
+          "response": []
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"staff@bambite.com\",\n  \"currentPassword\": \"TempPass123!\",\n  \"newPassword\": \"NewSecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/staff-accounts/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff-accounts", "change-password"]
+            },
+            "description": "Change staff account password. Can be used WITHOUT authentication for first login (when mustChangePassword=true) by providing email, currentPassword, and newPassword. For authenticated users, provide currentPassword and newPassword (accountId is taken from token, email not needed). After successful password change, mustChangePassword flag is cleared. New password must meet complexity requirements: 8+ chars, uppercase, lowercase, number, special char. After changing password, login again to get tokens in httpOnly cookies."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "Get All Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "category",
+                  "value": "MAIN_DISH",
+                  "description": "Optional: Filter by category. Values: NOODLE, FRIED_RICE, MAIN_DISH, SOUP, SALAD_SIDE_DISH, SIDE_DISH, APPETIZER",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional: Search term to filter by name, description, or ingredients",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Optional: Field to sort by (default: createdAt)",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "Optional: Sort direction - asc or desc (default: desc)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get all products (public - no authentication required). Supports filtering by category, search, pagination, and sorting. Enable query parameters as needed."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}"]
+            },
+            "description": "Get a single product by ID (public - no authentication required)"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('productId', response.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "Mohinga",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Traditional Myanmar fish noodle soup",
+                  "type": "text"
+                },
+                {
+                  "key": "category",
+                  "value": "MAIN_DISH",
+                  "type": "text",
+                  "description": "Category: NOODLE, FRIED_RICE, MAIN_DISH, SOUP, SALAD_SIDE_DISH, SIDE_DISH, APPETIZER"
+                },
+                {
+                  "key": "ingredients",
+                  "value": "Rice noodles, fish broth, banana stem, boiled eggs",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "3500",
+                  "type": "text"
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "100",
+                  "type": "text"
+                },
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": [],
+                  "description": "Upload product images (up to 20 images). Supported formats: JPEG, JPG, PNG, WebP. Max size: 5MB per image."
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"]
+            },
+            "description": "Create a new product with images. Uses multipart/form-data. At least one image is REQUIRED. Requires: Admin OR Staff with product_management permission. Category values: NOODLE, FRIED_RICE, MAIN_DISH, SOUP, SALAD_SIDE_DISH, SIDE_DISH, APPETIZER. Image field name must be 'images' (plural). You can upload multiple images by selecting multiple files in Postman (up to 20 images)."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "Mohinga Deluxe",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "price",
+                  "value": "4000",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "stockQuantity",
+                  "value": "150",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": [],
+                  "description": "Add new images (optional). New images will be added to existing ones. To replace all images, add query parameter: ?deleteOldImages=true"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}?deleteOldImages=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}"],
+              "query": [
+                {
+                  "key": "deleteOldImages",
+                  "value": "false",
+                  "description": "Set to 'true' to delete all old images and replace with new ones. Set to 'false' (default) to add new images to existing ones."
+                }
+              ]
+            },
+            "description": "Update product details and/or images. Uses multipart/form-data. All fields are optional. To update only product data without images, use form fields only (no file upload). To update images: include 'images' file field. By default, when new images are uploaded, all old images are deleted from Cloudinary and replaced with new ones. To add new images to existing ones (keep old + add new), set query parameter deleteOldImages=false. To remove all images, set deleteOldImages=true without uploading files. Requires: Admin OR Staff with product_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}"]
+            },
+            "description": "Delete a product. All associated images are automatically deleted from Cloudinary. Requires: Admin OR Staff with product_management permission"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Create Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('orderId', response.data.order.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 2\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders"]
+            },
+            "description": "Create new order with automatic stock deduction and inventory tracking. Requires: Authenticated User (customer)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Orders",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "description": "Optional: PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED"
+                }
+              ]
+            },
+            "description": "Get all orders. Requires: Admin OR Staff with order_management permission (sees all orders). Users see only their own orders."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Order by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{orderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "{{orderId}}"]
+            },
+            "description": "Get specific order details. Requires: Admin OR Staff with order_management permission (sees any order). Users see only their own orders."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Order Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PROCESSING\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{orderId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "{{orderId}}", "status"]
+            },
+            "description": "Update order status. Requires: Admin OR Staff with order_management permission. Status values: PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED"
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Order",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{orderId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "{{orderId}}", "cancel"]
+            },
+            "description": "Cancel order and restore stock. Requires: Authenticated User (can only cancel own pending orders)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Cart",
+      "item": [
+        {
+          "name": "Get Cart",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cart",
+              "host": ["{{baseUrl}}"],
+              "path": ["cart"]
+            },
+            "description": "Get user's cart with all items and totals. Requires: Authenticated User"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Cart Item Count",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cart/count",
+              "host": ["{{baseUrl}}"],
+              "path": ["cart", "count"]
+            },
+            "description": "Get total count of items in cart. Requires: Authenticated User"
+          },
+          "response": []
+        },
+        {
+          "name": "Add to Cart",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cart/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["cart", "items"]
+            },
+            "description": "Add item to cart or update quantity if already exists. Requires: Authenticated User"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Cart Item Quantity",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cart/items/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["cart", "items", "{{productId}}"]
+            },
+            "description": "Update quantity of specific cart item. Requires: Authenticated User"
+          },
+          "response": []
+        },
+        {
+          "name": "Remove from Cart",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cart/items/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["cart", "items", "{{productId}}"]
+            },
+            "description": "Remove specific item from cart. Requires: Authenticated User"
+          },
+          "response": []
+        },
+        {
+          "name": "Clear Cart",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cart",
+              "host": ["{{baseUrl}}"],
+              "path": ["cart"]
+            },
+            "description": "Clear all items from cart. Requires: Authenticated User"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Inventory Management",
+      "item": [
+        {
+          "name": "Record Inventory Change",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantityChange\": 50\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventory",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory"]
+            },
+            "description": "Manually record inventory change. Requires: Admin OR Staff with inventory_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product Inventory History",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/product/{{productId}}?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "product", "{{productId}}"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get all inventory changes for a specific product. Requires: Admin OR Staff with inventory_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Inventory Changes",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/changes?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "changes"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get all inventory changes across all products. Requires: Admin OR Staff with inventory_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Inventory Summary",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "summary"]
+            },
+            "description": "Get inventory summary with low stock alerts. Requires: Admin OR Staff with inventory_management permission"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Staff Management",
+      "item": [
+        {
+          "name": "Create Staff",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('staffId', response.data.staff.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"position\": \"Cashier\",\n  \"salary\": 500000,\n  \"tax\": 25000,\n  \"totalBonus\": 50000,\n  \"status\": \"active\",\n  \"departmentId\": \"{{departmentId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/staff",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff"]
+            },
+            "description": "Create new staff member. Employee ID is auto-generated based on department. Net pay is auto-calculated (salary + totalBonus - tax). Requires: Admin OR Staff with staff_management permission. Status: active, on_leave, quit"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Staff",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/staff?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "description": "Optional: active, on_leave, quit"
+                }
+              ]
+            },
+            "description": "Get all staff members. Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Staff by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/staff/{{staffId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff", "{{staffId}}"]
+            },
+            "description": "Get staff member by ID. Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Staff",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"salary\": 550000,\n  \"totalBonus\": 60000,\n  \"tax\": 30000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/staff/{{staffId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff", "{{staffId}}"]
+            },
+            "description": "Update staff member. Net pay is auto-recalculated. If department changes, employee ID is regenerated. Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Staff",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/staff/{{staffId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff", "{{staffId}}"]
+            },
+            "description": "Delete staff member. Employee IDs in the department are automatically renumbered. Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Payroll Summary",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/staff/payroll/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff", "payroll", "summary"]
+            },
+            "description": "Get payroll summary with totals. Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Department Management",
+      "item": [
+        {
+          "name": "Create Department",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('departmentId', response.data.department.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Kitchen\",\n  \"shortName\": \"KIT\",\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/departments",
+              "host": ["{{baseUrl}}"],
+              "path": ["departments"]
+            },
+            "description": "Create a new department. shortName is used for employee ID prefix (e.g., KIT-0001). Requires: Admin OR Staff with department_management permission. Status: active, inactive"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Departments",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/departments?status=active",
+              "host": ["{{baseUrl}}"],
+              "path": ["departments"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "active",
+                  "description": "Optional: active, inactive"
+                }
+              ]
+            },
+            "description": "Get all departments. Returns all departments - no pagination. Use query parameter ?status=active to filter active departments only (real-world REST approach). Optional status filter: active, inactive. Requires: Admin OR Staff with department_management OR staff_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Department by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/departments/{{departmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["departments", "{{departmentId}}"]
+            },
+            "description": "Get department by ID. Requires: Admin OR Staff with department_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Department",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Kitchen Department\",\n  \"shortName\": \"KIT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/departments/{{departmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["departments", "{{departmentId}}"]
+            },
+            "description": "Update department. Requires: Admin OR Staff with department_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Department Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"inactive\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/departments/{{departmentId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["departments", "{{departmentId}}", "status"]
+            },
+            "description": "Update department status only. Cannot deactivate if staff are assigned. Requires: Admin OR Staff with department_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Department",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/departments/{{departmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["departments", "{{departmentId}}"]
+            },
+            "description": "Delete department. Cannot delete if staff are assigned. Requires: Admin OR Staff with department_management permission"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Staff Account Management",
+      "item": [
+        {
+          "name": "Create Staff Account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('staffAccountId', response.data.staffAccount.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"staffId\": \"{{staffId}}\",\n  \"email\": \"staff@bambite.com\",\n  \"password\": \"StaffPass123!\",\n  \"permissionIds\": []\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/staff-accounts",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff-accounts"]
+            },
+            "description": "Create staff account for a staff member. Staff must be active. Password is OPTIONAL - if not provided, a secure 16-character password will be auto-generated and sent via email. If password is provided, it must meet complexity requirements. Account creation email is sent asynchronously with login credentials. Staff will be required to change password on first login (mustChangePassword=true). Permission IDs are optional. Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Staff Accounts",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/staff-accounts?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff-accounts"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get all staff accounts with permissions. Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Staff Account by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/staff-accounts/{{staffAccountId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff-accounts", "{{staffAccountId}}"]
+            },
+            "description": "Get staff account by ID with permissions. Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Staff Account",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newemail@bambite.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/staff-accounts/{{staffAccountId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff-accounts", "{{staffAccountId}}"]
+            },
+            "description": "Update staff account (email or password). Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Permissions (PUT)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permissionIds\": [\n    \"{{permissionId}}\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/staff-accounts/{{staffAccountId}}/permissions",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff-accounts", "{{staffAccountId}}", "permissions"]
+            },
+            "description": "Update permissions for staff account (PUT method). Replaces all existing permissions with the provided list. Empty array removes all permissions. Get permission IDs from GET /permissions. Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Assign Permissions (POST)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permissionIds\": [\n    \"{{permissionId}}\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/staff-accounts/{{staffAccountId}}/permissions",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff-accounts", "{{staffAccountId}}", "permissions"]
+            },
+            "description": "Assign permissions to staff account (POST method, backward compatible). Same as PUT - replaces all existing permissions. Get permission IDs from GET /permissions. Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Resend Account Creation Email",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/staff-accounts/{{staffAccountId}}/resend-email",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff-accounts", "{{staffAccountId}}", "resend-email"]
+            },
+            "description": "Resend account creation email with a new auto-generated temporary password. Useful if email delivery failed or staff lost their credentials. The new password will be sent to the staff account's email address. Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Staff Account",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/staff-accounts/{{staffAccountId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["staff-accounts", "{{staffAccountId}}"]
+            },
+            "description": "Delete staff account. Staff's hasAccount flag is automatically set to false. Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Permissions",
+      "item": [
+        {
+          "name": "Get All Permissions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data.permissions && response.data.permissions.length > 0) {",
+                  "        pm.collectionVariables.set('permissionId', response.data.permissions[0].id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/permissions",
+              "host": ["{{baseUrl}}"],
+              "path": ["permissions"]
+            },
+            "description": "Get all available permissions (read-only). Use this to get permission IDs for assigning to staff accounts. Permissions are fixed via enum and cannot be modified via API. Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Permission by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/permissions/{{permissionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["permissions", "{{permissionId}}"]
+            },
+            "description": "Get permission by ID with assigned staff accounts. Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Password Generation",
+      "item": [
+        {
+          "name": "Generate Strong Password",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/password?length=16",
+              "host": ["{{baseUrl}}"],
+              "path": ["password"],
+              "query": [
+                {
+                  "key": "length",
+                  "value": "16",
+                  "description": "Password length (12-32, default: 16)"
+                }
+              ]
+            },
+            "description": "Generate a strong password. Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payment Management",
+      "item": [
+        {
+          "name": "Create Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('paymentId', response.data.payment.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"staffId\": \"{{staffId}}\",\n  \"bonus\": 50000,\n  \"tax\": 30000,\n  \"note\": \"Monthly salary payment\",\n  \"paymentMethod\": \"mobile_banking\",\n  \"paidMonth\": \"2025-01\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments"]
+            },
+            "description": "Create a new payment record for a staff member. Salary is automatically retrieved from staff model. totalPayment is auto-calculated (salary + bonus - tax). paidMonth format: YYYY-MM (e.g., 2025-01). One payment per staff per month (enforced by unique constraint). Payment method: mobile_banking (default) or cash. Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Payments",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "paidMonth",
+                  "value": "2025-01",
+                  "description": "Optional: Filter by paid month (YYYY-MM format)"
+                },
+                {
+                  "key": "isPaid",
+                  "value": "true",
+                  "description": "Optional: Filter by payment status (true/false)"
+                }
+              ]
+            },
+            "description": "Get all payment records with pagination and optional filters. Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Payment by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/{{paymentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "{{paymentId}}"]
+            },
+            "description": "Get payment record by ID with staff details. Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Payments by Staff ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/staff/{{staffId}}?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "staff", "{{staffId}}"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get all payment records for a specific staff member. Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Payment Summary",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "summary"]
+            },
+            "description": "Get payment summary statistics (total payments, total amount, average payment, etc.). Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Payment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bonus\": 60000,\n  \"tax\": 35000,\n  \"note\": \"Updated payment with bonus\",\n  \"paymentMethod\": \"cash\",\n  \"isPaid\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/{{paymentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "{{paymentId}}"]
+            },
+            "description": "Update payment record. totalPayment is auto-recalculated when bonus or tax changes. Note: salary cannot be updated (it's from staff model at time of payment). Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Payment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/{{paymentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "{{paymentId}}"]
+            },
+            "description": "Delete payment record. Staff's netPay and totalBonus will be recalculated based on remaining payments. Requires: Admin OR Staff with staff_management permission"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Place Tag Management",
+      "item": [
+        {
+          "name": "Create Place Tag",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('placeTagId', response.data.placeTag.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Yangon\",\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/place-tags",
+              "host": ["{{baseUrl}}"],
+              "path": ["place-tags"]
+            },
+            "description": "Create a new place tag. Place tags are used to categorize job posts by location. Requires: Admin only. Status: active (default), inactive"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Place Tags",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/place-tags?status=active",
+              "host": ["{{baseUrl}}"],
+              "path": ["place-tags"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "active",
+                  "description": "Optional: active, inactive"
+                }
+              ]
+            },
+            "description": "Get all place tags. Returns all place tags - no pagination. Use query parameter ?status=active to filter active place tags only. Requires: Admin only"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Active Place Tags",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/place-tags/active",
+              "host": ["{{baseUrl}}"],
+              "path": ["place-tags", "active"]
+            },
+            "description": "Get active place tags only (for job post creation). Returns only active place tags that are not deleted. Requires: Admin only"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Place Tag by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/place-tags/{{placeTagId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["place-tags", "{{placeTagId}}"]
+            },
+            "description": "Get place tag by ID with job post count. Requires: Admin only"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Place Tag",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Yangon City\",\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/place-tags/{{placeTagId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["place-tags", "{{placeTagId}}"]
+            },
+            "description": "Update place tag (name and/or status). Cannot set status to inactive if there are job posts associated with this place tag. Requires: Admin only"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Place Tag Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"inactive\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/place-tags/{{placeTagId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["place-tags", "{{placeTagId}}", "status"]
+            },
+            "description": "Update place tag status only. Cannot set status to inactive if there are job posts associated with this place tag. Requires: Admin only"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Job Post Management",
+      "item": [
+        {
+          "name": "Get All Job Posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/job-posts?placeTagId={{placeTagId}}&search=developer",
+              "host": ["{{baseUrl}}"],
+              "path": ["job-posts"],
+              "query": [
+                {
+                  "key": "placeTagId",
+                  "value": "{{placeTagId}}",
+                  "description": "Optional: Filter by place tag ID",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "developer",
+                  "description": "Optional: Search term to filter by title",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get all job posts (public - no authentication required). Can be filtered by placeTagId and search query. Supports filtering by place tag and searching by title."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Job Post by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/job-posts/{{jobPostId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["job-posts", "{{jobPostId}}"]
+            },
+            "description": "Get a single job post by ID (public - no authentication required). Returns full job post details including tasks, required qualifications, and job details."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Job Post",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('jobPostId', response.data.jobPost.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Senior Backend Developer\",\n  \"placeTagId\": \"{{placeTagId}}\",\n  \"tasks\": {\n    \"title\": \"Key Responsibilities\",\n    \"descriptions\": [\n      \"Design and develop RESTful APIs using Node.js and TypeScript\",\n      \"Optimize database queries and ensure data integrity\",\n      \"Implement authentication and authorization systems\",\n      \"Collaborate with frontend developers and product managers\"\n    ]\n  },\n  \"requiredQualifications\": {\n    \"title\": \"Requirements\",\n    \"descriptions\": [\n      \"5+ years of backend development experience\",\n      \"Strong knowledge of Node.js, TypeScript, and Express.js\",\n      \"Experience with Prisma ORM and MySQL databases\",\n      \"Familiarity with RESTful API design principles\",\n      \"Understanding of authentication and security best practices\"\n    ]\n  },\n  \"jobDetails\": {\n    \"workingHours\": \"9:00 AM - 6:00 PM (Monday to Friday)\",\n    \"contract\": true,\n    \"salary\": \"Competitive salary based on experience (2,000,000 - 3,500,000 MMK)\",\n    \"closeDate\": \"2025-02-28T23:59:59Z\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/job-posts",
+              "host": ["{{baseUrl}}"],
+              "path": ["job-posts"]
+            },
+            "description": "Create a new job post. Can only be created with active place tags. All fields are required. closeDate must be a valid ISO 8601 date string. Requires: Admin only"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Job Post",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Senior Backend Developer - Updated\",\n  \"placeTagId\": \"{{placeTagId}}\",\n  \"jobDetails\": {\n    \"workingHours\": \"9:00 AM - 6:00 PM (Monday to Friday)\",\n    \"contract\": true,\n    \"salary\": \"Competitive salary based on experience (2,500,000 - 4,000,000 MMK)\",\n    \"closeDate\": \"2025-03-15T23:59:59Z\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/job-posts/{{jobPostId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["job-posts", "{{jobPostId}}"]
+            },
+            "description": "Update job post. All fields are optional. If updating placeTagId, the new place tag must be active. If updating tasks, requiredQualifications, or jobDetails, provide the complete object structure. Requires: Admin only"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Job Post",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/job-posts/{{jobPostId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["job-posts", "{{jobPostId}}"]
+            },
+            "description": "Delete a job post. Requires: Admin only"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Job Application Management",
+      "item": [
+        {
+          "name": "Create Job Application",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('applyJobId', response.data.application.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "jobPostId",
+                  "value": "{{jobPostId}}",
+                  "type": "text",
+                  "description": "Job post ID to apply for"
+                },
+                {
+                  "key": "name",
+                  "value": "John Doe",
+                  "type": "text",
+                  "description": "Applicant's full name"
+                },
+                {
+                  "key": "email",
+                  "value": "john.doe@example.com",
+                  "type": "text",
+                  "description": "Applicant's email address"
+                },
+                {
+                  "key": "joiningReason",
+                  "value": "I am passionate about backend development and would love to contribute to your team.",
+                  "type": "text",
+                  "description": "Optional: Reason for wanting to join",
+                  "disabled": true
+                },
+                {
+                  "key": "additionalQuestion",
+                  "value": "I have 5+ years of experience in Node.js and TypeScript.",
+                  "type": "text",
+                  "description": "Optional: Additional information or answers to questions",
+                  "disabled": true
+                },
+                {
+                  "key": "coverLetter",
+                  "value": "Dear Hiring Manager, I am writing to express my interest in the Senior Backend Developer position...",
+                  "type": "text",
+                  "description": "Optional: Cover letter text",
+                  "disabled": true
+                },
+                {
+                  "key": "uploadedFile",
+                  "type": "file",
+                  "src": [],
+                  "description": "Optional: Upload resume/CV as PDF file. Max size: 3MB. Only PDF files are allowed."
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apply-jobs",
+              "host": ["{{baseUrl}}"],
+              "path": ["apply-jobs"]
+            },
+            "description": "Submit a job application (Public - no authentication required). Uses multipart/form-data. PDF file upload is optional. A confirmation email will be sent to the applicant's email address upon successful submission. All text fields except name and email are optional."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Job Applications",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/apply-jobs?jobPostId={{jobPostId}}&status=pending&email=john",
+              "host": ["{{baseUrl}}"],
+              "path": ["apply-jobs"],
+              "query": [
+                {
+                  "key": "jobPostId",
+                  "value": "{{jobPostId}}",
+                  "description": "Optional: Filter by job post ID",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "description": "Optional: Filter by status (pending, approved, rejected)",
+                  "disabled": true
+                },
+                {
+                  "key": "email",
+                  "value": "john",
+                  "description": "Optional: Search by email address",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get all job applications with optional filters. Can filter by jobPostId, status, or search by email. Requires: Admin only"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Job Application by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/apply-jobs/{{applyJobId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["apply-jobs", "{{applyJobId}}"]
+            },
+            "description": "Get a single job application by ID with full details including job post information. Requires: Admin only"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Job Application Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apply-jobs/{{applyJobId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["apply-jobs", "{{applyJobId}}", "status"]
+            },
+            "description": "Update job application status. Status values: pending (default), approved, rejected. Requires: Admin only"
+          },
+          "response": []
+        },
+        {
+          "name": "Send Email to Applicant",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Thank you for your application. We have reviewed your profile and would like to inform you that your application has been approved. We will contact you soon with next steps.\",\n  \"notes\": \"Additional notes for internal reference (optional)\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/apply-jobs/{{applyJobId}}/send-email",
+              "host": ["{{baseUrl}}"],
+              "path": ["apply-jobs", "{{applyJobId}}", "send-email"]
+            },
+            "description": "Send a custom email to the applicant. The email will include the applicant's name, job details, current application status, the custom message, and optional notes. Requires: Admin only"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Job Application",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/apply-jobs/{{applyJobId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["apply-jobs", "{{applyJobId}}"]
+            },
+            "description": "Delete a job application. The uploaded PDF file (if any) will be automatically deleted from Cloudinary. Requires: Admin only"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Interview Management",
+      "item": [
+        {
+          "name": "Create Interview",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('interviewId', response.data.interview.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"applyJobId\": \"{{applyJobId}}\",\n  \"meetingUrl\": \"https://meet.google.com/abc-defg-hij\",\n  \"meetingDate\": \"2025-02-15\",\n  \"meetingTime\": \"14:30:00\",\n  \"notes\": \"Please prepare your portfolio and be ready to discuss your previous projects. The interview will last approximately 45 minutes.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/interviews",
+              "host": ["{{baseUrl}}"],
+              "path": ["interviews"]
+            },
+            "description": "Create a new interview for an approved job application. Can only be created for applications with status 'approved'. An interview invitation email will be automatically sent to the applicant with meeting details. Meeting date format: YYYY-MM-DD (ISO 8601). Meeting time format: HH:MM:SS or HH:MM (UTC). Requires: Admin only"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Interviews",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/interviews?applyJobId={{applyJobId}}&meetingDate=2025-02-15",
+              "host": ["{{baseUrl}}"],
+              "path": ["interviews"],
+              "query": [
+                {
+                  "key": "applyJobId",
+                  "value": "{{applyJobId}}",
+                  "description": "Optional: Filter by apply job ID",
+                  "disabled": true
+                },
+                {
+                  "key": "meetingDate",
+                  "value": "2025-02-15",
+                  "description": "Optional: Filter by meeting date (YYYY-MM-DD)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get all interviews with optional filters. Can filter by applyJobId or meetingDate. Results are sorted by meeting date and time (ascending). Requires: Admin only"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Interview by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/interviews/{{interviewId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["interviews", "{{interviewId}}"]
+            },
+            "description": "Get a single interview by ID with full details including job application and job post information. Requires: Admin only"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Interview by Apply Job ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/interviews/by-apply-job/{{applyJobId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["interviews", "by-apply-job", "{{applyJobId}}"]
+            },
+            "description": "Get interview by apply job ID. Useful for checking if an interview already exists for a specific job application. Requires: Admin only"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Interview",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"meetingUrl\": \"https://meet.google.com/xyz-uvwx-rst\",\n  \"meetingDate\": \"2025-02-16\",\n  \"meetingTime\": \"15:00:00\",\n  \"notes\": \"Updated interview notes\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/interviews/{{interviewId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["interviews", "{{interviewId}}"]
+            },
+            "description": "Update interview details. All fields are optional. Meeting date format: YYYY-MM-DD (ISO 8601). Meeting time format: HH:MM:SS or HH:MM (UTC). Requires: Admin only"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Interview",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/interviews/{{interviewId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["interviews", "{{interviewId}}"]
+            },
+            "description": "Delete an interview. Requires: Admin only"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Contact Management",
+      "item": [
+        {
+          "name": "Create Contact Submission",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('contactId', response.data.contact.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"reason\": \"general_inquiry\",\n  \"message\": \"I would like to know more about your products and services. Please contact me at your earliest convenience.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/contacts",
+              "host": ["{{baseUrl}}"],
+              "path": ["contacts"]
+            },
+            "description": "Submit a contact form (Public - no authentication required). Reason options: general_inquiry, product_question, collaboration, feedback, other. All fields are required."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Contact Submissions",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/contacts?reason=general_inquiry&email=john",
+              "host": ["{{baseUrl}}"],
+              "path": ["contacts"],
+              "query": [
+                {
+                  "key": "reason",
+                  "value": "general_inquiry",
+                  "description": "Optional: Filter by reason (general_inquiry, product_question, collaboration, feedback, other)",
+                  "disabled": true
+                },
+                {
+                  "key": "email",
+                  "value": "john",
+                  "description": "Optional: Search by email address",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get all contact submissions with optional filters. Can filter by reason or search by email. Requires: Admin only"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Contact Submission by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/contacts/{{contactId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["contacts", "{{contactId}}"]
+            },
+            "description": "Get a single contact submission by ID. Requires: Admin only"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Contact Submission",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/contacts/{{contactId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["contacts", "{{contactId}}"]
+            },
+            "description": "Delete a contact submission. Requires: Admin only"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

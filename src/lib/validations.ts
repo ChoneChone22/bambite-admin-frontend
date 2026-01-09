@@ -3,7 +3,6 @@
  */
 
 import * as Yup from "yup";
-import { ProductCategory } from "@/src/types/api";
 
 // ==================== Auth Schemas ====================
 
@@ -36,21 +35,19 @@ export const registerSchema = Yup.object().shape({
 });
 
 // ==================== Product Schemas ====================
-
+// Note: productSchema is now defined inline in product management pages
+// to support dynamic categories and image uploads
+// This legacy schema is kept for backward compatibility
 export const productSchema = Yup.object().shape({
   name: Yup.string()
-    .min(3, "Product name must be at least 3 characters")
-    .max(100, "Product name must not exceed 100 characters")
+    .min(2, "Product name must be at least 2 characters")
+    .max(200, "Product name must not exceed 200 characters")
     .required("Product name is required"),
-  category: Yup.string()
-    .oneOf(Object.values(ProductCategory), "Invalid category")
-    .required("Category is required"),
-  ingredients: Yup.string()
-    .min(10, "Ingredients must be at least 10 characters")
-    .required("Ingredients are required"),
+  categoryId: Yup.string().required("Category is required"),
+  description: Yup.string().max(1000, "Description must not exceed 1000 characters"),
+  ingredients: Yup.string().max(500, "Ingredients must not exceed 500 characters"),
   price: Yup.number()
     .positive("Price must be greater than 0")
-    .max(10000, "Price must not exceed $10,000")
     .required("Price is required"),
   stockQuantity: Yup.number()
     .integer("Stock quantity must be a whole number")

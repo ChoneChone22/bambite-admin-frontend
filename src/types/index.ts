@@ -16,10 +16,13 @@ export interface LoginFormValues {
 
 export interface ProductFormValues {
   name: string;
-  category: import("./api").ProductCategory;
-  ingredients: string;
+  description?: string;
+  categoryId: string; // Changed from category enum to categoryId UUID
+  ingredients?: string;
   price: number;
   stockQuantity: number;
+  optionIds?: string[];
+  images?: File[];
 }
 
 // ==================== State Types ====================
@@ -51,6 +54,8 @@ export interface SelectOption<T = string> {
 
 export const PLACEHOLDER_IMAGE = "https://placehold.co/600x400";
 
+// PRODUCT_CATEGORIES is deprecated - use dynamic categories from API instead
+// Keeping for backward compatibility during migration
 export const PRODUCT_CATEGORIES: SelectOption<
   import("./api").ProductCategory
 >[] = [

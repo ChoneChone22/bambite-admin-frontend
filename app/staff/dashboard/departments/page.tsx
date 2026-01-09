@@ -117,13 +117,14 @@ export default function DepartmentManagementPage() {
   ) => {
     try {
       await api.departments.create(values);
+      setSubmitting(false); // Stop loading state
       resetForm();
-      setShowModal(false);
+      setShowModal(false); // Close modal immediately
       await fetchDepartments();
+      await modal.alert("Department created successfully", "Success", "success");
     } catch (err: any) {
+      setSubmitting(false); // Stop loading state on error
       await modal.alert(err.message || "Failed to create department", "Error", "error");
-    } finally {
-      setSubmitting(false);
     }
   };
 

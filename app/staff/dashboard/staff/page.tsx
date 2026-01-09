@@ -145,16 +145,22 @@ export default function StaffManagementPage() {
     try {
       if (editingStaff) {
         await api.staff.update(editingStaff.id, values);
+        setSubmitting(false); // Stop loading state
+        resetForm();
+        setShowModal(false); // Close modal immediately
+        await fetchData();
+        await modal.alert("Staff member updated successfully", "Success", "success");
       } else {
         await api.staff.create(values);
+        setSubmitting(false); // Stop loading state
+        resetForm();
+        setShowModal(false); // Close modal immediately
+        await fetchData();
+        await modal.alert("Staff member created successfully", "Success", "success");
       }
-      resetForm();
-      setShowModal(false);
-      await fetchData();
     } catch (err: any) {
+      setSubmitting(false); // Stop loading state on error
       await modal.alert(err.message || "Failed to save staff member", "Error", "error");
-    } finally {
-      setSubmitting(false);
     }
   };
 

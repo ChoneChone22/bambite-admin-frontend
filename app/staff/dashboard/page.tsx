@@ -43,10 +43,16 @@ export default function StaffDashboardPage() {
         // Products stat (requires PRODUCT_MANAGEMENT)
         if (permissionCodes.includes("PRODUCT_MANAGEMENT")) {
           statsPromises.push(
-            api.products.getAll({}).then((products) => ({
-              type: "products",
-              value: Array.isArray(products) ? products.length : 0,
-            }))
+            api.products.getAll({}).then((productsResponse) => {
+              // Extract products array from response object { data: Product[], meta?: {...} }
+              const productsArray = Array.isArray(productsResponse)
+                ? productsResponse
+                : productsResponse.data || [];
+              return {
+                type: "products",
+                value: productsArray.length,
+              };
+            })
           );
         }
 

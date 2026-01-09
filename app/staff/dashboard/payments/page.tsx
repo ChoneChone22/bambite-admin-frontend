@@ -133,6 +133,11 @@ export default function PaymentManagementPage() {
           paymentMethod: values.paymentMethod,
           isPaid: values.isPaid,
         });
+        setSubmitting(false); // Stop loading state
+        resetForm();
+        setShowModal(false); // Close modal immediately
+        await fetchData();
+        await modal.alert("Payment updated successfully", "Success", "success");
       } else {
         await api.payments.create({
           staffId: values.staffId,
@@ -142,14 +147,15 @@ export default function PaymentManagementPage() {
           paymentMethod: values.paymentMethod,
           paidMonth: values.paidMonth,
         });
+        setSubmitting(false); // Stop loading state
+        resetForm();
+        setShowModal(false); // Close modal immediately
+        await fetchData();
+        await modal.alert("Payment created successfully", "Success", "success");
       }
-      resetForm();
-      setShowModal(false);
-      await fetchData();
     } catch (err: any) {
+      setSubmitting(false); // Stop loading state on error
       await modal.alert(err.message || "Failed to save payment", "Error", "error");
-    } finally {
-      setSubmitting(false);
     }
   };
 

@@ -5,6 +5,8 @@
 
 // ==================== Enums ====================
 
+// ProductCategory enum is deprecated - use Category model instead
+// Keeping for backward compatibility during migration
 export enum ProductCategory {
   SOUP = "SOUP",
   SALAD = "SALAD",
@@ -51,14 +53,51 @@ export interface User {
   updatedAt?: string;
 }
 
+// ==================== Category Model ====================
+
+export interface Category {
+  id: string;
+  name: string;
+  status: "active" | "inactive";
+  createdAt?: string;
+  updatedAt?: string;
+  _count?: {
+    products: number;
+  };
+}
+
+// ==================== Option Model ====================
+
+export interface Option {
+  id: string;
+  name: string; // unique identifier (lowercase, no spaces)
+  displayName: string; // user-friendly display name
+  optionLists: string[]; // array of option values
+  createdAt?: string;
+  updatedAt?: string;
+  _count?: {
+    products: number;
+  };
+}
+
+// ==================== Product Model ====================
+
 export interface Product {
   id: string;
   name: string;
-  category: ProductCategory;
-  ingredients: string;
+  thaiName?: string | null; // Thai name (optional)
+  description?: string;
+  categoryId: string; // Changed from category enum to categoryId UUID
+  category?: Category; // Nested category object
+  ingredients?: string;
   price: number;
   stockQuantity: number;
-  imageUrl?: string;
+  imageUrls?: string[]; // Changed from imageUrl to imageUrls array
+  productOptions?: Array<{
+    id: string;
+    option: Option;
+  }>;
+  optionIds?: string[]; // Array of option UUIDs
   createdAt?: string;
   updatedAt?: string;
 }
@@ -72,7 +111,7 @@ export interface CartItem {
   quantity: number;
   subtotal: number;
   stockQuantity: number;
-  category: ProductCategory;
+  category?: Category; // Category object: { id, name, status } - optional for backward compatibility
 }
 
 export interface OrderItem {
@@ -137,7 +176,7 @@ export interface Staff {
 export interface InventoryLog {
   id: string;
   productId: string;
-  product?: Product;
+  product?: Product; // Product includes category as object
   reason: InventoryReason;
   quantityChange: number;
   previousQuantity: number;
@@ -196,18 +235,29 @@ export interface RegisterRequest {
 
 export interface CreateProductRequest {
   name: string;
-  category: ProductCategory;
-  ingredients: string;
+  thaiName?: string; // Thai name (optional)
+  description?: string;
+  categoryId: string; // UUID of category
+  ingredients?: string;
   price: number;
   stockQuantity: number;
+  optionIds?: string[]; // Array of option UUIDs
+  images: File[]; // Array of image files (required, at least 1)
 }
 
 export interface UpdateProductRequest {
   name?: string;
-  category?: ProductCategory;
+  thaiName?: string; // Thai name (optional)
+  description?: string;
+  categoryId?: string; // UUID of category
   ingredients?: string;
   price?: number;
   stockQuantity?: number;
+  optionIds?: string[]; // Array of option UUIDs
+  images?: File[]; // New images to add
+  deleteOldImages?: boolean; // If true, replace all images; if false, add to existing (default: false)
+  removeImageUrls?: string[]; // Array of image URLs to remove (NEW)
+  imageUrls?: string[]; // Array of image URLs to keep (final list) (NEW)
 }
 
 export interface AddToCartRequest {
@@ -337,10 +387,40 @@ export interface PaginationParams {
 }
 
 export interface ProductFilters extends PaginationParams {
-  category?: ProductCategory;
-  minPrice?: number;
-  maxPrice?: number;
+  category?: string; // categoryId (UUID) instead of enum
   search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+// ==================== Category API Types ====================
+
+export interface CreateCategoryRequest {
+  name: string;
+  status?: "active" | "inactive";
+}
+
+export interface UpdateCategoryRequest {
+  name?: string;
+  status?: "active" | "inactive";
+}
+
+export interface CategoryFilters {
+  status?: "active" | "inactive";
+}
+
+// ==================== Option API Types ====================
+
+export interface CreateOptionRequest {
+  name: string; // unique identifier (lowercase, no spaces)
+  displayName: string; // user-friendly display name
+  optionLists: string[]; // array of option values
+}
+
+export interface UpdateOptionRequest {
+  name?: string;
+  displayName?: string;
+  optionLists?: string[];
 }
 
 export interface OrderFilters extends PaginationParams {
@@ -353,4 +433,206 @@ export interface OrderFilters extends PaginationParams {
 export interface PaymentFilters extends PaginationParams {
   paidMonth?: string;
   isPaid?: boolean;
+}
+
+// ==================== Place Tag Model ====================
+
+export interface PlaceTag {
+  id: string;
+  name: string;
+  status: "active" | "inactive";
+  createdAt?: string;
+  updatedAt?: string;
+  _count?: {
+    jobPosts: number;
+  };
+}
+
+export interface CreatePlaceTagRequest {
+  name: string;
+  status?: "active" | "inactive";
+}
+
+export interface UpdatePlaceTagRequest {
+  name?: string;
+  status?: "active" | "inactive";
+}
+
+export interface PlaceTagFilters {
+  status?: "active" | "inactive";
+}
+
+// ==================== Job Post Model ====================
+
+export interface JobPost {
+  id: string;
+  title: string;
+  placeTagId: string;
+  placeTag?: PlaceTag;
+  tasks: {
+    title: string;
+    descriptions: string[];
+  };
+  requiredQualifications: {
+    title: string;
+    descriptions: string[];
+  };
+  jobDetails: {
+    workingHours: string;
+    contract: boolean;
+    salary: string;
+    closeDate: string;
+  };
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateJobPostRequest {
+  title: string;
+  placeTagId: string;
+  tasks: {
+    title: string;
+    descriptions: string[];
+  };
+  requiredQualifications: {
+    title: string;
+    descriptions: string[];
+  };
+  jobDetails: {
+    workingHours: string;
+    contract: boolean;
+    salary: string;
+    closeDate: string; // ISO 8601 date string
+  };
+}
+
+export interface UpdateJobPostRequest {
+  title?: string;
+  placeTagId?: string;
+  tasks?: {
+    title: string;
+    descriptions: string[];
+  };
+  requiredQualifications?: {
+    title: string;
+    descriptions: string[];
+  };
+  jobDetails?: {
+    workingHours?: string;
+    contract?: boolean;
+    salary?: string;
+    closeDate?: string;
+  };
+}
+
+export interface JobPostFilters {
+  placeTagId?: string;
+  search?: string;
+}
+
+// ==================== Job Application Model ====================
+
+export interface JobApplication {
+  id: string;
+  jobPostId: string;
+  jobPost?: JobPost;
+  name: string;
+  email: string;
+  joiningReason?: string;
+  additionalQuestion?: string;
+  coverLetter?: string;
+  uploadedFileUrl?: string;
+  status: "pending" | "approved" | "rejected";
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateJobApplicationRequest {
+  jobPostId: string;
+  name: string;
+  email: string;
+  joiningReason?: string;
+  additionalQuestion?: string;
+  coverLetter?: string;
+  uploadedFile?: File;
+}
+
+export interface UpdateJobApplicationStatusRequest {
+  status: "pending" | "approved" | "rejected";
+}
+
+export interface SendEmailToApplicantRequest {
+  message: string;
+  notes?: string;
+}
+
+export interface JobApplicationFilters {
+  jobPostId?: string;
+  status?: "pending" | "approved" | "rejected";
+  email?: string;
+}
+
+// ==================== Interview Model ====================
+
+export interface Interview {
+  id: string;
+  applyJobId: string;
+  applyJob?: JobApplication;
+  meetingUrl: string;
+  meetingDate: string; // YYYY-MM-DD format
+  meetingTime: string; // HH:MM:SS or HH:MM format (UTC)
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateInterviewRequest {
+  applyJobId: string;
+  meetingUrl: string;
+  meetingDate: string; // YYYY-MM-DD format
+  meetingTime: string; // HH:MM:SS or HH:MM format (UTC)
+  notes?: string;
+}
+
+export interface UpdateInterviewRequest {
+  meetingUrl?: string;
+  meetingDate?: string;
+  meetingTime?: string;
+  notes?: string;
+}
+
+export interface InterviewFilters {
+  applyJobId?: string;
+  meetingDate?: string; // YYYY-MM-DD format
+}
+
+// ==================== Contact Model ====================
+
+export type ContactReason =
+  | "general_inquiry"
+  | "product_question"
+  | "collaboration"
+  | "feedback"
+  | "other";
+
+export interface Contact {
+  id: string;
+  name: string;
+  email: string;
+  reason: ContactReason;
+  message: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateContactRequest {
+  name: string;
+  email: string;
+  reason: ContactReason;
+  message: string;
+}
+
+export interface ContactFilters {
+  reason?: ContactReason;
+  email?: string;
 }

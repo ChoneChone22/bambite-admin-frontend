@@ -145,6 +145,11 @@ export default function StaffAccountManagementPage() {
             values.permissionIds
           );
         }
+        setSubmitting(false); // Stop loading state
+        resetForm();
+        setShowModal(false); // Close modal immediately
+        await fetchData();
+        await modal.alert("Staff account updated successfully", "Success", "success");
       } else {
         await api.staffAccounts.create({
           staffId: values.staffId,
@@ -152,14 +157,15 @@ export default function StaffAccountManagementPage() {
           password: values.password || undefined,
           permissionIds: values.permissionIds || [],
         });
+        setSubmitting(false); // Stop loading state
+        resetForm();
+        setShowModal(false); // Close modal immediately
+        await fetchData();
+        await modal.alert("Staff account created successfully", "Success", "success");
       }
-      resetForm();
-      setShowModal(false);
-      await fetchData();
     } catch (err: any) {
+      setSubmitting(false); // Stop loading state on error
       await modal.alert(err.message || "Failed to save staff account", "Error", "error");
-    } finally {
-      setSubmitting(false);
     }
   };
 

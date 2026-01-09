@@ -37,11 +37,12 @@ export default function InventoryControlPage() {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const [productsData, changesData] = await Promise.all([
+      const [productsResponse, changesData] = await Promise.all([
         api.products.getAll(),
         api.inventory.getChanges(),
       ]);
-      setProducts(productsData);
+      // products.getAll() returns { data: Product[], meta?: {...} }
+      setProducts(productsResponse.data || productsResponse);
       setChanges(changesData);
     } catch (err) {
       console.error("Failed to fetch inventory data:", err);
@@ -65,13 +66,14 @@ export default function InventoryControlPage() {
   ) => {
     try {
       await api.inventory.createLog(values);
+      setSubmitting(false); // Stop loading state
       resetForm();
-      setShowForm(false);
+      setShowForm(false); // Close modal immediately
       await fetchData();
+      await modal.alert("Inventory log created successfully", "Success", "success");
     } catch (err: any) {
+      setSubmitting(false); // Stop loading state on error
       await modal.alert(err.message || "Failed to create inventory log", "Error", "error");
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -123,7 +125,10 @@ export default function InventoryControlPage() {
               <Form className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label
+                      className="block text-sm font-medium mb-1"
+                      style={{ color: "#374151" }}
+                    >
                       Product *
                     </label>
                     <Field as="select" name="productId" className="input-field">
@@ -142,7 +147,10 @@ export default function InventoryControlPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label
+                      className="block text-sm font-medium mb-1"
+                      style={{ color: "#374151" }}
+                    >
                       Reason *
                     </label>
                     <Field as="select" name="reason" className="input-field">
@@ -162,16 +170,19 @@ export default function InventoryControlPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Quantity Change *
-                  </label>
+                    <label
+                      className="block text-sm font-medium mb-1"
+                      style={{ color: "#374151" }}
+                    >
+                      Quantity Change *
+                    </label>
                   <Field
                     name="quantityChange"
                     type="number"
                     className="input-field"
                     placeholder="Use positive for increase, negative for decrease"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs mt-1" style={{ color: "#6b7280" }}>
                     Current quantity:{" "}
                     {values.productId
                       ? products.find((p) => p.id === values.productId)
@@ -191,9 +202,12 @@ export default function InventoryControlPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Notes (Optional)
-                  </label>
+                    <label
+                      className="block text-sm font-medium mb-1"
+                      style={{ color: "#374151" }}
+                    >
+                      Notes (Optional)
+                    </label>
                   <Field
                     as="textarea"
                     name="notes"
@@ -262,8 +276,11 @@ export default function InventoryControlPage() {
                   >
                     {product.name}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {product.category}
+                  <td
+                    className="px-6 py-4 whitespace-nowrap text-sm"
+                    style={{ color: "#6b7280" }}
+                  >
+                    {product.category?.name || "N/A"}
                   </td>
                   <td
                     className="px-6 py-4 whitespace-nowrap text-sm font-semibold"
@@ -330,7 +347,10 @@ export default function InventoryControlPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               {changes.map((change) => (
                 <tr key={change.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td
+                    className="px-6 py-4 whitespace-nowrap text-sm"
+                    style={{ color: "#6b7280" }}
+                  >
                     {change.createdAt
                       ? formatDateTime(change.createdAt)
                       : "N/A"}
@@ -384,7 +404,7 @@ export default function InventoryControlPage() {
 
           {changes.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-500">No inventory changes yet</p>
+              <p style={{ color: "#6b7280" }}>No inventory changes yet</p>
             </div>
           )}
         </div>
