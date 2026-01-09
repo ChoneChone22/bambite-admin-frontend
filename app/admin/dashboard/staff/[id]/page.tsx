@@ -22,27 +22,49 @@ export default function StaffDetailPage() {
       setError(null);
       try {
         const data = await api.staff.getById(staffId);
-        console.log("Staff detail response (raw):", JSON.stringify(data, null, 2));
-        
+        console.log(
+          "Staff detail response (raw):",
+          JSON.stringify(data, null, 2)
+        );
+
         // Ensure we have valid staff data
         if (data && typeof data === "object") {
           // Parse numeric fields properly - handle string numbers and ensure correct types
-          const rawSalary = typeof data.salary === "string" ? parseFloat(data.salary) : (data.salary || 0);
-          const rawBonus = typeof data.totalBonus === "string" ? parseFloat(data.totalBonus) : (data.totalBonus || 0);
-          
+          const rawSalary =
+            typeof data.salary === "string"
+              ? parseFloat(data.salary)
+              : data.salary || 0;
+          const rawBonus =
+            typeof data.totalBonus === "string"
+              ? parseFloat(data.totalBonus)
+              : data.totalBonus || 0;
+
           // If salary is 0/missing but bonus has a value, the backend might have swapped them
           // Use the bonus value as salary if salary is 0
-          const finalSalary = (rawSalary && rawSalary > 0) ? rawSalary : (rawBonus > 0 ? rawBonus : 0);
-          const finalBonus = (rawSalary && rawSalary > 0 && rawBonus > 0 && rawBonus !== rawSalary) ? rawBonus : 0;
-          
+          const finalSalary =
+            rawSalary && rawSalary > 0
+              ? rawSalary
+              : rawBonus > 0
+              ? rawBonus
+              : 0;
+          const finalBonus =
+            rawSalary && rawSalary > 0 && rawBonus > 0 && rawBonus !== rawSalary
+              ? rawBonus
+              : 0;
+
           const normalizedStaff: Staff = {
             ...data,
             salary: finalSalary,
             totalBonus: finalBonus,
             // Parse tax
-            tax: typeof data.tax === "number" ? data.tax : (typeof data.tax === "string" ? parseFloat(data.tax) || 0 : 0),
+            tax:
+              typeof data.tax === "number"
+                ? data.tax
+                : typeof data.tax === "string"
+                ? parseFloat(data.tax) || 0
+                : 0,
           };
-          
+
           console.log("Normalized staff:", normalizedStaff);
           setStaff(normalizedStaff);
         } else {
@@ -77,7 +99,10 @@ export default function StaffDetailPage() {
         >
           ← Back to Staff List
         </button>
-        <div className="bg-red-50 border border-red-200 p-4 rounded-lg" style={{ color: "#b91c1c" }}>
+        <div
+          className="bg-red-50 border border-red-200 p-4 rounded-lg"
+          style={{ color: "#b91c1c" }}
+        >
           {error || "Staff member not found."}
         </div>
       </div>
@@ -106,8 +131,14 @@ export default function StaffDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow p-6 space-y-3" style={{ backgroundColor: "#ffffff" }}>
-          <h2 className="text-lg font-semibold mb-2" style={{ color: "#000000" }}>
+        <div
+          className="bg-white rounded-lg shadow p-6 space-y-3"
+          style={{ backgroundColor: "#ffffff" }}
+        >
+          <h2
+            className="text-lg font-semibold mb-2"
+            style={{ color: "#000000" }}
+          >
             Basic Information
           </h2>
           <DetailRow label="Employee ID" value={staff.employeeId || "—"} />
@@ -137,8 +168,14 @@ export default function StaffDetailPage() {
           />
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6 space-y-3" style={{ backgroundColor: "#ffffff" }}>
-          <h2 className="text-lg font-semibold mb-2" style={{ color: "#000000" }}>
+        <div
+          className="bg-white rounded-lg shadow p-6 space-y-3"
+          style={{ backgroundColor: "#ffffff" }}
+        >
+          <h2
+            className="text-lg font-semibold mb-2"
+            style={{ color: "#000000" }}
+          >
             Compensation
           </h2>
           <DetailRow
@@ -149,10 +186,7 @@ export default function StaffDetailPage() {
                 : "$0.00"
             }
           />
-          <DetailRow
-            label="Bonus"
-            value={formatPrice(staff.totalBonus || 0)}
-          />
+          <DetailRow label="Bonus" value={formatPrice(staff.totalBonus || 0)} />
           <DetailRow label="Tax" value={formatPrice(staff.tax || 0)} />
           <DetailRow
             label="Net Pay (latest)"
@@ -182,15 +216,15 @@ function DetailRow({
     if (valueClassName?.includes("green")) return "#16a34a";
     if (valueClassName?.includes("yellow")) return "#ca8a04";
     if (valueClassName?.includes("gray")) return "#4b5563";
-    return "#000000"; // Default black
+    return "#000000";
   };
 
   return (
     <div className="flex justify-between text-sm">
       <span style={{ color: "#4b5563" }}>{label}</span>
-      <span className="font-medium" style={{ color: getValueColor() }}>{value}</span>
+      <span className="font-medium" style={{ color: getValueColor() }}>
+        {value}
+      </span>
     </div>
   );
 }
-
-
