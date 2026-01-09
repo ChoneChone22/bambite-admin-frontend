@@ -35,8 +35,8 @@ export default function AdminDashboardPage() {
 
         console.log("Dashboard stats results:", results);
 
-        const products =
-          results[0].status === "fulfilled" ? results[0].value : [];
+        const productsResponse =
+          results[0].status === "fulfilled" ? results[0].value : null;
         const orders =
           results[1].status === "fulfilled" ? results[1].value : [];
         const payroll =
@@ -46,8 +46,15 @@ export default function AdminDashboardPage() {
 
         console.log("Payroll data for dashboard:", payroll);
 
+        // Extract products array from response object { data: Product[], meta?: {...} }
+        const productsArray = productsResponse
+          ? Array.isArray(productsResponse)
+            ? productsResponse
+            : productsResponse.data || []
+          : [];
+
         setStats({
-          totalProducts: Array.isArray(products) ? products.length : 0,
+          totalProducts: productsArray.length,
           totalOrders: Array.isArray(orders) ? orders.length : 0,
           totalStaff: payroll.staffCount || 0,
         });

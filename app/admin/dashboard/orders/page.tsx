@@ -159,7 +159,7 @@ export default function OrdersManagementPage() {
                   <div className="text-sm" style={{ color: "#000000" }}>
                     {order.user?.email || "N/A"}
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm" style={{ color: "#6b7280" }}>
                     {order.user?.phoneNumber || ""}
                   </div>
                 </td>
@@ -186,7 +186,10 @@ export default function OrdersManagementPage() {
                     {order.status}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td
+                  className="px-6 py-4 whitespace-nowrap text-sm"
+                  style={{ color: "#6b7280" }}
+                >
                   {formatDateTime(order.orderedDate || order.createdAt)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -205,7 +208,7 @@ export default function OrdersManagementPage() {
 
         {filteredOrders.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500">No orders found</p>
+            <p style={{ color: "#6b7280" }}>No orders found</p>
           </div>
         )}
       </div>
@@ -220,14 +223,14 @@ export default function OrdersManagementPage() {
         {selectedOrder && (
           <>
             <div className="mb-6">
-              <p className="text-sm text-gray-600! mb-2">Order ID</p>
-              <p className="font-semibold text-gray-500!">
+              <p className="text-sm mb-2" style={{ color: "#4b5563" }}>Order ID</p>
+              <p className="font-semibold" style={{ color: "#6b7280" }}>
                 #{selectedOrder.id.slice(0, 8)}
               </p>
             </div>
 
             <div className="mb-6">
-              <p className="text-sm text-gray-600 mb-2">Current Status</p>
+              <p className="text-sm mb-2" style={{ color: "#4b5563" }}>Current Status</p>
               <span
                 className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(
                   selectedOrder.status
@@ -238,7 +241,10 @@ export default function OrdersManagementPage() {
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                className="block text-sm font-medium mb-2"
+                style={{ color: "#374151" }}
+              >
                 New Status
               </label>
               <div className="space-y-2">

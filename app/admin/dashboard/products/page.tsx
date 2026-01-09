@@ -64,6 +64,7 @@ interface ImagePreview {
   url: string;
   file?: File;
   isExisting?: boolean;
+  originalUrl?: string; // Store original URL for existing images to track removals
 }
 
 export default function ProductsManagementPage() {
@@ -132,14 +133,29 @@ export default function ProductsManagementPage() {
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
-    // Set existing images as previews
+    // Set existing images as previews with original URL for tracking
     const existingPreviews: ImagePreview[] =
       product.imageUrls?.map((url) => ({
         url,
         isExisting: true,
+        originalUrl: url, // Store original URL to track which images are removed
       })) || [];
     setImagePreviews(existingPreviews);
     setShowModal(true);
+  };
+
+  // Extract option IDs from product for form initialization
+  const getProductOptionIds = (product: Product | null): string[] => {
+    if (!product) return [];
+    // If optionIds exists, use it
+    if (product.optionIds && product.optionIds.length > 0) {
+      return product.optionIds;
+    }
+    // Otherwise, extract from productOptions
+    if (product.productOptions && product.productOptions.length > 0) {
+      return product.productOptions.map((po) => po.option.id);
+    }
+    return [];
   };
 
   const handleDelete = async (id: string) => {
@@ -182,6 +198,7 @@ export default function ProductsManagementPage() {
   };
 
   const removeImagePreview = (index: number, setFieldValue: any) => {
+    const previewToRemove = imagePreviews[index];
     const newPreviews = imagePreviews.filter((_, i) => i !== index);
     setImagePreviews(newPreviews);
     
@@ -190,6 +207,9 @@ export default function ProductsManagementPage() {
       .filter((p) => !p.isExisting && p.file)
       .map((p) => p.file!);
     setFieldValue("images", remainingFiles);
+    
+    // Note: Removed existing images will be tracked via removeImageUrls in handleSubmit
+    // by comparing original imageUrls with current previews
   };
 
   const handleSubmit = async (
@@ -201,6 +221,7 @@ export default function ProductsManagementPage() {
         // Update product
         const updateData: UpdateProductRequest = {
           name: values.name,
+          thaiName: values.thaiName || undefined,
           description: values.description,
           categoryId: values.categoryId,
           ingredients: values.ingredients,
@@ -209,23 +230,53 @@ export default function ProductsManagementPage() {
           optionIds: values.optionIds || [],
         };
 
-        // Only include images if new ones were added
+        // Get new images to add
         const newImages = imagePreviews
           .filter((p) => !p.isExisting && p.file)
           .map((p) => p.file!);
         
         if (newImages.length > 0) {
           updateData.images = newImages;
-          // If user removed existing images, replace all
-          const hasRemovedExisting = imagePreviews.some((p) => p.isExisting);
-          updateData.deleteOldImages = !hasRemovedExisting;
+        }
+
+        // Calculate which existing images were removed
+        const originalImageUrls = editingProduct.imageUrls || [];
+        const remainingExistingUrls = imagePreviews
+          .filter((p) => p.isExisting && p.originalUrl)
+          .map((p) => p.originalUrl!);
+        
+        const removedImageUrls = originalImageUrls.filter(
+          (url) => !remainingExistingUrls.includes(url)
+        );
+
+        // If specific images were removed, use removeImageUrls
+        if (removedImageUrls.length > 0) {
+          updateData.removeImageUrls = removedImageUrls;
+        }
+
+        // If user wants to replace all images (deleteOldImages=true)
+        // This takes precedence over removeImageUrls
+        // Only set if user explicitly wants to replace all AND has new images
+        if (newImages.length > 0 && removedImageUrls.length === originalImageUrls.length) {
+          // All existing images removed, replace all
+          updateData.deleteOldImages = true;
+          // Don't send removeImageUrls if replacing all
+          delete updateData.removeImageUrls;
         }
 
         await api.products.update(editingProduct.id, updateData);
+        setSubmitting(false); // Stop loading state
+        resetForm();
+        setShowModal(false); // Close modal immediately
+        setImagePreviews([]);
+        await fetchProducts(page);
+        await fetchCategories(); // Refresh categories in case counts changed
+        await modal.alert("Product updated successfully", "Success", "success");
       } else {
         // Create product
         const createData: CreateProductRequest = {
           name: values.name,
+          thaiName: values.thaiName || undefined,
           description: values.description,
           categoryId: values.categoryId,
           ingredients: values.ingredients,
@@ -238,21 +289,21 @@ export default function ProductsManagementPage() {
         };
 
         await api.products.create(createData);
+        setSubmitting(false); // Stop loading state
+        resetForm();
+        setShowModal(false); // Close modal immediately
+        setImagePreviews([]);
+        await fetchProducts(page);
+        await fetchCategories(); // Refresh categories in case counts changed
+        await modal.alert("Product created successfully", "Success", "success");
       }
-
-      resetForm();
-      setShowModal(false);
-      setImagePreviews([]);
-      await fetchProducts(page);
-      await fetchCategories(); // Refresh categories in case counts changed
     } catch (err: any) {
+      setSubmitting(false); // Stop loading state on error
       await modal.alert(
         getErrorMessage(err) || "Failed to save product",
         "Error",
         "error"
       );
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -327,7 +378,18 @@ export default function ProductsManagementPage() {
                       >
                         {product.name}
                       </div>
-                      <div className="text-sm text-gray-500 truncate max-w-xs">
+                      {product.thaiName && (
+                        <div
+                          className="text-sm font-medium mt-0.5"
+                          style={{ color: "#4b5563" }}
+                        >
+                          {product.thaiName}
+                        </div>
+                      )}
+                      <div
+                        className="text-sm truncate max-w-xs"
+                        style={{ color: "#6b7280" }}
+                      >
                         {product.description || product.ingredients || "No description"}
                       </div>
                     </div>
@@ -348,9 +410,11 @@ export default function ProductsManagementPage() {
                         {po.option.displayName}
                       </span>
                     ))}
-                    {(!product.productOptions || product.productOptions.length === 0) && (
-                      <span className="text-xs text-gray-400">No options</span>
-                    )}
+                      {(!product.productOptions || product.productOptions.length === 0) && (
+                        <span className="text-xs" style={{ color: "#9ca3af" }}>
+                          No options
+                        </span>
+                      )}
                   </div>
                 </td>
                 <td
@@ -408,7 +472,7 @@ export default function ProductsManagementPage() {
           >
             Previous
           </button>
-          <span className="px-4 py-2">
+          <span className="px-4 py-2" style={{ color: "#374151" }}>
             Page {page} of {totalPages}
           </span>
           <button
@@ -440,12 +504,13 @@ export default function ProductsManagementPage() {
         <Formik
           initialValues={{
             name: editingProduct?.name || "",
+            thaiName: editingProduct?.thaiName || "",
             description: editingProduct?.description || "",
             categoryId: editingProduct?.categoryId || "",
             ingredients: editingProduct?.ingredients || "",
             price: editingProduct?.price || 0,
             stockQuantity: editingProduct?.stockQuantity || 0,
-            optionIds: editingProduct?.optionIds || [],
+            optionIds: getProductOptionIds(editingProduct),
             images: [],
             isEdit: !!editingProduct,
           }}
@@ -455,7 +520,10 @@ export default function ProductsManagementPage() {
           {({ errors, touched, isSubmitting, setFieldValue, values }) => (
             <Form className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: "#374151" }}
+                >
                   Product Name *
                 </label>
                 <Field
@@ -470,7 +538,29 @@ export default function ProductsManagementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: "#374151" }}
+                >
+                  Thai Name (ชื่อภาษาไทย)
+                </label>
+                <Field
+                  name="thaiName"
+                  type="text"
+                  className="input-field"
+                  placeholder="e.g., ม่อหิ่ง"
+                  maxLength={200}
+                />
+                {errors.thaiName && touched.thaiName && (
+                  <p className="text-red-600 text-sm mt-1">{errors.thaiName}</p>
+                )}
+              </div>
+
+              <div>
+                <label
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: "#374151" }}
+                >
                   Description
                 </label>
                 <Field
@@ -486,7 +576,10 @@ export default function ProductsManagementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: "#374151" }}
+                >
                   Category *
                 </label>
                 <Field as="select" name="categoryId" className="input-field">
@@ -503,7 +596,10 @@ export default function ProductsManagementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: "#374151" }}
+                >
                   Ingredients
                 </label>
                 <Field
@@ -531,20 +627,25 @@ export default function ProductsManagementPage() {
                         value={option.id}
                         className="mr-2"
                       />
-                      <span className="text-sm">
+                      <span className="text-sm" style={{ color: "#374151" }}>
                         {option.displayName} ({option.optionLists.join(", ")})
                       </span>
                     </label>
                   ))}
                   {options.length === 0 && (
-                    <p className="text-sm text-gray-500">No options available. Create options first.</p>
+                    <p className="text-sm" style={{ color: "#6b7280" }}>
+                      No options available. Create options first.
+                    </p>
                   )}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-sm font-medium mb-1"
+                    style={{ color: "#374151" }}
+                  >
                     Price ($) *
                   </label>
                   <Field
@@ -561,7 +662,10 @@ export default function ProductsManagementPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-sm font-medium mb-1"
+                    style={{ color: "#374151" }}
+                  >
                     Stock Quantity *
                   </label>
                   <Field
@@ -580,9 +684,17 @@ export default function ProductsManagementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: "#374151" }}
+                >
                   Images {!editingProduct && "*"}
                 </label>
+                {editingProduct && (
+                  <p className="text-xs mb-2" style={{ color: "#6b7280" }}>
+                    Add new images or remove existing ones. New images will be added to existing ones by default.
+                  </p>
+                )}
                 <input
                   type="file"
                   multiple
@@ -593,34 +705,60 @@ export default function ProductsManagementPage() {
                 {errors.images && touched.images && (
                   <p className="text-red-600 text-sm mt-1">{errors.images}</p>
                 )}
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs mt-1" style={{ color: "#6b7280" }}>
                   Accepted formats: JPEG, PNG, WebP. Max size: 5MB per image.
                 </p>
 
                 {/* Image Previews */}
                 {imagePreviews.length > 0 && (
-                  <div className="mt-4 grid grid-cols-4 gap-4">
-                    {imagePreviews.map((preview, index) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={preview.url}
-                          alt={`Preview ${index + 1}`}
-                          className="w-full h-24 object-cover rounded border"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeImagePreview(index, setFieldValue)}
-                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
-                        >
-                          ×
-                        </button>
-                        {preview.isExisting && (
-                          <span className="absolute bottom-1 left-1 bg-blue-500 text-white text-xs px-1 rounded">
-                            Existing
-                          </span>
-                        )}
-                      </div>
-                    ))}
+                  <div className="mt-4">
+                    <p className="text-sm font-medium mb-2" style={{ color: "#374151" }}>
+                      Image Previews ({imagePreviews.length} {imagePreviews.length === 1 ? 'image' : 'images'})
+                    </p>
+                    <div className="grid grid-cols-4 gap-4">
+                      {imagePreviews.map((preview, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={preview.url}
+                            alt={`Preview ${index + 1}`}
+                            className="w-full h-24 object-cover rounded border-2 transition-opacity"
+                            style={{
+                              borderColor: preview.isExisting ? "#3b82f6" : "#10b981",
+                              opacity: preview.isExisting ? 1 : 0.9,
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImagePreview(index, setFieldValue)}
+                            className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold transition-colors shadow-md"
+                            title="Remove image"
+                          >
+                            ×
+                          </button>
+                          {preview.isExisting ? (
+                            <span 
+                              className="absolute bottom-1 left-1 bg-blue-500 text-white text-xs px-2 py-0.5 rounded font-medium"
+                              style={{ backgroundColor: "#3b82f6" }}
+                            >
+                              Existing
+                            </span>
+                          ) : (
+                            <span 
+                              className="absolute bottom-1 left-1 bg-green-500 text-white text-xs px-2 py-0.5 rounded font-medium"
+                              style={{ backgroundColor: "#10b981" }}
+                            >
+                              New
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    {editingProduct && imagePreviews.filter(p => p.isExisting).length > 0 && (
+                      <p className="text-xs mt-2" style={{ color: "#6b7280" }}>
+                        <span style={{ color: "#3b82f6" }}>Blue border</span> = Existing images •{" "}
+                        <span style={{ color: "#10b981" }}>Green border</span> = New images to add
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

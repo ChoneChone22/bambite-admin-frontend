@@ -106,20 +106,26 @@ export default function OptionsManagementPage() {
     try {
       if (editingOption) {
         await api.options.update(editingOption.id, values);
+        setSubmitting(false); // Stop loading state
+        resetForm();
+        setShowModal(false); // Close modal immediately
+        await fetchOptions();
+        await modal.alert("Option updated successfully", "Success", "success");
       } else {
         await api.options.create(values);
+        setSubmitting(false); // Stop loading state
+        resetForm();
+        setShowModal(false); // Close modal immediately
+        await fetchOptions();
+        await modal.alert("Option created successfully", "Success", "success");
       }
-      resetForm();
-      setShowModal(false);
-      await fetchOptions();
     } catch (err: any) {
+      setSubmitting(false); // Stop loading state on error
       await modal.alert(
         getErrorMessage(err) || "Failed to save option",
         "Error",
         "error"
       );
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -182,7 +188,7 @@ export default function OptionsManagementPage() {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-700">
+                  <div className="text-sm" style={{ color: "#374151" }}>
                     {option.displayName}
                   </div>
                 </td>
@@ -198,7 +204,10 @@ export default function OptionsManagementPage() {
                     ))}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td
+                  className="px-6 py-4 whitespace-nowrap text-sm"
+                  style={{ color: "#6b7280" }}
+                >
                   {option._count?.products || 0} product(s)
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -221,7 +230,11 @@ export default function OptionsManagementPage() {
             ))}
             {options.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                <td
+                  colSpan={5}
+                  className="px-6 py-4 text-center"
+                  style={{ color: "#6b7280" }}
+                >
                   No options found
                 </td>
               </tr>
@@ -249,7 +262,10 @@ export default function OptionsManagementPage() {
           {({ errors, touched, isSubmitting, values }) => (
             <Form className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: "#374151" }}
+                >
                   Option Name (identifier) *
                 </label>
                 <Field
@@ -258,7 +274,7 @@ export default function OptionsManagementPage() {
                   className="input-field"
                   placeholder="e.g., size, color, material"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs mt-1" style={{ color: "#6b7280" }}>
                   Lowercase, no spaces. Use underscores if needed (e.g., "product_size")
                 </p>
                 {errors.name && touched.name && (
@@ -267,7 +283,10 @@ export default function OptionsManagementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: "#374151" }}
+                >
                   Display Name *
                 </label>
                 <Field
@@ -276,7 +295,7 @@ export default function OptionsManagementPage() {
                   className="input-field"
                   placeholder="e.g., Size, Color, Material"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs mt-1" style={{ color: "#6b7280" }}>
                   User-friendly name shown in the UI
                 </p>
                 {errors.displayName && touched.displayName && (
@@ -285,7 +304,10 @@ export default function OptionsManagementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: "#374151" }}
+                >
                   Option Values *
                 </label>
                 <FieldArray name="optionLists">
@@ -313,7 +335,8 @@ export default function OptionsManagementPage() {
                       <button
                         type="button"
                         onClick={() => push("")}
-                        className="text-sm text-blue-600 hover:underline"
+                        className="text-sm hover:underline"
+                        style={{ color: "#2563eb" }}
                       >
                         + Add Value
                       </button>
