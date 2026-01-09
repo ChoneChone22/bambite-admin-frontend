@@ -1572,7 +1572,7 @@ export const contactsApi = {
    * Get contact by ID
    */
   getById: async (id: string): Promise<Contact> => {
-    const response = await axiosInstance.get<ApiResponse<Contact>>(
+    const response = await axiosInstance.get<any>(
       `/contacts/${id}`
     );
     const data = response.data;
@@ -1580,8 +1580,8 @@ export const contactsApi = {
     if (data?.data?.contact) {
       return data.data.contact as Contact;
     }
-    if (data?.contact) {
-      return data.contact as Contact;
+    if ((data as any)?.contact) {
+      return (data as any).contact as Contact;
     }
     if (data?.data) {
       return data.data as Contact;

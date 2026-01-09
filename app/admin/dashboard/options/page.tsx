@@ -105,14 +105,14 @@ export default function OptionsManagementPage() {
   ) => {
     try {
       if (editingOption) {
-        await api.options.update(editingOption.id, values);
+        await api.options.update(editingOption.id, values as UpdateOptionRequest);
         setSubmitting(false); // Stop loading state
         resetForm();
         setShowModal(false); // Close modal immediately
         await fetchOptions();
         await modal.alert("Option updated successfully", "Success", "success");
       } else {
-        await api.options.create(values);
+        await api.options.create(values as CreateOptionRequest);
         setSubmitting(false); // Stop loading state
         resetForm();
         setShowModal(false); // Close modal immediately

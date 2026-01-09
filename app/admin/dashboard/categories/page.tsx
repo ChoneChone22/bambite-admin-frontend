@@ -139,14 +139,14 @@ export default function CategoriesManagementPage() {
   ) => {
     try {
       if (editingCategory) {
-        await api.categories.update(editingCategory.id, values);
+        await api.categories.update(editingCategory.id, values as UpdateCategoryRequest);
         setSubmitting(false); // Stop loading state
         resetForm();
         setShowModal(false); // Close modal immediately
         await fetchCategories();
         await modal.alert("Category updated successfully", "Success", "success");
       } else {
-        await api.categories.create(values);
+        await api.categories.create(values as CreateCategoryRequest);
         setSubmitting(false); // Stop loading state
         resetForm();
         setShowModal(false); // Close modal immediately
