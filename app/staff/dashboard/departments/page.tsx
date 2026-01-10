@@ -6,12 +6,14 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import api from "@/src/services/api";
 import { Department, Staff } from "@/src/types/api";
 import { useModal } from "@/src/hooks/useModal";
+import { useTablePagination } from "@/src/hooks";
+import TablePagination from "@/src/components/TablePagination";
 import FormModal from "@/src/components/FormModal";
 
 const departmentSchema = Yup.object().shape({
@@ -35,6 +37,7 @@ export default function DepartmentManagementPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const modal = useModal();
 
   const fetchDepartments = async () => {
@@ -67,6 +70,42 @@ export default function DepartmentManagementPage() {
     };
     loadData();
   }, []);
+
+  // Filter departments based on search query
+  const filteredDepartments = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return departments;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    return departments.filter((dept) => {
+      const name = dept.name?.toLowerCase() || "";
+      const shortName = dept.shortName?.toLowerCase() || "";
+      const status = dept.status?.toLowerCase() || "";
+      const staffCount = staff.filter((s) => s.departmentId === dept.id).length.toString();
+      return (
+        name.includes(query) ||
+        shortName.includes(query) ||
+        status.includes(query) ||
+        staffCount.includes(query)
+      );
+    });
+  }, [departments, staff, searchQuery]);
+
+  // Table pagination
+  const {
+    paginatedData,
+    currentPage,
+    totalPages,
+    rowsPerPage,
+    totalRows,
+    handlePageChange,
+    handleRowsPerPageChange,
+  } = useTablePagination(filteredDepartments, {
+    initialRowsPerPage: 10,
+    minRowsPerPage: 10,
+    maxRowsPerPage: 50,
+  });
 
   const handleCreate = () => {
     setShowModal(true);
@@ -153,27 +192,53 @@ export default function DepartmentManagementPage() {
         <div className="bg-red-50 p-4 rounded-lg mb-6" style={{ color: "#b91c1c" }}>{error}</div>
       )}
 
+      {/* Search Box */}
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search departments by name, short name, status, or staff count..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="input-field w-full max-w-md"
+        />
+      </div>
+
       {/* Departments Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
-                Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
-                Short Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
-                Status
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {departments.map((dept) => (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                  Name
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                  Short Name
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                  Staff Count
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {paginatedData.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-6 py-12 text-center text-sm"
+                    style={{ color: "#6b7280" }}
+                  >
+                    No departments found
+                  </td>
+                </tr>
+              ) : (
+                paginatedData.map((dept) => (
               <tr key={dept.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div
@@ -203,6 +268,12 @@ export default function DepartmentManagementPage() {
                     {dept.status === "active" ? "Active" : "Inactive"}
                   </span>
                 </td>
+                <td
+                  className="px-6 py-4 whitespace-nowrap text-sm"
+                  style={{ color: "#6b7280" }}
+                >
+                  {staff.filter((s) => s.departmentId === dept.id).length} staff
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
                     onClick={() => handleToggleStatus(dept)}
@@ -216,14 +287,22 @@ export default function DepartmentManagementPage() {
                   </button>
                 </td>
               </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {departments.length === 0 && (
-          <div className="text-center py-12">
-            <p style={{ color: "#6b7280" }}>No departments found.</p>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        {filteredDepartments.length > 0 && (
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            rowsPerPage={rowsPerPage}
+            totalRows={totalRows}
+            onPageChange={handlePageChange}
+            onRowsPerPageChange={handleRowsPerPageChange}
+            minRowsPerPage={10}
+            maxRowsPerPage={50}
+          />
         )}
       </div>
 

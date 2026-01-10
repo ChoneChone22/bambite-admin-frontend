@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
- * Admin Option Management Page
- * CRUD operations for product options
+ * Staff Option Management Page
+ * CRUD operations for product options (requires product_options_management permission)
  */
 
 "use client";
@@ -58,11 +58,13 @@ export default function OptionsManagementPage() {
   const fetchOptions = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       const response = await api.options.getAll();
       setOptions(response);
     } catch (err) {
-      setError("Failed to fetch options");
-      console.error(err);
+      const errorMsg = getErrorMessage(err);
+      setError(errorMsg || "Failed to fetch options");
+      console.error("Failed to fetch options:", err);
     } finally {
       setIsLoading(false);
     }
@@ -128,13 +130,14 @@ export default function OptionsManagementPage() {
     try {
       await api.options.delete(id);
       await fetchOptions();
+      await modal.alert("Option deleted successfully", "Success", "success");
     } catch (err: any) {
       await modal.alert(
         getErrorMessage(err) || "Failed to delete option",
         "Error",
         "error"
       );
-      console.error(err);
+      console.error("Failed to delete option:", err);
     }
   };
 
@@ -145,26 +148,27 @@ export default function OptionsManagementPage() {
     try {
       if (editingOption) {
         await api.options.update(editingOption.id, values as UpdateOptionRequest);
-        setSubmitting(false); // Stop loading state
+        setSubmitting(false);
         resetForm();
-        setShowModal(false); // Close modal immediately
+        setShowModal(false);
         await fetchOptions();
         await modal.alert("Option updated successfully", "Success", "success");
       } else {
         await api.options.create(values as CreateOptionRequest);
-        setSubmitting(false); // Stop loading state
+        setSubmitting(false);
         resetForm();
-        setShowModal(false); // Close modal immediately
+        setShowModal(false);
         await fetchOptions();
         await modal.alert("Option created successfully", "Success", "success");
       }
     } catch (err: any) {
-      setSubmitting(false); // Stop loading state on error
+      setSubmitting(false);
       await modal.alert(
         getErrorMessage(err) || "Failed to save option",
         "Error",
         "error"
       );
+      console.error("Failed to save option:", err);
     }
   };
 
@@ -192,17 +196,6 @@ export default function OptionsManagementPage() {
       {error && (
         <div className="bg-red-50 text-red-700 p-4 rounded-lg mb-6">{error}</div>
       )}
-
-      {/* Search Box */}
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Search options by name, display name, values, or product count..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="input-field w-full max-w-md"
-        />
-      </div>
 
       {/* Options Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -240,55 +233,55 @@ export default function OptionsManagementPage() {
                 </tr>
               ) : (
                 paginatedData.map((option) => (
-              <tr key={option.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div
-                    className="text-sm font-medium"
-                    style={{ color: "#000000" }}
-                  >
-                    {option.name}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm" style={{ color: "#374151" }}>
-                    {option.displayName}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex flex-wrap gap-1">
-                    {option.optionLists.map((value, idx) => (
-                      <span
-                        key={idx}
-                        className="px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-800"
+                  <tr key={option.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div
+                        className="text-sm font-medium"
+                        style={{ color: "#000000" }}
                       >
-                        {value}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td
-                  className="px-6 py-4 whitespace-nowrap text-sm"
-                  style={{ color: "#6b7280" }}
-                >
-                  {option._count?.products || 0} product(s)
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => handleEdit(option)}
-                    className="font-semibold hover:underline mr-4 cursor-pointer"
-                    style={{ color: "#2C5BBB", cursor: "pointer" }}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(option.id)}
-                    className="font-semibold hover:underline cursor-pointer"
-                    style={{ color: "#DC2626", cursor: "pointer" }}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
+                        {option.name}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm" style={{ color: "#374151" }}>
+                        {option.displayName}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-1">
+                        {option.optionLists.map((value, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-800"
+                          >
+                            {value}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td
+                      className="px-6 py-4 whitespace-nowrap text-sm"
+                      style={{ color: "#6b7280" }}
+                    >
+                      {option._count?.products || 0} product(s)
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
+                      <button
+                        onClick={() => handleEdit(option)}
+                        className="font-semibold hover:underline cursor-pointer"
+                        style={{ color: "#2C5BBB", cursor: "pointer" }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(option.id)}
+                        className="font-semibold hover:underline cursor-pointer"
+                        style={{ color: "#DC2626", cursor: "pointer" }}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
                 ))
               )}
             </tbody>
@@ -390,7 +383,7 @@ export default function OptionsManagementPage() {
                             <button
                               type="button"
                               onClick={() => remove(index)}
-                              className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                              className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                             >
                               Remove
                             </button>
@@ -400,7 +393,7 @@ export default function OptionsManagementPage() {
                       <button
                         type="button"
                         onClick={() => push("")}
-                        className="text-sm hover:underline"
+                        className="text-sm hover:underline cursor-pointer"
                         style={{ color: "#2563eb" }}
                       >
                         + Add Value
@@ -444,4 +437,3 @@ export default function OptionsManagementPage() {
     </div>
   );
 }
-

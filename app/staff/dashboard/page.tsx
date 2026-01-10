@@ -56,8 +56,8 @@ export default function StaffDashboardPage() {
           );
         }
 
-        // Orders stat (requires ORDER_MANAGEMENT)
-        if (permissionCodes.includes("ORDER_MANAGEMENT")) {
+        // Orders stat (requires ORDERS_MANAGEMENT)
+        if (permissionCodes.includes("ORDERS_MANAGEMENT")) {
           statsPromises.push(
             api.orders.getAll({}).then((orders) => ({
               type: "orders",
@@ -156,10 +156,13 @@ export default function StaffDashboardPage() {
       {/* No Permissions Message */}
       {!hasAnyPermission && (
         <div className="bg-blue-50 border border-blue-200 text-blue-700 p-6 rounded-lg mb-6">
-          <h2 className="text-lg font-semibold mb-2">No Permissions Assigned</h2>
+          <h2 className="text-lg font-semibold mb-2">
+            No Permissions Assigned
+          </h2>
           <p className="text-sm">
-            You don't have any management permissions assigned yet. You can still view your profile.
-            Contact your administrator to request access to specific features.
+            You don&apos;t have any management permissions assigned yet. You can
+            still view your profile. Contact your administrator to request
+            access to specific features.
           </p>
         </div>
       )}
@@ -172,7 +175,10 @@ export default function StaffDashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Total Products</p>
-                  <p className="text-3xl font-bold" style={{ color: "#000000" }}>
+                  <p
+                    className="text-3xl font-bold"
+                    style={{ color: "#000000" }}
+                  >
                     {stats.totalProducts}
                   </p>
                 </div>
@@ -181,12 +187,15 @@ export default function StaffDashboardPage() {
             </div>
           )}
 
-          {permissions.includes("ORDER_MANAGEMENT") && (
+          {permissions.includes("ORDERS_MANAGEMENT") && (
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Total Orders</p>
-                  <p className="text-3xl font-bold" style={{ color: "#000000" }}>
+                  <p
+                    className="text-3xl font-bold"
+                    style={{ color: "#000000" }}
+                  >
                     {stats.totalOrders}
                   </p>
                 </div>
@@ -201,7 +210,10 @@ export default function StaffDashboardPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600 mb-1">Total Staff</p>
-                    <p className="text-3xl font-bold" style={{ color: "#000000" }}>
+                    <p
+                      className="text-3xl font-bold"
+                      style={{ color: "#000000" }}
+                    >
                       {stats.totalStaff}
                     </p>
                   </div>
@@ -209,7 +221,7 @@ export default function StaffDashboardPage() {
                 </div>
               </div>
 
-              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              {/* <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600 mb-1">Total Payroll</p>
@@ -226,7 +238,7 @@ export default function StaffDashboardPage() {
                   </div>
                   <div className="text-4xl">💰</div>
                 </div>
-              </div>
+              </div> */}
             </>
           )}
         </div>
@@ -235,7 +247,10 @@ export default function StaffDashboardPage() {
       {/* Quick Actions */}
       {hasAnyPermission && (
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h2 className="text-xl font-semibold mb-4" style={{ color: "#000000" }}>
+          <h2
+            className="text-xl font-semibold mb-4"
+            style={{ color: "#000000" }}
+          >
             Quick Actions
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -245,18 +260,24 @@ export default function StaffDashboardPage() {
                 className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
                 style={{ "--hover-border": "#2C5BBB" } as React.CSSProperties}
               >
-                <p className="font-semibold text-lg" style={{ color: "#000000" }}>
+                <p
+                  className="font-semibold text-lg"
+                  style={{ color: "#000000" }}
+                >
                   Manage Products
                 </p>
               </a>
             )}
 
-            {permissions.includes("ORDER_MANAGEMENT") && (
+            {permissions.includes("ORDERS_MANAGEMENT") && (
               <a
                 href="/staff/dashboard/orders"
                 className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
               >
-                <p className="font-semibold text-lg" style={{ color: "#000000" }}>
+                <p
+                  className="font-semibold text-lg"
+                  style={{ color: "#000000" }}
+                >
                   Manage Orders
                 </p>
               </a>
@@ -267,7 +288,10 @@ export default function StaffDashboardPage() {
                 href="/staff/dashboard/inventory"
                 className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
               >
-                <p className="font-semibold text-lg" style={{ color: "#000000" }}>
+                <p
+                  className="font-semibold text-lg"
+                  style={{ color: "#000000" }}
+                >
                   Update Inventory
                 </p>
               </a>
@@ -278,39 +302,135 @@ export default function StaffDashboardPage() {
                 href="/staff/dashboard/departments"
                 className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
               >
-                <p className="font-semibold text-lg" style={{ color: "#000000" }}>
+                <p
+                  className="font-semibold text-lg"
+                  style={{ color: "#000000" }}
+                >
                   Manage Departments
                 </p>
               </a>
             )}
 
             {permissions.includes("STAFF_MANAGEMENT") && (
+              <a
+                href="/staff/dashboard/staff"
+                className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
+              >
+                <p
+                  className="font-semibold text-lg"
+                  style={{ color: "#000000" }}
+                >
+                  Manage Staff
+                </p>
+              </a>
+            )}
+
+            {permissions.includes("STAFF_ACCOUNT_MANAGEMENT") && (
+              <a
+                href="/staff/dashboard/staff-accounts"
+                className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
+              >
+                <p
+                  className="font-semibold text-lg"
+                  style={{ color: "#000000" }}
+                >
+                  Manage Staff Accounts
+                </p>
+              </a>
+            )}
+
+            {permissions.includes("STAFF_PAYMENT_MANAGEMENT") && (
+              <a
+                href="/staff/dashboard/payments"
+                className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
+              >
+                <p
+                  className="font-semibold text-lg"
+                  style={{ color: "#000000" }}
+                >
+                  Manage Payments
+                </p>
+              </a>
+            )}
+
+            {permissions.includes("PRODUCT_CATEGORY_MANAGEMENT") && (
+              <a
+                href="/staff/dashboard/categories"
+                className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
+              >
+                <p
+                  className="font-semibold text-lg"
+                  style={{ color: "#000000" }}
+                >
+                  Manage Categories
+                </p>
+              </a>
+            )}
+
+            {permissions.includes("PRODUCT_OPTIONS_MANAGEMENT") && (
+              <a
+                href="/staff/dashboard/options"
+                className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
+              >
+                <p
+                  className="font-semibold text-lg"
+                  style={{ color: "#000000" }}
+                >
+                  Manage Options
+                </p>
+              </a>
+            )}
+
+            {permissions.includes("RECRUITMENT_MANAGEMENT") && (
               <>
                 <a
-                  href="/staff/dashboard/staff"
+                  href="/staff/dashboard/job-posts"
                   className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
                 >
-                  <p className="font-semibold text-lg" style={{ color: "#000000" }}>
-                    Manage Staff
+                  <p
+                    className="font-semibold text-lg"
+                    style={{ color: "#000000" }}
+                  >
+                    Manage Job Posts
                   </p>
                 </a>
                 <a
-                  href="/staff/dashboard/staff-accounts"
+                  href="/staff/dashboard/job-applications"
                   className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
                 >
-                  <p className="font-semibold text-lg" style={{ color: "#000000" }}>
-                    Manage Staff Accounts
+                  <p
+                    className="font-semibold text-lg"
+                    style={{ color: "#000000" }}
+                  >
+                    Manage Applications
                   </p>
                 </a>
                 <a
-                  href="/staff/dashboard/payments"
+                  href="/staff/dashboard/interviews"
                   className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
                 >
-                  <p className="font-semibold text-lg" style={{ color: "#000000" }}>
-                    Manage Payments
+                  <p
+                    className="font-semibold text-lg"
+                    style={{ color: "#000000" }}
+                  >
+                    Manage Interviews
                   </p>
                 </a>
               </>
+            )}
+
+            {permissions.includes("CONTACT_MANAGEMENT") && (
+              <a
+                href="/staff/dashboard/contacts"
+                className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
+              >
+                <p
+                  className="font-semibold text-lg"
+                  style={{ color: "#000000" }}
+                >
+                  Manage Contacts
+                </p>
+              </a>
             )}
           </div>
         </div>
@@ -332,4 +452,3 @@ export default function StaffDashboardPage() {
     </div>
   );
 }
-

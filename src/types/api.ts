@@ -435,6 +435,20 @@ export interface PaymentFilters extends PaginationParams {
   isPaid?: boolean;
 }
 
+export interface PaymentSummaryFilters {
+  staffId?: string;
+  startDate?: string; // YYYY-MM-DD
+  endDate?: string; // YYYY-MM-DD
+}
+
+export interface PaymentSummary {
+  totalPayments: number; // Total count of paid payments
+  totalAmount: number; // Sum of all total payments
+  totalBonus: number; // Sum of all bonuses
+  totalTax: number; // Sum of all taxes
+  averagePayment: number; // Average payment amount
+}
+
 // ==================== Place Tag Model ====================
 
 export interface PlaceTag {

@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 import api from "@/src/services/api";
+import { Payment } from "@/src/types/api";
+import { formatPrice } from "@/src/lib/utils";
+import { useTablePagination } from "@/src/hooks";
+import TablePagination from "@/src/components/TablePagination";
 
 // Helper function to format permission code (replace underscores with spaces and capitalize)
 const formatPermissionCode = (code: string): string => {
@@ -39,6 +43,11 @@ export default function StaffProfilePage() {
   const [profile, setProfile] = useState<StaffProfileResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [isLoadingPayments, setIsLoadingPayments] = useState(false);
+  const [paymentFilters, setPaymentFilters] = useState<{
+    paidMonth?: string;
+  }>({});
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -76,6 +85,43 @@ export default function StaffProfilePage() {
 
     fetchProfile();
   }, []);
+
+  // Fetch payments for this staff member
+  useEffect(() => {
+    const fetchPayments = async () => {
+      if (!profile?.staff?.id) return;
+      setIsLoadingPayments(true);
+      try {
+        const paymentsData = await api.payments.getByStaffId(profile.staff.id, {
+          paidMonth: paymentFilters.paidMonth,
+          page: 1,
+          limit: 1000, // Fetch all for client-side pagination
+        });
+        setPayments(paymentsData || []);
+      } catch (err: unknown) {
+        console.error("Failed to fetch payments:", err);
+        setPayments([]);
+      } finally {
+        setIsLoadingPayments(false);
+      }
+    };
+    fetchPayments();
+  }, [profile?.staff?.id, paymentFilters.paidMonth]);
+
+  // Table pagination for payments
+  const {
+    paginatedData: paginatedPayments,
+    currentPage,
+    totalPages,
+    rowsPerPage,
+    totalRows,
+    handlePageChange,
+    handleRowsPerPageChange,
+  } = useTablePagination(payments, {
+    initialRowsPerPage: 10,
+    minRowsPerPage: 10,
+    maxRowsPerPage: 50,
+  });
 
   if (isLoading) {
     return (
@@ -151,6 +197,174 @@ export default function StaffProfilePage() {
             </p>
           )}
         </div>
+
+      {/* Payment History */}
+      {profile.staff?.id && (
+        <div className="mt-6 bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold" style={{ color: "#000000" }}>
+              Payment History
+            </h2>
+          </div>
+
+          {/* Date Filter */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2" style={{ color: "#374151" }}>
+              Filter by Paid Month (YYYY-MM)
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="month"
+                className="input-field"
+                value={paymentFilters.paidMonth || ""}
+                onChange={(e) =>
+                  setPaymentFilters((prev) => ({
+                    ...prev,
+                    paidMonth: e.target.value || undefined,
+                  }))
+                }
+              />
+              {paymentFilters.paidMonth && (
+                <button
+                  onClick={() => setPaymentFilters({})}
+                  className="btn-secondary cursor-pointer"
+                >
+                  Clear Filter
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Payments Table */}
+          {isLoadingPayments ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[--primary]"></div>
+            </div>
+          ) : (
+            <>
+              <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                          Paid Month
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                          Payment Method
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                          Salary
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                          Bonus
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                          Tax
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                          Total Payment
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                          Note
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {paginatedPayments.length > 0 ? (
+                        paginatedPayments.map((payment) => (
+                          <tr key={payment.id} className="hover:bg-gray-50">
+                            <td
+                              className="px-6 py-4 whitespace-nowrap text-sm"
+                              style={{ color: "#000000" }}
+                            >
+                              {payment.paidMonth}
+                            </td>
+                            <td
+                              className="px-6 py-4 whitespace-nowrap text-sm capitalize"
+                              style={{ color: "#000000" }}
+                            >
+                              {payment.paymentMethod?.replace("_", " ") || "—"}
+                            </td>
+                            <td
+                              className="px-6 py-4 whitespace-nowrap text-sm"
+                              style={{ color: "#000000" }}
+                            >
+                              {formatPrice(payment.staff?.salary || 0)}
+                            </td>
+                            <td
+                              className="px-6 py-4 whitespace-nowrap text-sm"
+                              style={{ color: "#000000" }}
+                            >
+                              {formatPrice(payment.bonus || 0)}
+                            </td>
+                            <td
+                              className="px-6 py-4 whitespace-nowrap text-sm"
+                              style={{ color: "#000000" }}
+                            >
+                              {formatPrice(payment.tax || 0)}
+                            </td>
+                            <td
+                              className="px-6 py-4 whitespace-nowrap text-sm font-semibold"
+                              style={{ color: "#000000" }}
+                            >
+                              {formatPrice(payment.totalPayment || 0)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span
+                                className={`px-3 py-1 text-xs font-medium rounded-full ${
+                                  payment.isPaid
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-yellow-100 text-yellow-800"
+                                }`}
+                              >
+                                {payment.isPaid ? "Paid" : "Pending"}
+                              </span>
+                            </td>
+                            <td
+                              className="px-6 py-4 text-sm max-w-xs truncate"
+                              style={{ color: "#4b5563" }}
+                              title={payment.note || ""}
+                            >
+                              {payment.note || "—"}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={8}
+                            className="px-6 py-12 text-center text-gray-500"
+                          >
+                            No payment records found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Pagination Controls */}
+              {payments.length > 0 && (
+                <TablePagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalRows={totalRows}
+                  rowsPerPage={rowsPerPage}
+                  onPageChange={handlePageChange}
+                  onRowsPerPageChange={handleRowsPerPageChange}
+                  minRowsPerPage={10}
+                  maxRowsPerPage={50}
+                />
+              )}
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

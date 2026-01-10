@@ -10,7 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import api from "@/src/services/api";
-import { Payment, Staff } from "@/src/types/api";
+import { Payment, Staff, PaymentSummary } from "@/src/types/api";
 import { formatPrice } from "@/src/lib/utils";
 import { useModal } from "@/src/hooks/useModal";
 import FormModal from "@/src/components/FormModal";
@@ -31,6 +31,7 @@ const paymentSchema = Yup.object().shape({
 export default function PaymentManagementPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
+  const [paymentSummary, setPaymentSummary] = useState<PaymentSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
@@ -39,13 +40,26 @@ export default function PaymentManagementPage() {
     paidMonth?: string;
     isPaid?: string;
   }>({});
+  const [searchQuery, setSearchQuery] = useState("");
   const modal = useModal();
 
   const fetchData = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const [paymentsData, staffData] = await Promise.all([
+      
+      // Build summary filters based on current filters
+      const summaryFilters: { startDate?: string; endDate?: string } = {};
+      if (filters.paidMonth) {
+        // Convert YYYY-MM to date range (first day to last day of month)
+        const [year, month] = filters.paidMonth.split("-");
+        const startDate = `${year}-${month}-01`;
+        const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+        summaryFilters.startDate = startDate;
+        summaryFilters.endDate = `${year}-${month}-${lastDay.toString().padStart(2, "0")}`;
+      }
+
+      const [paymentsData, staffData, summaryData] = await Promise.all([
         api.payments.getAll({
           paidMonth: filters.paidMonth,
           isPaid:
@@ -56,9 +70,14 @@ export default function PaymentManagementPage() {
           limit: 50,
         }),
         api.staff.getAll(),
+        api.payments.getSummary(summaryFilters).catch((err) => {
+          console.error("Failed to fetch payment summary:", err);
+          return null;
+        }),
       ]);
       setPayments(paymentsData);
       setStaff(staffData);
+      setPaymentSummary(summaryData);
     } catch (err) {
       console.error("Failed to fetch payments:", err);
       setError("Failed to fetch payment records");
@@ -72,20 +91,54 @@ export default function PaymentManagementPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.paidMonth, filters.isPaid]);
 
+  // Filter payments based on search query
+  const filteredPayments = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return payments;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    return payments.filter((payment) => {
+      // Search in staff name
+      const staffName = payment.staff?.name?.toLowerCase() || "";
+      // Search in employee ID
+      const employeeId = payment.staff?.employeeId?.toLowerCase() || "";
+      // Search in department name
+      const departmentName = payment.staff?.department?.name?.toLowerCase() || "";
+      const departmentShortName = payment.staff?.department?.shortName?.toLowerCase() || "";
+      // Search in paid month
+      const paidMonth = payment.paidMonth?.toLowerCase() || "";
+      // Search in note
+      const note = payment.note?.toLowerCase() || "";
+
+      return (
+        staffName.includes(query) ||
+        employeeId.includes(query) ||
+        departmentName.includes(query) ||
+        departmentShortName.includes(query) ||
+        paidMonth.includes(query) ||
+        note.includes(query)
+      );
+    });
+  }, [payments, searchQuery]);
+
   const summary = useMemo(() => {
-    const totalPayments = payments.length;
-    const totalAmount = payments.reduce(
+    // Use API summary values if available, otherwise fallback to calculated values
+    // Note: Summary should reflect all payments, not filtered ones
+    const totalPayments = paymentSummary?.totalPayments ?? payments.length;
+    const totalAmount = paymentSummary?.totalAmount ?? payments.reduce(
       (sum, p) => sum + (p.totalPayment || 0),
       0
     );
+    // Note: API summary doesn't provide paidCount, so we calculate it from payments
     const paidCount = payments.filter((p) => p.isPaid).length;
 
     return {
-      totalPayments,
-      totalAmount,
+      totalPayments: typeof totalPayments === "string" ? parseInt(totalPayments, 10) : (totalPayments || 0),
+      totalAmount: typeof totalAmount === "string" ? parseFloat(totalAmount) : (totalAmount || 0),
       paidCount,
     };
-  }, [payments]);
+  }, [payments, paymentSummary]);
 
   const handleCreate = () => {
     setEditingPayment(null);
@@ -190,7 +243,7 @@ export default function PaymentManagementPage() {
       )}
 
       {/* Summary + Filters */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
           <p className="text-sm text-gray-600 mb-1">Total Payments</p>
           <p className="text-2xl font-bold" style={{ color: "#000000" }}>
@@ -198,16 +251,36 @@ export default function PaymentManagementPage() {
           </p>
         </div>
         <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-          <p className="text-sm text-gray-600 mb-1">Total Amount</p>
-          <p className="text-2xl font-bold" style={{ color: "#000000" }}>
-            {formatPrice(summary.totalAmount)}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
           <p className="text-sm text-gray-600 mb-1">Paid Records</p>
           <p className="text-2xl font-bold" style={{ color: "#000000" }}>
             {summary.paidCount}
           </p>
+        </div>
+      </div>
+
+      {/* Search Box */}
+      <div className="bg-white rounded-lg shadow p-4 border border-gray-200 mb-6">
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Search Payments
+            </label>
+            <input
+              type="text"
+              placeholder="Search by staff name, employee ID, department, month, or note..."
+              className="input-field"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="btn-secondary cursor-pointer whitespace-nowrap"
+            >
+              Clear Search
+            </button>
+          )}
         </div>
       </div>
 
@@ -289,7 +362,20 @@ export default function PaymentManagementPage() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {payments.map((payment) => (
+            {filteredPayments.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={8}
+                  className="px-6 py-4 text-center text-sm"
+                  style={{ color: "#6b7280" }}
+                >
+                  {searchQuery
+                    ? "No payments found matching your search."
+                    : "No payments found."}
+                </td>
+              </tr>
+            ) : (
+              filteredPayments.map((payment) => (
               <tr key={payment.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div
@@ -365,7 +451,8 @@ export default function PaymentManagementPage() {
                   </button>
                 </td>
               </tr>
-            ))}
+              ))
+            )}
           </tbody>
         </table>
 

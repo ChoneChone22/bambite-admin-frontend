@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
@@ -49,12 +49,41 @@ export default function StaffManagementPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
   const modal = useModal();
 
+  // Filter staff based on search query
+  const filteredStaff = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return staff;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    return staff.filter((member) => {
+      const employeeId = member.employeeId?.toLowerCase() || "";
+      const name = member.name?.toLowerCase() || "";
+      const position = member.position?.toLowerCase() || "";
+      const departmentName = member.department?.name?.toLowerCase() || "";
+      const departmentShortName =
+        member.department?.shortName?.toLowerCase() || "";
+      const status = member.status?.toLowerCase() || "";
+      const salary = member.salary?.toString() || "";
+      return (
+        employeeId.includes(query) ||
+        name.includes(query) ||
+        position.includes(query) ||
+        departmentName.includes(query) ||
+        departmentShortName.includes(query) ||
+        status.includes(query) ||
+        salary.includes(query)
+      );
+    });
+  }, [staff, searchQuery]);
+
   // Table sorting
   const { sortedData, handleSort, getSortDirection, sortConfig } =
-    useTableSort<Staff>(staff, { key: null, direction: null });
+    useTableSort<Staff>(filteredStaff, { key: null, direction: null });
 
   // Table pagination
   const {
@@ -133,7 +162,11 @@ export default function StaffManagementPage() {
       await api.staff.delete(id);
       await fetchData();
     } catch (err: any) {
-      await modal.alert(err.message || "Failed to delete staff member", "Error", "error");
+      await modal.alert(
+        err.message || "Failed to delete staff member",
+        "Error",
+        "error"
+      );
       console.error(err);
     }
   };
@@ -149,18 +182,30 @@ export default function StaffManagementPage() {
         resetForm();
         setShowModal(false); // Close modal immediately
         await fetchData();
-        await modal.alert("Staff member updated successfully", "Success", "success");
+        await modal.alert(
+          "Staff member updated successfully",
+          "Success",
+          "success"
+        );
       } else {
         await api.staff.create(values);
         setSubmitting(false); // Stop loading state
         resetForm();
         setShowModal(false); // Close modal immediately
         await fetchData();
-        await modal.alert("Staff member created successfully", "Success", "success");
+        await modal.alert(
+          "Staff member created successfully",
+          "Success",
+          "success"
+        );
       }
     } catch (err: any) {
       setSubmitting(false); // Stop loading state on error
-      await modal.alert(err.message || "Failed to save staff member", "Error", "error");
+      await modal.alert(
+        err.message || "Failed to save staff member",
+        "Error",
+        "error"
+      );
     }
   };
 
@@ -203,6 +248,17 @@ export default function StaffManagementPage() {
           </div>
         </div>
       </div> */}
+
+      {/* Search Box */}
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search staff by employee ID, name, position, department, status, or salary..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="input-field w-full max-w-md"
+        />
+      </div>
 
       {/* Staff Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -273,15 +329,25 @@ export default function StaffManagementPage() {
                 >
                   {member.position}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
                   <button
                     onClick={() =>
                       router.push(`/staff/dashboard/staff/${member.id}`)
                     }
-                    className="font-semibold hover:underline mr-4 cursor-pointer"
+                    className="font-semibold hover:underline cursor-pointer"
                     style={{ color: "#2C5BBB", cursor: "pointer" }}
                   >
-                    Manage
+                    View
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingStaff(member);
+                      setShowModal(true);
+                    }}
+                    className="font-semibold hover:underline cursor-pointer"
+                    style={{ color: "#f59759", cursor: "pointer" }}
+                  >
+                    Edit
                   </button>
                   <button
                     onClick={() => handleDelete(member.id)}
@@ -315,171 +381,161 @@ export default function StaffManagementPage() {
         maxWidth="2xl"
       >
         <Formik
-              initialValues={{
-                name: editingStaff?.name || "",
-                position: editingStaff?.position || "",
-                salary: editingStaff?.salary || 0,
-                tax: editingStaff?.tax || 0,
-                totalBonus: editingStaff?.totalBonus || 0,
-                departmentId: editingStaff?.departmentId || "",
-                status: editingStaff?.status || "active",
-              }}
-              validationSchema={staffSchema}
-              onSubmit={handleSubmit}
-            >
-              {({ errors, touched, isSubmitting }) => (
-                <Form className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Full Name *
-                    </label>
-                    <Field
-                      name="name"
-                      type="text"
-                      className="input-field"
-                      placeholder="e.g., John Doe"
-                    />
-                    {errors.name && touched.name && (
-                      <p className="text-red-600 text-sm mt-1">{errors.name}</p>
-                    )}
-                  </div>
+          initialValues={{
+            name: editingStaff?.name || "",
+            position: editingStaff?.position || "",
+            salary: editingStaff?.salary || 0,
+            tax: editingStaff?.tax || 0,
+            totalBonus: editingStaff?.totalBonus || 0,
+            departmentId: editingStaff?.departmentId || "",
+            status: editingStaff?.status || "active",
+          }}
+          validationSchema={staffSchema}
+          onSubmit={handleSubmit}
+        >
+          {({ errors, touched, isSubmitting }) => (
+            <Form className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Full Name *
+                </label>
+                <Field
+                  name="name"
+                  type="text"
+                  className="input-field"
+                  placeholder="e.g., John Doe"
+                />
+                {errors.name && touched.name && (
+                  <p className="text-red-600 text-sm mt-1">{errors.name}</p>
+                )}
+              </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Position *
-                    </label>
-                    <Field
-                      name="position"
-                      type="text"
-                      className="input-field"
-                      placeholder="e.g., Kitchen Manager"
-                    />
-                    {errors.position && touched.position && (
-                      <p className="text-red-600 text-sm mt-1">
-                        {errors.position}
-                      </p>
-                    )}
-                  </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Position *
+                </label>
+                <Field
+                  name="position"
+                  type="text"
+                  className="input-field"
+                  placeholder="e.g., Kitchen Manager"
+                />
+                {errors.position && touched.position && (
+                  <p className="text-red-600 text-sm mt-1">{errors.position}</p>
+                )}
+              </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Department *
-                    </label>
-                    <Field
-                      as="select"
-                      name="departmentId"
-                      className="input-field"
-                    >
-                      <option value="">Select department</option>
-                      {activeDepartments.map((dept) => (
-                        <option key={dept.id} value={dept.id}>
-                          {dept.name} ({dept.shortName})
-                        </option>
-                      ))}
-                    </Field>
-                    {errors.departmentId && touched.departmentId && (
-                      <p className="text-red-600 text-sm mt-1">
-                        {errors.departmentId}
-                      </p>
-                    )}
-                  </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Department *
+                </label>
+                <Field as="select" name="departmentId" className="input-field">
+                  <option value="">Select department</option>
+                  {activeDepartments.map((dept) => (
+                    <option key={dept.id} value={dept.id}>
+                      {dept.name} ({dept.shortName})
+                    </option>
+                  ))}
+                </Field>
+                {errors.departmentId && touched.departmentId && (
+                  <p className="text-red-600 text-sm mt-1">
+                    {errors.departmentId}
+                  </p>
+                )}
+              </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Salary ($) *
-                      </label>
-                      <Field
-                        name="salary"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        className="input-field"
-                        placeholder="50000"
-                      />
-                      {errors.salary && touched.salary && (
-                        <p className="text-red-600 text-sm mt-1">
-                          {errors.salary}
-                        </p>
-                      )}
-                    </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Salary ($) *
+                  </label>
+                  <Field
+                    name="salary"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="input-field"
+                    placeholder="50000"
+                  />
+                  {errors.salary && touched.salary && (
+                    <p className="text-red-600 text-sm mt-1">{errors.salary}</p>
+                  )}
+                </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Bonus ($)
-                      </label>
-                      <Field
-                        name="totalBonus"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        className="input-field"
-                        placeholder="0"
-                      />
-                      {errors.totalBonus && touched.totalBonus && (
-                        <p className="text-red-600 text-sm mt-1">
-                          {errors.totalBonus}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Bonus ($)
+                  </label>
+                  <Field
+                    name="totalBonus"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="input-field"
+                    placeholder="0"
+                  />
+                  {errors.totalBonus && touched.totalBonus && (
+                    <p className="text-red-600 text-sm mt-1">
+                      {errors.totalBonus}
+                    </p>
+                  )}
+                </div>
+              </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Tax ($)
-                    </label>
-                    <Field
-                      name="tax"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      className="input-field"
-                      placeholder="0"
-                    />
-                    {errors.tax && touched.tax && (
-                      <p className="text-red-600 text-sm mt-1">{errors.tax}</p>
-                    )}
-                  </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tax ($)
+                </label>
+                <Field
+                  name="tax"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  className="input-field"
+                  placeholder="0"
+                />
+                {errors.tax && touched.tax && (
+                  <p className="text-red-600 text-sm mt-1">{errors.tax}</p>
+                )}
+              </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Status *
-                    </label>
-                    <Field as="select" name="status" className="input-field">
-                      <option value="active">Active</option>
-                      <option value="on_leave">On Leave</option>
-                      <option value="quit">Quit</option>
-                    </Field>
-                    {errors.status && touched.status && (
-                      <p className="text-red-600 text-sm mt-1">
-                        {errors.status}
-                      </p>
-                    )}
-                  </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Status *
+                </label>
+                <Field as="select" name="status" className="input-field">
+                  <option value="active">Active</option>
+                  <option value="on_leave">On Leave</option>
+                  <option value="quit">Quit</option>
+                </Field>
+                {errors.status && touched.status && (
+                  <p className="text-red-600 text-sm mt-1">{errors.status}</p>
+                )}
+              </div>
 
-                  <div className="flex gap-4 pt-4">
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="btn-primary flex-1 cursor-pointer"
-                    >
-                      {isSubmitting
-                        ? "Saving..."
-                        : editingStaff
-                        ? "Update"
-                        : "Create"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowModal(false)}
-                      className="btn-secondary flex-1"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </Form>
-              )}
-            </Formik>
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="btn-primary flex-1 cursor-pointer"
+                >
+                  {isSubmitting
+                    ? "Saving..."
+                    : editingStaff
+                    ? "Update"
+                    : "Create"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="btn-secondary flex-1"
+                >
+                  Cancel
+                </button>
+              </div>
+            </Form>
+          )}
+        </Formik>
       </FormModal>
     </div>
   );
