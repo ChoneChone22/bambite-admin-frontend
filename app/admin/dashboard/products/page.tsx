@@ -6,10 +6,12 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import api from "@/src/services/api";
+import { useTablePagination } from "@/src/hooks";
+import TablePagination from "@/src/components/TablePagination";
 import {
   Product,
   Category,
@@ -76,23 +78,19 @@ export default function ProductsManagementPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
   const modal = useModal();
 
-  const fetchProducts = async (pageNum = 1) => {
+  const fetchProducts = async () => {
     try {
       setIsLoading(true);
       const response = await api.products.getAll({
-        page: pageNum,
-        limit: 10,
+        page: 1,
+        limit: 1000, // Fetch all for client-side pagination
         sortBy: "createdAt",
         sortOrder: "desc",
       });
-      setProducts(response.data);
-      if (response.meta) {
-        setTotalPages(Math.ceil(response.meta.total / response.meta.limit));
-      }
+      setProducts(response.data || response);
     } catch (err) {
       setError("Failed to fetch products");
       console.error(err);
@@ -100,6 +98,56 @@ export default function ProductsManagementPage() {
       setIsLoading(false);
     }
   };
+
+  // Filter products based on search query
+  const filteredProducts = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return products;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    return products.filter((product) => {
+      // Search in product name
+      const name = product.name?.toLowerCase() || "";
+      // Search in Thai name
+      const thaiName = product.thaiName?.toLowerCase() || "";
+      // Search in description
+      const description = product.description?.toLowerCase() || "";
+      // Search in ingredients
+      const ingredients = product.ingredients?.toLowerCase() || "";
+      // Search in category name
+      const categoryName = product.category?.name?.toLowerCase() || "";
+      // Search in price (convert to string)
+      const price = product.price?.toString() || "";
+      // Search in stock quantity
+      const stock = product.stockQuantity?.toString() || "";
+
+      return (
+        name.includes(query) ||
+        thaiName.includes(query) ||
+        description.includes(query) ||
+        ingredients.includes(query) ||
+        categoryName.includes(query) ||
+        price.includes(query) ||
+        stock.includes(query)
+      );
+    });
+  }, [products, searchQuery]);
+
+  // Table pagination
+  const {
+    paginatedData,
+    currentPage,
+    totalPages,
+    rowsPerPage,
+    totalRows,
+    handlePageChange,
+    handleRowsPerPageChange,
+  } = useTablePagination(filteredProducts, {
+    initialRowsPerPage: 10,
+    minRowsPerPage: 10,
+    maxRowsPerPage: 50,
+  });
 
   const fetchCategories = async () => {
     try {
@@ -167,7 +215,7 @@ export default function ProductsManagementPage() {
 
     try {
       await api.products.delete(id);
-      await fetchProducts(page);
+      await fetchProducts();
     } catch (err: any) {
       await modal.alert(
         getErrorMessage(err) || "Failed to delete product",
@@ -269,7 +317,7 @@ export default function ProductsManagementPage() {
         resetForm();
         setShowModal(false); // Close modal immediately
         setImagePreviews([]);
-        await fetchProducts(page);
+        await fetchProducts();
         await fetchCategories(); // Refresh categories in case counts changed
         await modal.alert("Product updated successfully", "Success", "success");
       } else {
@@ -293,7 +341,7 @@ export default function ProductsManagementPage() {
         resetForm();
         setShowModal(false); // Close modal immediately
         setImagePreviews([]);
-        await fetchProducts(page);
+        await fetchProducts();
         await fetchCategories(); // Refresh categories in case counts changed
         await modal.alert("Product created successfully", "Success", "success");
       }
@@ -332,33 +380,56 @@ export default function ProductsManagementPage() {
         <div className="bg-red-50 text-red-700 p-4 rounded-lg mb-6">{error}</div>
       )}
 
+      {/* Search Box */}
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search products by name, description, category, price, or stock..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="input-field w-full max-w-md"
+        />
+      </div>
+
       {/* Products Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                Product
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                Category
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                Options
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                Price
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                Stock
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {products.map((product) => (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  Product
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  Category
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  Options
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  Price
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  Stock
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {paginatedData.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-6 py-12 text-center text-sm"
+                    style={{ color: "#6b7280" }}
+                  >
+                    No products found
+                  </td>
+                </tr>
+              ) : (
+                paginatedData.map((product) => (
               <tr key={product.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
@@ -451,45 +522,24 @@ export default function ProductsManagementPage() {
                   </button>
                 </td>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="mt-6 flex justify-center gap-2">
-          <button
-            onClick={() => {
-              const newPage = page - 1;
-              if (newPage >= 1) {
-                setPage(newPage);
-                fetchProducts(newPage);
-              }
-            }}
-            disabled={page === 1}
-            className="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Previous
-          </button>
-          <span className="px-4 py-2" style={{ color: "#374151" }}>
-            Page {page} of {totalPages}
-          </span>
-          <button
-            onClick={() => {
-              const newPage = page + 1;
-              if (newPage <= totalPages) {
-                setPage(newPage);
-                fetchProducts(newPage);
-              }
-            }}
-            disabled={page === totalPages}
-            className="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Next
-          </button>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
+        {filteredProducts.length > 0 && (
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            rowsPerPage={rowsPerPage}
+            totalRows={totalRows}
+            onPageChange={handlePageChange}
+            onRowsPerPageChange={handleRowsPerPageChange}
+            minRowsPerPage={10}
+            maxRowsPerPage={50}
+          />
+        )}
+      </div>
 
       {/* Product Form Modal */}
       <FormModal

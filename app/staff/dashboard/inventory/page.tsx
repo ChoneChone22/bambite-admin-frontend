@@ -6,13 +6,15 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import api from "@/src/services/api";
 import { Product, InventoryLog, InventoryReason } from "@/src/types/api";
 import { formatDateTime } from "@/src/lib/utils";
 import { useModal } from "@/src/hooks/useModal";
+import { useTablePagination } from "@/src/hooks";
+import TablePagination from "@/src/components/TablePagination";
 
 // Validation Schema
 const inventorySchema = Yup.object().shape({
@@ -32,6 +34,7 @@ export default function InventoryControlPage() {
   const [changes, setChanges] = useState<InventoryLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const modal = useModal();
 
   const fetchData = async () => {
@@ -54,6 +57,72 @@ export default function InventoryControlPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Filter products based on search query
+  const filteredProducts = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return products;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    return products.filter((product) => {
+      const name = product.name?.toLowerCase() || "";
+      const categoryName = product.category?.name?.toLowerCase() || "";
+      const stock = product.stockQuantity?.toString() || "";
+      return name.includes(query) || categoryName.includes(query) || stock.includes(query);
+    });
+  }, [products, searchQuery]);
+
+  // Filter inventory changes based on search query
+  const filteredChanges = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return changes;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    return changes.filter((change) => {
+      const productName = change.product?.name?.toLowerCase() || "";
+      const reason = change.reason?.toLowerCase() || "";
+      const quantity = change.quantityChange?.toString() || "";
+      const notes = change.notes?.toLowerCase() || "";
+      return (
+        productName.includes(query) ||
+        reason.includes(query) ||
+        quantity.includes(query) ||
+        notes.includes(query)
+      );
+    });
+  }, [changes, searchQuery]);
+
+  // Table pagination for products
+  const {
+    paginatedData: paginatedProducts,
+    currentPage: productsPage,
+    totalPages: productsTotalPages,
+    rowsPerPage: productsRowsPerPage,
+    totalRows: productsTotalRows,
+    handlePageChange: handleProductsPageChange,
+    handleRowsPerPageChange: handleProductsRowsPerPageChange,
+  } = useTablePagination(filteredProducts, {
+    initialRowsPerPage: 10,
+    minRowsPerPage: 10,
+    maxRowsPerPage: 50,
+  });
+
+  // Table pagination for changes
+  const {
+    paginatedData: paginatedChanges,
+    currentPage: changesPage,
+    totalPages: changesTotalPages,
+    rowsPerPage: changesRowsPerPage,
+    totalRows: changesTotalRows,
+    handlePageChange: handleChangesPageChange,
+    handleRowsPerPageChange: handleChangesRowsPerPageChange,
+  } = useTablePagination(filteredChanges, {
+    initialRowsPerPage: 10,
+    minRowsPerPage: 10,
+    maxRowsPerPage: 50,
+  });
 
   const handleSubmit = async (
     values: {
@@ -242,6 +311,17 @@ export default function InventoryControlPage() {
         </div>
       )}
 
+      {/* Search Box */}
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search products or inventory changes by name, category, stock, reason, or notes..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="input-field w-full max-w-md"
+        />
+      </div>
+
       {/* Current Stock Overview */}
       <div className="bg-white rounded-lg shadow mb-8 overflow-hidden">
         <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
@@ -268,7 +348,18 @@ export default function InventoryControlPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {products.map((product) => (
+              {paginatedProducts.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={4}
+                    className="px-6 py-12 text-center text-sm"
+                    style={{ color: "#6b7280" }}
+                  >
+                    No products found
+                  </td>
+                </tr>
+              ) : (
+                paginatedProducts.map((product) => (
                 <tr key={product.id} className="hover:bg-gray-50">
                   <td
                     className="px-6 py-4 whitespace-nowrap text-sm font-medium"
@@ -304,10 +395,23 @@ export default function InventoryControlPage() {
                     )}
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>
+        {filteredProducts.length > 0 && (
+          <TablePagination
+            currentPage={productsPage}
+            totalPages={productsTotalPages}
+            rowsPerPage={productsRowsPerPage}
+            totalRows={productsTotalRows}
+            onPageChange={handleProductsPageChange}
+            onRowsPerPageChange={handleProductsRowsPerPageChange}
+            minRowsPerPage={10}
+            maxRowsPerPage={50}
+          />
+        )}
       </div>
 
       {/* Inventory Change History */}
@@ -345,7 +449,18 @@ export default function InventoryControlPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {changes.map((change) => (
+              {paginatedChanges.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="px-6 py-12 text-center text-sm"
+                    style={{ color: "#6b7280" }}
+                  >
+                    No inventory changes found
+                  </td>
+                </tr>
+              ) : (
+                paginatedChanges.map((change) => (
                 <tr key={change.id} className="hover:bg-gray-50">
                   <td
                     className="px-6 py-4 whitespace-nowrap text-sm"
@@ -398,16 +513,24 @@ export default function InventoryControlPage() {
                     {change.notes || "-"}
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
 
-          {changes.length === 0 && (
-            <div className="text-center py-12">
-              <p style={{ color: "#6b7280" }}>No inventory changes yet</p>
-            </div>
-          )}
         </div>
+        {filteredChanges.length > 0 && (
+          <TablePagination
+            currentPage={changesPage}
+            totalPages={changesTotalPages}
+            rowsPerPage={changesRowsPerPage}
+            totalRows={changesTotalRows}
+            onPageChange={handleChangesPageChange}
+            onRowsPerPageChange={handleChangesRowsPerPageChange}
+            minRowsPerPage={10}
+            maxRowsPerPage={50}
+          />
+        )}
       </div>
     </div>
   );

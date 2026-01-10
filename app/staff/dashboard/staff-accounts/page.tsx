@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
@@ -40,6 +40,58 @@ const formatPermissionCode = (code: string): string => {
     .join(" ");
 };
 
+// Permission grouping structure (matching admin sidebar)
+interface PermissionGroup {
+  title: string;
+  permissionCodes: string[];
+}
+
+const permissionGroups: PermissionGroup[] = [
+  {
+    title: "Products",
+    permissionCodes: [
+      "product_management",
+      "product_category_management",
+      "product_options_management",
+    ],
+  },
+  {
+    title: "Orders",
+    permissionCodes: ["orders_management"],
+  },
+  {
+    title: "Staff Management",
+    permissionCodes: [
+      "staff_management",
+      "staff_account_management",
+      "staff_payment_management",
+      "department_management",
+    ],
+  },
+  {
+    title: "Operations",
+    permissionCodes: ["inventory_management"],
+  },
+  {
+    title: "Recruitment",
+    permissionCodes: ["recruitment_management"],
+  },
+  {
+    title: "Communications",
+    permissionCodes: ["contact_management"],
+  },
+];
+
+// Helper function to group permissions
+const groupPermissions = (permissions: Permission[]) => {
+  return permissionGroups.map((group) => ({
+    ...group,
+    permissions: permissions.filter((perm) =>
+      group.permissionCodes.includes(perm.code?.toLowerCase() || "")
+    ),
+  }));
+};
+
 export default function StaffAccountManagementPage() {
   const router = useRouter();
   const [accounts, setAccounts] = useState<StaffAccount[]>([]);
@@ -51,11 +103,38 @@ export default function StaffAccountManagementPage() {
     null
   );
   const [error, setError] = useState<string | null>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState("");
   const modal = useModal();
+
+  // Filter staff accounts based on search query
+  const filteredStaffAccounts = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return accounts;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    return accounts.filter((account) => {
+      const email = account.email?.toLowerCase() || "";
+      const staffName = account.staff?.name?.toLowerCase() || "";
+      const employeeId = account.staff?.employeeId?.toLowerCase() || "";
+      const position = account.staff?.position?.toLowerCase() || "";
+      const departmentName = account.staff?.department?.name?.toLowerCase() || "";
+      const status = account.isActive ? "active" : "inactive";
+      return (
+        email.includes(query) ||
+        staffName.includes(query) ||
+        employeeId.includes(query) ||
+        position.includes(query) ||
+        departmentName.includes(query) ||
+        status.includes(query)
+      );
+    });
+  }, [accounts, searchQuery]);
 
   // Table sorting
   const { sortedData, handleSort, getSortDirection, sortConfig } =
-    useTableSort<StaffAccount>(accounts, { key: null, direction: null });
+    useTableSort<StaffAccount>(filteredStaffAccounts, { key: null, direction: null });
 
   // Table pagination
   const {
@@ -101,11 +180,15 @@ export default function StaffAccountManagementPage() {
   const handleCreate = () => {
     setEditingAccount(null);
     setShowModal(true);
+    // Expand all groups by default when opening modal
+    setExpandedGroups(new Set(permissionGroups.map((g) => g.title)));
   };
 
   const handleEdit = (account: StaffAccount) => {
     setEditingAccount(account);
     setShowModal(true);
+    // Expand all groups by default when opening modal
+    setExpandedGroups(new Set(permissionGroups.map((g) => g.title)));
   };
 
   const handleDelete = async (id: string) => {
@@ -195,6 +278,17 @@ export default function StaffAccountManagementPage() {
           {error}
         </div>
       )}
+
+      {/* Search Box */}
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Search staff accounts by email, staff name, employee ID, position, department, or status..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="input-field w-full max-w-md"
+        />
+      </div>
 
       {/* Accounts Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -431,47 +525,102 @@ export default function StaffAccountManagementPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Permissions
                     </label>
-                    <div className="border border-gray-300 rounded-lg p-4 max-h-64 overflow-y-auto bg-gray-50">
+                    <div className="border border-gray-300 rounded-lg p-2 max-h-64 overflow-y-auto bg-gray-50">
                       {permissions.length === 0 ? (
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-500 p-4">
                           No permissions available.
                         </p>
                       ) : (
-                        <div className="space-y-3">
-                          {permissions.map((perm) => {
-                            const checked = values.permissionIds?.includes(
-                              perm.id
-                            );
+                        <div className="space-y-1">
+                          {groupPermissions(permissions).map((group) => {
+                            if (group.permissions.length === 0) return null;
+                            const isExpanded = expandedGroups.has(group.title);
+                            const toggleGroup = () => {
+                              setExpandedGroups((prev) => {
+                                const newSet = new Set(prev);
+                                if (newSet.has(group.title)) {
+                                  newSet.delete(group.title);
+                                } else {
+                                  newSet.add(group.title);
+                                }
+                                return newSet;
+                              });
+                            };
+
                             return (
-                              <label
-                                key={perm.id}
-                                className="flex items-start gap-3 p-2 rounded hover:bg-white cursor-pointer transition-colors"
-                              >
-                                <input
-                                  type="checkbox"
-                                  className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                  checked={!!checked}
-                                  onChange={(e) => {
-                                    const current = values.permissionIds || [];
-                                    if (e.target.checked) {
-                                      setFieldValue("permissionIds", [
-                                        ...current,
-                                        perm.id,
-                                      ]);
-                                    } else {
-                                      setFieldValue(
-                                        "permissionIds",
-                                        current.filter((id) => id !== perm.id)
+                              <div key={group.title} className="mb-1">
+                                {/* Group Header */}
+                                <button
+                                  type="button"
+                                  onClick={toggleGroup}
+                                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all font-semibold text-sm hover:bg-gray-100"
+                                  style={{ color: "#374151" }}
+                                >
+                                  <span>{group.title}</span>
+                                  <svg
+                                    className={`w-4 h-4 transition-transform duration-200 ${
+                                      isExpanded ? "transform rotate-90" : ""
+                                    }`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                    style={{ minWidth: "16px" }}
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M9 5l7 7-7 7"
+                                    />
+                                  </svg>
+                                </button>
+
+                                {/* Group Items */}
+                                {isExpanded && (
+                                  <div className="ml-4 mt-1 space-y-1">
+                                    {group.permissions.map((perm) => {
+                                      const checked =
+                                        values.permissionIds?.includes(perm.id);
+                                      return (
+                                        <label
+                                          key={perm.id}
+                                          className="flex items-start gap-3 p-2 rounded hover:bg-white cursor-pointer transition-colors"
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                            checked={!!checked}
+                                            onChange={(e) => {
+                                              const current =
+                                                values.permissionIds || [];
+                                              if (e.target.checked) {
+                                                setFieldValue("permissionIds", [
+                                                  ...current,
+                                                  perm.id,
+                                                ]);
+                                              } else {
+                                                setFieldValue(
+                                                  "permissionIds",
+                                                  current.filter(
+                                                    (id) => id !== perm.id
+                                                  )
+                                                );
+                                              }
+                                            }}
+                                          />
+                                          <div className="flex-1">
+                                            <div className="text-sm font-semibold text-gray-900">
+                                              {formatPermissionCode(
+                                                perm.code || ""
+                                              )}
+                                            </div>
+                                          </div>
+                                        </label>
                                       );
-                                    }
-                                  }}
-                                />
-                                <div className="flex-1">
-                                  <div className="text-sm font-semibold text-gray-900">
-                                    {formatPermissionCode(perm.code || "")}
+                                    })}
                                   </div>
-                                </div>
-                              </label>
+                                )}
+                              </div>
                             );
                           })}
                         </div>

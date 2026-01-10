@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
- * Admin Category Management Page
- * CRUD operations for product categories
+ * Staff Category Management Page
+ * CRUD operations for product categories (requires product_category_management permission)
  */
 
 "use client";
@@ -45,11 +45,13 @@ export default function CategoriesManagementPage() {
   const fetchCategories = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       const response = await api.categories.getAll();
       setCategories(response);
     } catch (err) {
-      setError("Failed to fetch categories");
-      console.error(err);
+      const errorMsg = getErrorMessage(err);
+      setError(errorMsg || "Failed to fetch categories");
+      console.error("Failed to fetch categories:", err);
     } finally {
       setIsLoading(false);
     }
@@ -114,6 +116,7 @@ export default function CategoriesManagementPage() {
     try {
       await api.categories.delete(id);
       await fetchCategories();
+      await modal.alert("Category deleted successfully", "Success", "success");
     } catch (err: any) {
       const errorMsg = getErrorMessage(err);
       // Check if error is about products in stock
@@ -130,7 +133,7 @@ export default function CategoriesManagementPage() {
           "error"
         );
       }
-      console.error(err);
+      console.error("Failed to delete category:", err);
     }
   };
 
@@ -147,6 +150,11 @@ export default function CategoriesManagementPage() {
     try {
       await api.categories.updateStatus(category.id, newStatus);
       await fetchCategories();
+      await modal.alert(
+        `Category ${action}d successfully`,
+        "Success",
+        "success"
+      );
     } catch (err: any) {
       const errorMsg = getErrorMessage(err);
       // Check if error is about products in stock
@@ -163,7 +171,7 @@ export default function CategoriesManagementPage() {
           "error"
         );
       }
-      console.error(err);
+      console.error(`Failed to ${action} category:`, err);
     }
   };
 
@@ -174,26 +182,27 @@ export default function CategoriesManagementPage() {
     try {
       if (editingCategory) {
         await api.categories.update(editingCategory.id, values as UpdateCategoryRequest);
-        setSubmitting(false); // Stop loading state
+        setSubmitting(false);
         resetForm();
-        setShowModal(false); // Close modal immediately
+        setShowModal(false);
         await fetchCategories();
         await modal.alert("Category updated successfully", "Success", "success");
       } else {
         await api.categories.create(values as CreateCategoryRequest);
-        setSubmitting(false); // Stop loading state
+        setSubmitting(false);
         resetForm();
-        setShowModal(false); // Close modal immediately
+        setShowModal(false);
         await fetchCategories();
         await modal.alert("Category created successfully", "Success", "success");
       }
     } catch (err: any) {
-      setSubmitting(false); // Stop loading state on error
+      setSubmitting(false);
       await modal.alert(
         getErrorMessage(err) || "Failed to save category",
         "Error",
         "error"
       );
+      console.error("Failed to save category:", err);
     }
   };
 
@@ -237,46 +246,64 @@ export default function CategoriesManagementPage() {
       <div className="mb-6 flex gap-2">
         <button
           onClick={() => setStatusFilter("all")}
-          className={`px-4 py-2 rounded ${
-            statusFilter === "all"
-              ? "bg-blue-500 text-white"
-              : "bg-gray-200"
-          }`}
+          className="px-4 py-2 rounded transition-colors"
           style={
             statusFilter === "all"
-              ? { backgroundColor: "#3b82f6", color: "#ffffff" }
+              ? { backgroundColor: "#2C5BBB", color: "#ffffff" }
               : { backgroundColor: "#e5e7eb", color: "#374151" }
           }
+          onMouseEnter={(e) => {
+            if (statusFilter !== "all") {
+              e.currentTarget.style.backgroundColor = "#d1d5db";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (statusFilter !== "all") {
+              e.currentTarget.style.backgroundColor = "#e5e7eb";
+            }
+          }}
         >
           All
         </button>
         <button
           onClick={() => setStatusFilter("active")}
-          className={`px-4 py-2 rounded ${
-            statusFilter === "active"
-              ? "bg-blue-500 text-white"
-              : "bg-gray-200"
-          }`}
+          className="px-4 py-2 rounded transition-colors"
           style={
             statusFilter === "active"
-              ? { backgroundColor: "#3b82f6", color: "#ffffff" }
+              ? { backgroundColor: "#2C5BBB", color: "#ffffff" }
               : { backgroundColor: "#e5e7eb", color: "#374151" }
           }
+          onMouseEnter={(e) => {
+            if (statusFilter !== "active") {
+              e.currentTarget.style.backgroundColor = "#d1d5db";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (statusFilter !== "active") {
+              e.currentTarget.style.backgroundColor = "#e5e7eb";
+            }
+          }}
         >
           Active
         </button>
         <button
           onClick={() => setStatusFilter("inactive")}
-          className={`px-4 py-2 rounded ${
-            statusFilter === "inactive"
-              ? "bg-blue-500 text-white"
-              : "bg-gray-200"
-          }`}
+          className="px-4 py-2 rounded transition-colors"
           style={
             statusFilter === "inactive"
-              ? { backgroundColor: "#3b82f6", color: "#ffffff" }
+              ? { backgroundColor: "#2C5BBB", color: "#ffffff" }
               : { backgroundColor: "#e5e7eb", color: "#374151" }
           }
+          onMouseEnter={(e) => {
+            if (statusFilter !== "inactive") {
+              e.currentTarget.style.backgroundColor = "#d1d5db";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (statusFilter !== "inactive") {
+              e.currentTarget.style.backgroundColor = "#e5e7eb";
+            }
+          }}
         >
           Inactive
         </button>
@@ -316,58 +343,58 @@ export default function CategoriesManagementPage() {
               ) : (
                 paginatedData.map((category) => (
                   <tr key={category.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div
-                    className="text-sm font-medium"
-                    style={{ color: "#000000" }}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div
+                      className="text-sm font-medium"
+                      style={{ color: "#000000" }}
+                    >
+                      {category.name}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded ${
+                        category.status === "active"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {category.status}
+                    </span>
+                  </td>
+                  <td
+                    className="px-6 py-4 whitespace-nowrap text-sm"
+                    style={{ color: "#6b7280" }}
                   >
-                    {category.name}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`px-2 py-1 text-xs font-medium rounded ${
-                      category.status === "active"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                    }`}
-                  >
-                    {category.status}
-                  </span>
-                </td>
-                <td
-                  className="px-6 py-4 whitespace-nowrap text-sm"
-                  style={{ color: "#6b7280" }}
-                >
-                  {category._count?.products || 0} product(s)
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => handleToggleStatus(category)}
-                    className="font-semibold hover:underline mr-4 cursor-pointer"
-                    style={{
-                      color: category.status === "active" ? "#ea580c" : "#16a34a",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {category.status === "active" ? "Deactivate" : "Activate"}
-                  </button>
-                  <button
-                    onClick={() => handleEdit(category)}
-                    className="font-semibold hover:underline mr-4 cursor-pointer"
-                    style={{ color: "#2C5BBB", cursor: "pointer" }}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(category.id)}
-                    className="font-semibold hover:underline cursor-pointer"
-                    style={{ color: "#DC2626", cursor: "pointer" }}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
+                    {category._count?.products || 0} product(s)
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
+                    <button
+                      onClick={() => handleToggleStatus(category)}
+                      className="font-semibold hover:underline cursor-pointer"
+                      style={{
+                        color: category.status === "active" ? "#ea580c" : "#16a34a",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {category.status === "active" ? "Deactivate" : "Activate"}
+                    </button>
+                    <button
+                      onClick={() => handleEdit(category)}
+                      className="font-semibold hover:underline cursor-pointer"
+                      style={{ color: "#2C5BBB", cursor: "pointer" }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(category.id)}
+                      className="font-semibold hover:underline cursor-pointer"
+                      style={{ color: "#DC2626", cursor: "pointer" }}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
                 ))
               )}
             </tbody>
@@ -465,4 +492,3 @@ export default function CategoriesManagementPage() {
     </div>
   );
 }
-

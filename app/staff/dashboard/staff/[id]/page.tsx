@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/src/services/api";
-import { Staff } from "@/src/types/api";
+import { Staff, Payment } from "@/src/types/api";
 import { formatPrice } from "@/src/lib/utils";
+import { useTablePagination } from "@/src/hooks";
+import TablePagination from "@/src/components/TablePagination";
 
 export default function StaffDetailPage() {
   const params = useParams();
@@ -14,6 +16,11 @@ export default function StaffDetailPage() {
   const [staff, setStaff] = useState<Staff | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [isLoadingPayments, setIsLoadingPayments] = useState(false);
+  const [paymentFilters, setPaymentFilters] = useState<{
+    paidMonth?: string;
+  }>({});
 
   useEffect(() => {
     const fetchStaff = async () => {
@@ -22,28 +29,27 @@ export default function StaffDetailPage() {
       setError(null);
       try {
         const data = await api.staff.getById(staffId);
-        console.log("Staff detail response (raw):", JSON.stringify(data, null, 2));
         
         // Ensure we have valid staff data
         if (data && typeof data === "object") {
-          // Parse numeric fields properly - handle string numbers and ensure correct types
-          const rawSalary = typeof data.salary === "string" ? parseFloat(data.salary) : (data.salary || 0);
-          const rawBonus = typeof data.totalBonus === "string" ? parseFloat(data.totalBonus) : (data.totalBonus || 0);
-          
-          // If salary is 0/missing but bonus has a value, the backend might have swapped them
-          // Use the bonus value as salary if salary is 0
-          const finalSalary = (rawSalary && rawSalary > 0) ? rawSalary : (rawBonus > 0 ? rawBonus : 0);
-          const finalBonus = (rawSalary && rawSalary > 0 && rawBonus > 0 && rawBonus !== rawSalary) ? rawBonus : 0;
-          
+          // Parse numeric fields properly
           const normalizedStaff: Staff = {
             ...data,
-            salary: finalSalary,
-            totalBonus: finalBonus,
-            // Parse tax
-            tax: typeof data.tax === "number" ? data.tax : (typeof data.tax === "string" ? parseFloat(data.tax) || 0 : 0),
+            salary:
+              typeof data.salary === "string"
+                ? parseFloat(data.salary) || 0
+                : data.salary || 0,
+            totalBonus:
+              typeof data.totalBonus === "string"
+                ? parseFloat(data.totalBonus) || 0
+                : data.totalBonus || 0,
+            tax:
+              typeof data.tax === "number"
+                ? data.tax
+                : typeof data.tax === "string"
+                ? parseFloat(data.tax) || 0
+                : 0,
           };
-          
-          console.log("Normalized staff:", normalizedStaff);
           setStaff(normalizedStaff);
         } else {
           throw new Error("Invalid staff data received");
@@ -59,9 +65,46 @@ export default function StaffDetailPage() {
     fetchStaff();
   }, [staffId]);
 
+  // Fetch payments for this staff member
+  useEffect(() => {
+    const fetchPayments = async () => {
+      if (!staff?.id) return;
+      setIsLoadingPayments(true);
+      try {
+        const paymentsData = await api.payments.getByStaffId(staff.id, {
+          paidMonth: paymentFilters.paidMonth,
+          page: 1,
+          limit: 1000, // Fetch all for client-side pagination
+        });
+        setPayments(paymentsData || []);
+      } catch (err: any) {
+        console.error("Failed to fetch payments:", err);
+        setPayments([]);
+      } finally {
+        setIsLoadingPayments(false);
+      }
+    };
+    fetchPayments();
+  }, [staff?.id, paymentFilters.paidMonth]);
+
+  // Table pagination for payments
+  const {
+    paginatedData: paginatedPayments,
+    currentPage,
+    totalPages,
+    rowsPerPage,
+    totalRows,
+    handlePageChange,
+    handleRowsPerPageChange,
+  } = useTablePagination(payments, {
+    initialRowsPerPage: 10,
+    minRowsPerPage: 10,
+    maxRowsPerPage: 50,
+  });
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[--primary]"></div>
       </div>
     );
@@ -69,44 +112,60 @@ export default function StaffDetailPage() {
 
   if (error || !staff) {
     return (
-      <div className="max-w-3xl">
-        <button
-          className="mb-4 text-sm font-semibold cursor-pointer"
-          style={{ color: "#2C5BBB", cursor: "pointer" }}
-          onClick={() => router.push("/staff/dashboard/staff")}
-        >
-          ← Back to Staff List
-        </button>
-        <div className="bg-red-50 border border-red-200 p-4 rounded-lg" style={{ color: "#b91c1c" }}>
-          {error || "Staff member not found."}
+      <div>
+        <div className="mb-6">
+          <button
+            onClick={() => router.back()}
+            className="text-sm mb-4 cursor-pointer"
+            style={{ color: "#4b5563", cursor: "pointer" }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "#111827";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "#4b5563";
+            }}
+          >
+            ← Back to Staff List
+          </button>
+          <h1 className="text-3xl font-bold mb-1" style={{ color: "#000000" }}>
+            Staff Details
+          </h1>
+        </div>
+        <div className="bg-white rounded-lg shadow p-6">
+          <p className="text-sm" style={{ color: "#dc2626" }}>
+            {error || "Staff member not found."}
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <button
-        className="text-sm font-semibold cursor-pointer"
-        style={{ color: "#2C5BBB", cursor: "pointer" }}
-        onClick={() => router.push("/staff/dashboard/staff")}
-      >
-        ← Back to Staff List
-      </button>
-
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold" style={{ color: "#000000" }}>
-            {staff.name || staff.user?.email || "Staff Detail"}
-          </h1>
-          <p className="text-sm mt-1" style={{ color: "#4b5563" }}>
-            Employee ID: {staff.employeeId || "—"}
-          </p>
-        </div>
+    <div>
+      <div className="mb-6">
+        <button
+          onClick={() => router.back()}
+          className="text-sm mb-4 cursor-pointer"
+          style={{ color: "#4b5563", cursor: "pointer" }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = "#111827";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = "#4b5563";
+          }}
+        >
+          ← Back to Staff List
+        </button>
+        <h1 className="text-3xl font-bold mb-1" style={{ color: "#000000" }}>
+          {staff.name || staff.user?.email || "Staff Detail"}
+        </h1>
+        <p className="text-sm" style={{ color: "#4b5563" }}>
+          Employee ID: {staff.employeeId || "—"}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow p-6 space-y-3" style={{ backgroundColor: "#ffffff" }}>
+        <div className="bg-white rounded-lg shadow p-6 space-y-4">
           <h2 className="text-lg font-semibold mb-2" style={{ color: "#000000" }}>
             Basic Information
           </h2>
@@ -123,7 +182,7 @@ export default function StaffDetailPage() {
                 : "—"
             }
           />
-          <DetailRow label="Position" value={staff.position} />
+          <DetailRow label="Position" value={staff.position || "—"} />
           <DetailRow
             label="Status"
             value={staff.status || "—"}
@@ -137,7 +196,7 @@ export default function StaffDetailPage() {
           />
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6 space-y-3" style={{ backgroundColor: "#ffffff" }}>
+        <div className="bg-white rounded-lg shadow p-6 space-y-4">
           <h2 className="text-lg font-semibold mb-2" style={{ color: "#000000" }}>
             Compensation
           </h2>
@@ -149,10 +208,7 @@ export default function StaffDetailPage() {
                 : "$0.00"
             }
           />
-          <DetailRow
-            label="Bonus"
-            value={formatPrice(staff.totalBonus || 0)}
-          />
+          <DetailRow label="Bonus" value={formatPrice(staff.totalBonus || 0)} />
           <DetailRow label="Tax" value={formatPrice(staff.tax || 0)} />
           <DetailRow
             label="Net Pay (latest)"
@@ -164,6 +220,174 @@ export default function StaffDetailPage() {
           />
         </div>
       </div>
+
+      {/* Payment History */}
+      {staff?.id && (
+        <div className="mt-6 bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold" style={{ color: "#000000" }}>
+              Payment History
+            </h2>
+          </div>
+
+          {/* Date Filter */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2" style={{ color: "#374151" }}>
+              Filter by Paid Month (YYYY-MM)
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="month"
+                className="input-field"
+                value={paymentFilters.paidMonth || ""}
+                onChange={(e) =>
+                  setPaymentFilters((prev) => ({
+                    ...prev,
+                    paidMonth: e.target.value || undefined,
+                  }))
+                }
+              />
+              {paymentFilters.paidMonth && (
+                <button
+                  onClick={() => setPaymentFilters({})}
+                  className="btn-secondary cursor-pointer"
+                >
+                  Clear Filter
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Payments Table */}
+          {isLoadingPayments ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[--primary]"></div>
+            </div>
+          ) : (
+            <>
+              <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                          Paid Month
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                          Payment Method
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                          Salary
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                          Bonus
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                          Tax
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                          Total Payment
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                          Note
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {paginatedPayments.length > 0 ? (
+                        paginatedPayments.map((payment) => (
+                          <tr key={payment.id} className="hover:bg-gray-50">
+                            <td
+                              className="px-6 py-4 whitespace-nowrap text-sm"
+                              style={{ color: "#000000" }}
+                            >
+                              {payment.paidMonth}
+                            </td>
+                            <td
+                              className="px-6 py-4 whitespace-nowrap text-sm capitalize"
+                              style={{ color: "#000000" }}
+                            >
+                              {payment.paymentMethod?.replace("_", " ") || "—"}
+                            </td>
+                            <td
+                              className="px-6 py-4 whitespace-nowrap text-sm"
+                              style={{ color: "#000000" }}
+                            >
+                              {formatPrice(staff?.salary || payment.staff?.salary || 0)}
+                            </td>
+                            <td
+                              className="px-6 py-4 whitespace-nowrap text-sm"
+                              style={{ color: "#000000" }}
+                            >
+                              {formatPrice(payment.bonus || 0)}
+                            </td>
+                            <td
+                              className="px-6 py-4 whitespace-nowrap text-sm"
+                              style={{ color: "#000000" }}
+                            >
+                              {formatPrice(payment.tax || 0)}
+                            </td>
+                            <td
+                              className="px-6 py-4 whitespace-nowrap text-sm font-semibold"
+                              style={{ color: "#000000" }}
+                            >
+                              {formatPrice(payment.totalPayment || 0)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span
+                                className={`px-3 py-1 text-xs font-medium rounded-full ${
+                                  payment.isPaid
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-yellow-100 text-yellow-800"
+                                }`}
+                              >
+                                {payment.isPaid ? "Paid" : "Pending"}
+                              </span>
+                            </td>
+                            <td
+                              className="px-6 py-4 text-sm max-w-xs truncate"
+                              style={{ color: "#4b5563" }}
+                              title={payment.note || ""}
+                            >
+                              {payment.note || "—"}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={8}
+                            className="px-6 py-12 text-center text-gray-500"
+                          >
+                            No payment records found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Pagination Controls */}
+              {payments.length > 0 && (
+                <TablePagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalRows={totalRows}
+                  rowsPerPage={rowsPerPage}
+                  onPageChange={handlePageChange}
+                  onRowsPerPageChange={handleRowsPerPageChange}
+                  minRowsPerPage={10}
+                  maxRowsPerPage={50}
+                />
+              )}
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -188,9 +412,9 @@ function DetailRow({
   return (
     <div className="flex justify-between text-sm">
       <span style={{ color: "#4b5563" }}>{label}</span>
-      <span className="font-medium" style={{ color: getValueColor() }}>{value}</span>
+      <span className="font-medium" style={{ color: getValueColor() }}>
+        {value}
+      </span>
     </div>
   );
 }
-
-

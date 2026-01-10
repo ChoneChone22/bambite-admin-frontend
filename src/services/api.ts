@@ -36,6 +36,8 @@ import {
   CreatePaymentRequest,
   UpdatePaymentRequest,
   PaymentFilters,
+  PaymentSummary,
+  PaymentSummaryFilters,
   Category,
   CreateCategoryRequest,
   UpdateCategoryRequest,
@@ -997,13 +999,48 @@ export const paymentsApi = {
   },
 
   /**
-   * Get payment summary (Admin only)
+   * Get payment summary (Admin or Staff with staff_payment_management permission)
+   * @param filters Optional filters: staffId, startDate, endDate
+   * - If no filters: Returns summary for all staff
+   * - If staffId provided: Returns summary for specific staff member
+   * - If date range provided: Filters payments within date range
    */
-  getSummary: async (): Promise<any> => {
-    const response = await axiosInstance.get<ApiResponse<any>>(
-      "/payments/summary"
+  getSummary: async (filters?: PaymentSummaryFilters): Promise<PaymentSummary> => {
+    const response = await axiosInstance.get<ApiResponse<PaymentSummary>>(
+      "/payments/summary",
+      { params: filters }
     );
-    return response.data.data;
+    
+    // Handle different response structures
+    // API returns: { data: { summary: { totalPayments, totalAmount, ... } }, status: "success" }
+    let data: any = response.data;
+    if (data?.data) {
+      data = data.data;
+    }
+    
+    // Check if summary is nested under 'summary' property
+    const summaryData = data?.summary || data;
+    
+    // Ensure all numeric fields are numbers (API might return strings)
+    const summary: PaymentSummary = {
+      totalPayments: typeof summaryData?.totalPayments === "string" 
+        ? parseInt(summaryData.totalPayments, 10) 
+        : (summaryData?.totalPayments ?? 0),
+      totalAmount: typeof summaryData?.totalAmount === "string" 
+        ? parseFloat(summaryData.totalAmount) 
+        : (summaryData?.totalAmount ?? 0),
+      totalBonus: typeof summaryData?.totalBonus === "string" 
+        ? parseFloat(summaryData.totalBonus) 
+        : (summaryData?.totalBonus ?? 0),
+      totalTax: typeof summaryData?.totalTax === "string" 
+        ? parseFloat(summaryData.totalTax) 
+        : (summaryData?.totalTax ?? 0),
+      averagePayment: typeof summaryData?.averagePayment === "string" 
+        ? parseFloat(summaryData.averagePayment) 
+        : (summaryData?.averagePayment ?? 0),
+    };
+    
+    return summary;
   },
 
   /**
