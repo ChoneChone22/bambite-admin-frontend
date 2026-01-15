@@ -136,3 +136,115 @@ button {
 .animate-slideUp {
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+/* ==================== Mobile Responsive Styles ==================== */
+
+/* Mobile table wrapper for horizontal scrolling */
+.table-wrapper {
+  @apply overflow-x-auto -mx-4 md:mx-0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-wrapper table {
+  @apply min-w-full;
+}
+
+/* Mobile-friendly form inputs */
+@media (max-width: 640px) {
+  .input-field {
+    @apply text-base; /* Prevents zoom on iOS */
+  }
+
+  /* Better touch targets for mobile */
+  button,
+  a,
+  [role="button"] {
+    @apply min-h-[44px] min-w-[44px]; /* iOS recommended touch target size */
+  }
+
+  /* Improved spacing for mobile */
+  .container-custom {
+    @apply px-4;
+  }
+
+  /* Card padding adjustments */
+  .card {
+    @apply p-4;
+  }
+}
+
+/* Mobile table cell adjustments */
+@media (max-width: 768px) {
+  table th,
+  table td {
+    @apply px-3 py-2 text-sm;
+  }
+
+  /* Stack table content vertically on very small screens if needed */
+  @media (max-width: 480px) {
+    .table-responsive {
+      @apply block;
+    }
+
+    .table-responsive thead {
+      @apply hidden;
+    }
+
+    .table-responsive tbody,
+    .table-responsive tr,
+    .table-responsive td {
+      @apply block w-full;
+    }
+
+    .table-responsive tr {
+      @apply mb-4 border border-gray-200 rounded-lg p-4;
+    }
+
+    .table-responsive td {
+      @apply text-right px-0 py-2 border-none;
+    }
+
+    .table-responsive td:before {
+      @apply content-[attr(data-label)] float-left font-semibold text-gray-700;
+    }
+  }
+}
+
+/* Mobile modal adjustments */
+@media (max-width: 640px) {
+  .modal-content {
+    @apply mx-4 my-4 max-h-[90vh] overflow-y-auto;
+  }
+}
+
+/* Safe area insets for mobile devices (notches, etc.) */
+@supports (padding: max(0px)) {
+  .safe-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+
+  .safe-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .safe-left {
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+
+  .safe-right {
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+}
+
+/* Prevent text size adjustment on iOS */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Smooth scrolling for mobile */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}

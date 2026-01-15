@@ -6,9 +6,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { tokenManager } from "@/src/lib/tokenManager";
 import AdminSidebar from "@/src/components/AdminSidebar";
+import MobileNavBar from "@/src/components/MobileNavBar";
+import MobileSidebar from "@/src/components/MobileSidebar";
 
 export default function AdminDashboardLayout({
   children,
@@ -16,8 +18,15 @@ export default function AdminDashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -82,15 +91,32 @@ export default function AdminDashboardLayout({
     );
   }
 
+  const user = tokenManager.getUser();
+
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar - Admin only */}
+      {/* Mobile Navigation Bar */}
+      <MobileNavBar
+        onMenuClick={() => setIsMobileMenuOpen(true)}
+        title="Bambite Admin"
+        userEmail={user?.email}
+      />
+
+      {/* Mobile Sidebar Drawer */}
+      <MobileSidebar
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+      >
+        <AdminSidebar />
+      </MobileSidebar>
+
+      {/* Desktop Sidebar - Admin only */}
       <aside className="w-64 flex-shrink-0 hidden md:block">
         <AdminSidebar />
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pt-16 md:pt-0">
         <div className="p-4 md:p-8">{children}</div>
       </main>
     </div>

@@ -308,20 +308,8 @@ export default function StaffSidebar() {
 
   return (
     <div className="flex flex-col h-full bg-white border-r border-gray-200">
-      {/* Logo */}
-      <div className="p-6 border-b border-gray-200">
-        <h1 className="text-2xl font-bold" style={{ color: "#2C5BBB" }}>
-          Bambite Staff
-        </h1>
-        {user && (
-          <p className="text-sm text-gray-600 mt-1">
-            {user.email || "Staff Account"}
-          </p>
-        )}
-      </div>
-
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+      <nav className="flex-1 overflow-y-auto p-4 space-y-2 pt-6">
         {visibleGroups.length > 0 ? (
           visibleGroups.map((group) => {
             const hasActiveItem = group.items.some((item) => {

@@ -125,15 +125,8 @@ export default function AdminSidebar() {
 
   return (
     <div className="flex flex-col h-full bg-white border-r border-gray-200">
-      {/* Logo */}
-      <div className="p-6 border-b border-gray-200">
-        <h1 className="text-2xl font-bold" style={{ color: "#2C5BBB" }}>
-          Bambite Admin
-        </h1>
-      </div>
-
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+      <nav className="flex-1 overflow-y-auto p-4 space-y-2 pt-6">
         {navigationGroups.map((group) => {
           const isExpanded = expandedGroups.has(group.title);
           const hasActiveItem = isGroupActive(group);
