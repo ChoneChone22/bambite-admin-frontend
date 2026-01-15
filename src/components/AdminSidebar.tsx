@@ -94,9 +94,29 @@ export default function AdminSidebar() {
     });
   };
 
-  const handleLogout = () => {
-    clearAuth();
-    router.push("/admin/login");
+  const handleLogout = async () => {
+    try {
+      // Get refreshToken before clearing
+      const refreshToken = typeof window !== "undefined" 
+        ? localStorage.getItem("refreshToken") 
+        : null;
+      
+      // Import api dynamically to avoid circular dependencies
+      const api = (await import("@/src/services/api")).default;
+      // Backend supports both: cookies (Priority 1) and refreshToken in body (Priority 2)
+      await api.auth.logout(refreshToken || undefined);
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      // Clear user data and tokens
+      clearAuth();
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("userRole");
+      }
+      router.push("/admin/login");
+    }
   };
 
   const isGroupActive = (group: NavGroup) => {

@@ -69,23 +69,30 @@ const axiosInstance: AxiosInstance = axios.create({
 
 /**
  * Request interceptor
- * Note: Authorization header is optional - cookies are primary auth method
- * Some backends may still accept Bearer tokens as fallback
+ * Adds Authorization header from localStorage for Safari/iOS support
+ * Backend supports both methods: Cookies (Priority 1 - Chrome) and Authorization header (Priority 2 - Safari/iOS)
  */
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Skip Authorization header for auth endpoints (cookies handle auth)
+    // Skip Authorization header for auth endpoints (login, register, change-password)
     const isAuthEndpoint =
-      config.url?.includes("/auth/") ||
+      config.url?.includes("/auth/login") ||
+      config.url?.includes("/auth/register") ||
+      config.url?.includes("/auth/admin/login") ||
       config.url?.includes("/staff-accounts/login") ||
       config.url?.includes("/staff-accounts/change-password");
 
-    // For non-auth endpoints, we could add Authorization header as fallback
-    // but since we're using httpOnly cookies, it's not necessary
-    // The backend will read tokens from cookies automatically
+    // For non-auth endpoints, add Authorization header from localStorage (Safari/iOS support)
+    // Cookies are still sent automatically (for Chrome compatibility)
+    if (!isAuthEndpoint && typeof window !== "undefined") {
+      const accessToken = localStorage.getItem("accessToken");
+      if (accessToken && !config.headers.Authorization) {
+        config.headers.Authorization = `Bearer ${accessToken}`;
+      }
+    }
 
     // Ensure withCredentials is set for all requests (REQUIRED for cookies)
-    // This ensures cookies are sent with every request
+    // This ensures cookies are sent with every request (Chrome compatibility)
     config.withCredentials = true;
 
     return config;
@@ -159,37 +166,72 @@ axiosInstance.interceptors.request.use(
       isRefreshing = true;
 
       try {
-        // Attempt to refresh token - cookies are sent automatically
-        // Backend automatically detects which role's refresh token cookie to use based on:
-        // 1. The endpoint being accessed (prioritizes correct cookie)
-        // 2. All available refreshToken_* cookies
-        // Empty body - backend reads from the appropriate role-specific cookie
-        // Use axiosInstance instead of axios to ensure withCredentials is set
+        // Attempt to refresh token
+        // Backend supports both methods:
+        // 1. Cookies (Priority 1 - Chrome) - sent automatically via withCredentials
+        // 2. Authorization header with refreshToken in body (Priority 2 - Safari/iOS)
+        const refreshTokenValue = typeof window !== "undefined" 
+          ? localStorage.getItem("refreshToken") 
+          : null;
+
+        // Try refresh with refreshToken from localStorage (Safari/iOS fallback)
+        // Backend will try cookies first, then use body refreshToken if cookies unavailable
+        const refreshBody = refreshTokenValue ? { refreshToken: refreshTokenValue } : {};
+        
         const refreshResponse = await axiosInstance.post(
           "/auth/refresh",
-          {} // Empty body - refresh token comes from role-specific cookie
-          // withCredentials is already set at instance level
+          refreshBody
+          // withCredentials is already set at instance level (for Chrome cookies)
         );
 
-        // Refresh successful - new role-specific tokens are in httpOnly cookies
-        // Backend automatically sets new cookies with the same role-specific names
-        // No need to store tokens - they're in cookies
+        // Refresh successful - backend returns tokens in response body
+        // Store tokens in localStorage for Safari/iOS (Authorization header)
+        // Handle both response structures: { data: { tokens: {...} } } or { tokens: {...} }
+        const responseData = refreshResponse.data?.data || refreshResponse.data;
+        if (responseData?.tokens) {
+          const { accessToken, refreshToken } = responseData.tokens;
+          if (typeof window !== "undefined" && accessToken && refreshToken) {
+            localStorage.setItem("accessToken", accessToken);
+            localStorage.setItem("refreshToken", refreshToken);
+          }
+        }
+
+        // Backend also sets new cookies (for Chrome compatibility)
+        // Both methods now work: cookies (Chrome) and Authorization header (Safari/iOS)
 
         // Process queued requests
         processQueue(null, null);
         isRefreshing = false;
 
-        // Retry original request - browser automatically sends the correct role-specific cookie
+        // Retry original request with new token in Authorization header
+        // Cookies are also sent automatically (Chrome compatibility)
+        const newAccessToken = typeof window !== "undefined" 
+          ? localStorage.getItem("accessToken") 
+          : null;
+        if (newAccessToken && originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        }
         return axiosInstance(originalRequest);
       } catch (refreshError) {
-        // Refresh failed - clear user data and redirect
+        // Get user role before clearing (needed for redirect)
+        const userRole = typeof window !== "undefined" 
+          ? localStorage.getItem("userRole") 
+          : null;
+        
+        // Refresh failed - clear user data and tokens
         tokenManager.clearUser();
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("userRole");
+        }
         processQueue(refreshError, null);
         isRefreshing = false;
 
         if (typeof window !== "undefined") {
           const currentPath = window.location.pathname;
           if (!["/login", "/register", "/admin/login", "/staff/login"].includes(currentPath)) {
+            // Use path-based detection as primary, userRole as fallback
             const isAdminPath = currentPath.startsWith("/admin");
             const isStaffPath = currentPath.startsWith("/staff");
             if (isAdminPath) {
@@ -197,7 +239,13 @@ axiosInstance.interceptors.request.use(
             } else if (isStaffPath) {
               window.location.href = "/staff/login";
             } else {
-              window.location.href = "/login";
+              // Fallback to userRole or default to login
+              const loginPaths: Record<string, string> = {
+                staff: "/staff/login",
+                admin: "/admin/login",
+                user: "/login",
+              };
+              window.location.href = loginPaths[userRole || ""] || "/login";
             }
           }
         }

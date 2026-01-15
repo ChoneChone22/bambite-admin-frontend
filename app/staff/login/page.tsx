@@ -27,11 +27,18 @@ export default function StaffLoginPage() {
   const handleSubmit = async (values: LoginFormValues, { setSubmitting }: { setSubmitting: (isSubmitting: boolean) => void }) => {
     try {
       // Use API service method for consistency
-      // Cookies are automatically set by backend via Set-Cookie headers
+      // Backend sets cookies (for Chrome) AND returns tokens in response body (for Safari/iOS)
       const authData = await api.auth.staffLogin(values);
       
-      // Tokens are now in httpOnly cookies (set by backend automatically)
-      // Response contains staff account data only
+      // Extract tokens from response (for Safari/iOS support)
+      // Backend returns tokens in data.tokens object
+      if (authData.tokens) {
+        localStorage.setItem("accessToken", authData.tokens.accessToken);
+        localStorage.setItem("refreshToken", authData.tokens.refreshToken);
+        localStorage.setItem("userRole", "staff");
+      }
+      
+      // Response contains staff account data
       const staffAccount = authData.staffAccount || authData.user;
 
       if (!staffAccount) {
@@ -56,11 +63,12 @@ export default function StaffLoginPage() {
         return;
       }
 
-      // Normal login flow - tokens are in httpOnly cookies
+      // Normal login flow
+      // Backend sets cookies (for Chrome) and we store tokens in localStorage (for Safari/iOS)
       // Add role to staff account object
       const staffWithRole = { ...staffAccount, role: UserRole.STAFF };
 
-      // Store user data only (tokens are in httpOnly cookies, not accessible via JS)
+      // Store user data
       tokenManager.setUser(staffWithRole);
 
       // Dispatch auth change event
@@ -69,7 +77,8 @@ export default function StaffLoginPage() {
       setToast({ message: "Staff login successful!", type: "success" });
       
       // Redirect after short delay to allow cookies to be set
-      // Backend automatically sets accessToken_staff and refreshToken_staff cookies
+      // Backend automatically sets accessToken_staff and refreshToken_staff cookies (Chrome)
+      // Tokens are also stored in localStorage (Safari/iOS)
       // Redirect to staff dashboard (separate from admin dashboard)
       setTimeout(() => {
         router.push("/staff/dashboard");

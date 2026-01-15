@@ -283,13 +283,25 @@ export default function StaffSidebar() {
 
   const handleLogout = async () => {
     try {
+      // Get refreshToken before clearing
+      const refreshToken = typeof window !== "undefined" 
+        ? localStorage.getItem("refreshToken") 
+        : null;
+      
       // Import api dynamically to avoid circular dependencies
       const api = (await import("@/src/services/api")).default;
-      await api.auth.logout();
+      // Backend supports both: cookies (Priority 1) and refreshToken in body (Priority 2)
+      await api.auth.logout(refreshToken || undefined);
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
+      // Clear user data and tokens
       clearAuth();
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("userRole");
+      }
       router.push("/staff/login");
     }
   };

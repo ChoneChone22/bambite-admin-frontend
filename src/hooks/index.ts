@@ -94,15 +94,23 @@ export const useAuth = () => {
   const login = async (credentials: LoginRequest) => {
     const response = await api.auth.login(credentials);
     
-    // Tokens are in httpOnly cookies (set by backend automatically)
-    // Response contains user data only
+    // Extract tokens from response (for Safari/iOS support)
+    // Backend returns tokens in data.tokens object
+    if (response.tokens) {
+      localStorage.setItem("accessToken", response.tokens.accessToken);
+      localStorage.setItem("refreshToken", response.tokens.refreshToken);
+      localStorage.setItem("userRole", "user");
+    }
+    
+    // Response contains user data
     const user = response.user || response.admin || response.staffAccount || null;
     
     if (!user) {
       throw new Error("No user data received from server");
     }
     
-    // Store user data only (tokens are in httpOnly cookies)
+    // Store user data
+    // Backend sets cookies (for Chrome) and we store tokens in localStorage (for Safari/iOS)
     tokenManager.setUser(user);
     setUserState(user);
     setIsAuthenticated(true);
@@ -115,15 +123,23 @@ export const useAuth = () => {
   const register = async (data: RegisterRequest) => {
     const response = await api.auth.register(data);
     
-    // Tokens are in httpOnly cookies (set by backend automatically)
-    // Response contains user data only
+    // Extract tokens from response (for Safari/iOS support)
+    // Backend returns tokens in data.tokens object
+    if (response.tokens) {
+      localStorage.setItem("accessToken", response.tokens.accessToken);
+      localStorage.setItem("refreshToken", response.tokens.refreshToken);
+      localStorage.setItem("userRole", "user");
+    }
+    
+    // Response contains user data
     const user = response.user || response.admin || response.staffAccount || null;
     
     if (!user) {
       throw new Error("No user data received from server");
     }
     
-    // Store user data only (tokens are in httpOnly cookies)
+    // Store user data
+    // Backend sets cookies (for Chrome) and we store tokens in localStorage (for Safari/iOS)
     tokenManager.setUser(user);
     setUserState(user);
     setIsAuthenticated(true);
@@ -134,21 +150,42 @@ export const useAuth = () => {
   };
 
   const logout = async () => {
+    // Get user role and refreshToken before clearing (needed for API call and redirect)
+    const userRole = typeof window !== "undefined" 
+      ? localStorage.getItem("userRole") 
+      : null;
+    const refreshToken = typeof window !== "undefined" 
+      ? localStorage.getItem("refreshToken") 
+      : null;
+    
     try {
-      // Logout - refresh token comes from httpOnly cookie
-      // Backend clears cookies automatically
-      await api.auth.logout();
+      // Logout - backend clears cookies (Chrome) and we clear localStorage (Safari/iOS)
+      // Backend supports both: cookies (Priority 1) and refreshToken in body (Priority 2)
+      await api.auth.logout(refreshToken || undefined);
     } catch (error) {
-      // Even if logout fails, clear local user data
+      // Even if logout fails, clear local user data and tokens
       console.error("Logout error:", error);
     } finally {
-      // Clear user data (cookies are cleared by backend)
+      // Clear user data and tokens
       clearAuth();
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("userRole");
+      }
       setUserState(null);
       setIsAuthenticated(false);
       // Notify other components
       window.dispatchEvent(new Event("auth-change"));
-      router.push("/admin/login");
+      
+      // Redirect to appropriate login page based on role
+      const loginPaths: Record<string, string> = {
+        staff: "/staff/login",
+        admin: "/admin/login",
+        user: "/login",
+      };
+      const loginPath = loginPaths[userRole || "admin"] || "/admin/login";
+      router.push(loginPath);
     }
   };
 

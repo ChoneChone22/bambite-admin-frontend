@@ -34,8 +34,15 @@ export default function AdminLoginPage() {
 
       const authData = response.data.data;
       
-      // Tokens are now in httpOnly cookies (set by backend automatically)
-      // Response contains user/admin data only
+      // Extract tokens from response (for Safari/iOS support)
+      // Backend returns tokens in data.tokens object
+      if (authData.tokens) {
+        localStorage.setItem("accessToken", authData.tokens.accessToken);
+        localStorage.setItem("refreshToken", authData.tokens.refreshToken);
+        localStorage.setItem("userRole", "admin");
+      }
+      
+      // Response contains admin data
       const admin = authData.admin || authData.user;
 
       if (!admin) {
@@ -45,7 +52,8 @@ export default function AdminLoginPage() {
       // Add role to admin object
       const adminWithRole = { ...admin, role: UserRole.ADMIN };
 
-      // Store user data only (tokens are in httpOnly cookies)
+      // Store user data
+      // Backend sets cookies (for Chrome) and we store tokens in localStorage (for Safari/iOS)
       tokenManager.setUser(adminWithRole);
 
       // Dispatch auth change event
@@ -54,7 +62,8 @@ export default function AdminLoginPage() {
       setToast({ message: "Admin login successful!", type: "success" });
       
       // Redirect after short delay to allow cookies to be set
-      // Backend automatically sets accessToken_admin and refreshToken_admin cookies
+      // Backend automatically sets accessToken_admin and refreshToken_admin cookies (Chrome)
+      // Tokens are also stored in localStorage (Safari/iOS)
       setTimeout(() => {
         router.push("/admin/dashboard");
       }, 1000);

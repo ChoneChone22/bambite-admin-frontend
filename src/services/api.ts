@@ -73,8 +73,10 @@ import {
 export const authApi = {
       /**
        * Login user
-       * Sets role-specific cookies: accessToken_user, refreshToken_user
-       * Cookies are automatically set by backend via Set-Cookie headers
+       * Backend supports both authentication methods:
+       * 1. Cookies (Priority 1 - Chrome): Sets role-specific cookies (accessToken_user, refreshToken_user)
+       * 2. Authorization header (Priority 2 - Safari/iOS): Returns tokens in response body
+       * Response includes: { tokens: { accessToken, refreshToken }, user: {...} }
        * Multiple simultaneous logins are supported - user cookies won't interfere with admin/staff cookies
        */
       login: async (data: LoginRequest): Promise<AuthResponse> => {
@@ -82,7 +84,7 @@ export const authApi = {
           "/auth/user/login",
           data
         );
-        // Role-specific cookies (accessToken_user, refreshToken_user) are automatically set by backend
+        // Backend returns tokens in response body (for Safari/iOS) and sets cookies (for Chrome)
         return response.data.data;
       },
 
@@ -109,22 +111,22 @@ export const authApi = {
 
       /**
        * Refresh access token
-       * Backend automatically detects which role's refresh token cookie to use:
-       * - refreshToken_user (for user requests)
-       * - refreshToken_admin (for admin requests)
-       * - refreshToken_staff (for staff requests)
-       * Refresh token comes from role-specific httpOnly cookie (preferred) or request body (backward compatibility)
+       * Backend supports both authentication methods:
+       * 1. Cookies (Priority 1 - Chrome): Backend reads from role-specific httpOnly cookie
+       * 2. Authorization header with refreshToken in body (Priority 2 - Safari/iOS)
+       * Backend returns tokens in response body: { tokens: { accessToken, refreshToken } }
+       * Tokens are also set in cookies (for Chrome compatibility)
        */
       refreshToken: async (refreshToken?: string): Promise<AuthResponse> => {
-        // If refreshToken provided, use it (backward compatibility)
-        // Otherwise, backend reads from role-specific httpOnly cookie
-        // Backend automatically detects which role's cookie to use based on request context
+        // If refreshToken provided, use it (Safari/iOS fallback)
+        // Otherwise, backend reads from role-specific httpOnly cookie (Chrome)
+        // Backend automatically detects which method to use
         const body = refreshToken ? { refreshToken } : {};
         const response = await axiosInstance.post<ApiResponse<AuthResponse>>(
           "/auth/refresh",
           body
         );
-        // New role-specific tokens are in httpOnly cookies, response may not contain tokens
+        // Backend returns tokens in response body (for Safari/iOS) and sets cookies (for Chrome)
         return response.data.data || ({} as AuthResponse);
       },
 
@@ -147,8 +149,10 @@ export const authApi = {
 
   /**
    * Admin login
-   * Sets role-specific cookies: accessToken_admin, refreshToken_admin
-   * Cookies are automatically set by backend via Set-Cookie headers
+   * Backend supports both authentication methods:
+   * 1. Cookies (Priority 1 - Chrome): Sets role-specific cookies (accessToken_admin, refreshToken_admin)
+   * 2. Authorization header (Priority 2 - Safari/iOS): Returns tokens in response body
+   * Response includes: { tokens: { accessToken, refreshToken }, admin: {...} }
    * Multiple simultaneous logins are supported - admin cookies won't interfere with staff/user cookies
    */
   adminLogin: async (data: LoginRequest): Promise<AuthResponse> => {
@@ -156,7 +160,7 @@ export const authApi = {
       "/auth/admin/login",
       data
     );
-    // Role-specific cookies (accessToken_admin, refreshToken_admin) are automatically set by backend
+    // Backend returns tokens in response body (for Safari/iOS) and sets cookies (for Chrome)
     return response.data.data;
   },
 
@@ -172,10 +176,10 @@ export const authApi = {
 
   /**
    * Staff Account Login
-   * Sets role-specific cookies: accessToken_staff, refreshToken_staff
-   * Cookies are automatically set by backend via Set-Cookie headers
-   * Note: Set-Cookie headers are NOT accessible to JavaScript (browser security feature)
-   * Cookies are automatically stored by the browser when Set-Cookie headers are present
+   * Backend supports both authentication methods:
+   * 1. Cookies (Priority 1 - Chrome): Sets role-specific cookies (accessToken_staff, refreshToken_staff)
+   * 2. Authorization header (Priority 2 - Safari/iOS): Returns tokens in response body
+   * Response includes: { tokens: { accessToken, refreshToken }, staffAccount: {...} }
    * Multiple simultaneous logins are supported - staff cookies won't interfere with admin/user cookies
    * To verify cookies: Check DevTools → Application → Cookies → http://localhost:3000
    */
@@ -184,13 +188,10 @@ export const authApi = {
       "/staff-accounts/login",
       data
       // withCredentials is already set at instance level (axios.ts)
-      // This ensures cookies are sent/received automatically
+      // This ensures cookies are sent/received automatically (for Chrome)
     );
     
-    // Role-specific cookies (accessToken_staff, refreshToken_staff) are automatically set by backend
-    // No need to manually store tokens - they're in httpOnly cookies
-    // Cookies are set for the backend domain (localhost:3000), not frontend (localhost:3001)
-    // Verify cookies in: DevTools → Application → Cookies → http://localhost:3000
+    // Backend returns tokens in response body (for Safari/iOS) and sets cookies (for Chrome)
     return response.data.data;
   },
 

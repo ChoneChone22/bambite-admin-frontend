@@ -341,8 +341,13 @@ export interface UpdatePaymentRequest {
 // ==================== API Response Types ====================
 
 export interface AuthResponse {
-  // Tokens are now in httpOnly cookies, not in response body
-  // These fields are kept for backward compatibility but may be empty
+  // Tokens object from backend response (for Safari/iOS support)
+  // Backend now returns tokens in response body in addition to setting cookies
+  tokens?: {
+    accessToken: string;
+    refreshToken: string;
+  };
+  // Legacy token fields (kept for backward compatibility)
   accessToken?: string;
   refreshToken?: string;
   // Legacy support - some endpoints might still return 'token'
