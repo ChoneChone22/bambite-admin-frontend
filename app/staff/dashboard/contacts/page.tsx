@@ -148,8 +148,8 @@ export default function ContactsManagementPage() {
             className="px-4 py-2 rounded transition-colors"
             style={
               reasonFilter === "all"
-                ? { backgroundColor: "#2C5BBB", color: "#ffffff" }
-                : { backgroundColor: "#e5e7eb", color: "#374151" }
+                ? { backgroundColor: "#2C5BBB", color: "#ffffff", cursor: "pointer" }
+                : { backgroundColor: "#e5e7eb", color: "#374151", cursor: "pointer" }
             }
             onMouseEnter={(e) => {
               if (reasonFilter !== "all") {
@@ -171,8 +171,8 @@ export default function ContactsManagementPage() {
               className="px-4 py-2 rounded transition-colors"
               style={
                 reasonFilter === reason.value
-                  ? { backgroundColor: "#2C5BBB", color: "#ffffff" }
-                  : { backgroundColor: "#e5e7eb", color: "#374151" }
+                  ? { backgroundColor: "#2C5BBB", color: "#ffffff", cursor: "pointer" }
+                  : { backgroundColor: "#e5e7eb", color: "#374151", cursor: "pointer" }
               }
               onMouseEnter={(e) => {
                 if (reasonFilter !== reason.value) {

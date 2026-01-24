@@ -151,8 +151,8 @@ export default function ContactsManagementPage() {
             }`}
             style={
               reasonFilter === "all"
-                ? { backgroundColor: "#3b82f6", color: "#ffffff" }
-                : { backgroundColor: "#e5e7eb", color: "#374151" }
+                ? { backgroundColor: "#3b82f6", color: "#ffffff", cursor: "pointer" }
+                : { backgroundColor: "#e5e7eb", color: "#374151", cursor: "pointer" }
             }
           >
             All
@@ -168,8 +168,8 @@ export default function ContactsManagementPage() {
               }`}
               style={
                 reasonFilter === reason.value
-                  ? { backgroundColor: "#3b82f6", color: "#ffffff" }
-                  : { backgroundColor: "#e5e7eb", color: "#374151" }
+                  ? { backgroundColor: "#3b82f6", color: "#ffffff", cursor: "pointer" }
+                  : { backgroundColor: "#e5e7eb", color: "#374151", cursor: "pointer" }
               }
             >
               {reason.label}

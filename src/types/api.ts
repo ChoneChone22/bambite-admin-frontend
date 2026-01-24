@@ -49,6 +49,7 @@ export interface User {
   phoneNumber: string;
   address: string;
   role: UserRole;
+  profileImageUrl?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -86,7 +87,7 @@ export interface Product {
   id: string;
   name: string;
   thaiName?: string | null; // Thai name (optional)
-  description?: string;
+  description?: string; // Optional - can be omitted
   categoryId: string; // Changed from category enum to categoryId UUID
   category?: Category; // Nested category object
   ingredients?: string;
@@ -98,6 +99,8 @@ export interface Product {
     option: Option;
   }>;
   optionIds?: string[]; // Array of option UUIDs
+  averageRating?: number; // Cached average rating
+  totalReviews?: number; // Cached total review count
   createdAt?: string;
   updatedAt?: string;
 }
@@ -371,6 +374,8 @@ export interface ApiError {
   error: string;
   message: string;
   statusCode: number;
+  details?: any; // Additional error details (e.g., validation errors)
+  retryAfter?: number; // Retry after seconds (for rate limiting)
 }
 
 export interface PaginatedResponse<T> {
@@ -654,4 +659,307 @@ export interface CreateContactRequest {
 export interface ContactFilters {
   reason?: ContactReason;
   email?: string;
+}
+
+// ==================== Guest Token ====================
+
+export interface GuestTokenResponse {
+  guestToken: string;
+}
+
+// ==================== Billing Address Model ====================
+
+export interface BillingAddress {
+  id: string;
+  userId?: string;
+  user?: User;
+  region: string;
+  streetAddress: string;
+  city: string;
+  state: string;
+  postcode: string;
+  phone?: string;
+  email?: string;
+  isDefault: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface BillingAddressListResponse {
+  addresses: BillingAddress[];
+  defaultAddress: BillingAddress | null;
+  count: number;
+  remainingSlots: number;
+}
+
+export interface BillingAddressPrefillResponse {
+  email: string;
+  phone: string;
+  addressCount: number;
+  remainingSlots: number;
+}
+
+export interface CreateBillingAddressRequest {
+  region: string;
+  streetAddress: string;
+  city: string;
+  state: string;
+  postcode: string;
+  phone?: string;
+  email?: string;
+  isDefault?: boolean;
+}
+
+export interface UpdateBillingAddressRequest {
+  region?: string;
+  streetAddress?: string;
+  city?: string;
+  state?: string;
+  postcode?: string;
+  phone?: string;
+  email?: string;
+  isDefault?: boolean;
+}
+
+// ==================== Favourite Model ====================
+
+export interface Favourite {
+  id: string;
+  userId: string;
+  user?: User;
+  productId: string;
+  product?: Product;
+  createdAt?: string;
+}
+
+export interface FavouriteCheckResponse {
+  isFavorited: boolean;
+  favouriteId: string | null;
+}
+
+export interface FavouritesListResponse extends PaginatedResponse<Favourite> {
+  favourites: Favourite[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+// ==================== Review Model ====================
+
+export enum ReviewStatus {
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+}
+
+export enum ReviewSortBy {
+  NEWEST = "newest",
+  HIGHEST = "highest",
+  HELPFUL = "helpful",
+}
+
+export interface Review {
+  id: string;
+  productId: string;
+  product?: Product;
+  userId?: string | null;
+  user?: User | null;
+  guestName?: string | null;
+  guestEmail?: string | null;
+  rating: number; // 1-5
+  message?: string | null;
+  status: ReviewStatus;
+  helpfulVotes: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ProductReviewsResponse {
+  reviews: Review[];
+  total: number;
+  page: number;
+  limit: number;
+  averageRating: number;
+  totalReviews: number;
+}
+
+export interface ReviewPrefillResponse {
+  name: string;
+  email: string;
+}
+
+export interface CreateReviewRequest {
+  productId: string;
+  rating: number; // 1-5, required
+  message?: string;
+  guestName?: string; // Required for guests
+  guestEmail?: string; // Required for guests
+}
+
+export interface ReviewFilters extends PaginationParams {
+  sortBy?: ReviewSortBy;
+  status?: ReviewStatus | "ALL";
+}
+
+export interface UpdateReviewStatusRequest {
+  status: ReviewStatus.APPROVED | ReviewStatus.REJECTED;
+}
+
+// ==================== FAQ Model ====================
+
+export interface FAQ {
+  id: string;
+  question: string;
+  answer: string;
+  isActive: boolean;
+  order: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface FAQsListResponse {
+  faqs: FAQ[];
+  total: number;
+}
+
+export interface CreateFAQRequest {
+  question: string;
+  answer: string;
+  isActive?: boolean;
+  order?: number;
+}
+
+export interface UpdateFAQRequest {
+  question?: string;
+  answer?: string;
+  isActive?: boolean;
+}
+
+export interface UpdateFAQOrderRequest {
+  order: number;
+}
+
+export interface FAQFilters {
+  activeOnly?: boolean;
+}
+
+// ==================== Theme Model ====================
+
+export interface ThemeColors {
+  primary: string;
+  secondary: string;
+  accent: string;
+  background: string;
+  text: string;
+  card: string;
+  logo: string;
+}
+
+export interface Theme {
+  id: string;
+  name: string;
+  colors: ThemeColors;
+  selected: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ThemesListResponse {
+  themes: Theme[];
+}
+
+export interface SelectedThemeResponse {
+  theme: Theme | null;
+}
+
+export interface CreateThemeRequest {
+  name: string;
+  colors: ThemeColors;
+}
+
+export interface UpdateThemeRequest {
+  name?: string;
+  colors?: ThemeColors;
+}
+
+// ==================== Animation Model ====================
+
+export interface Animation {
+  id: string;
+  name: string;
+  imageUrl: string;
+  selected: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AnimationsListResponse {
+  animations: Animation[];
+}
+
+export interface SelectedAnimationResponse {
+  animation: Animation | null;
+}
+
+export interface CreateAnimationRequest {
+  name: string;
+  image: File;
+}
+
+export interface UpdateAnimationRequest {
+  name?: string;
+  image?: File;
+}
+
+export interface AnimationTriggerResponse {
+  enabled: boolean;
+}
+
+export interface UpdateAnimationTriggerRequest {
+  enabled: boolean;
+}
+
+// ==================== Real-Time Updates ====================
+
+export interface OrderUpdateEvent {
+  orderId: string;
+  status: OrderStatus;
+  netPrice: string;
+  orderedDate: string;
+}
+
+export interface NewOrderEvent {
+  id: string;
+  userId: string;
+  status: OrderStatus;
+  netPrice: string;
+  orderedDate: string;
+  itemCount: number;
+}
+
+export interface InventoryUpdateEvent {
+  productId: string;
+  stockQuantity: number;
+  quantityChange: number;
+  reason: string;
+}
+
+export interface CartUpdateEvent {
+  items: CartItem[];
+  totalItems: number;
+  totalPrice: number;
+}
+
+// ==================== Updated Order Request ====================
+
+export interface CreateOrderRequest {
+  items: {
+    productId: string;
+    quantity: number;
+  }[];
+  email?: string; // Required for guest users
+  phoneNumber?: string; // Required for guest users
+  billingAddress?: CreateBillingAddressRequest; // Required for guest users
+  billingAddressId?: string; // Use saved address
+  guestToken?: string; // For guest users
 }

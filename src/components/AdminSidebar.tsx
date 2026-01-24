@@ -61,7 +61,18 @@ const navigationGroups: NavGroup[] = [
   },
   {
     title: "Communications",
-    items: [{ name: "Contacts", href: "/admin/dashboard/contacts" }],
+    items: [
+      { name: "Contacts", href: "/admin/dashboard/contacts" },
+      { name: "FAQs", href: "/admin/dashboard/faqs" },
+    ],
+  },
+  {
+    title: "Content & Design",
+    items: [
+      { name: "Themes", href: "/admin/dashboard/themes" },
+      { name: "Animations", href: "/admin/dashboard/animations" },
+      { name: "Reviews", href: "/admin/dashboard/reviews" },
+    ],
   },
 ];
 

@@ -66,6 +66,42 @@ import {
   CreateContactRequest,
   ContactFilters,
   ContactReason,
+  PaginationParams,
+  GuestTokenResponse,
+  BillingAddress,
+  BillingAddressListResponse,
+  BillingAddressPrefillResponse,
+  CreateBillingAddressRequest,
+  UpdateBillingAddressRequest,
+  Favourite,
+  FavouriteCheckResponse,
+  FavouritesListResponse,
+  Review,
+  ProductReviewsResponse,
+  ReviewPrefillResponse,
+  CreateReviewRequest,
+  ReviewFilters,
+  UpdateReviewStatusRequest,
+  ReviewStatus,
+  ReviewSortBy,
+  FAQ,
+  FAQsListResponse,
+  CreateFAQRequest,
+  UpdateFAQRequest,
+  UpdateFAQOrderRequest,
+  FAQFilters,
+  Theme,
+  ThemesListResponse,
+  SelectedThemeResponse,
+  CreateThemeRequest,
+  UpdateThemeRequest,
+  Animation,
+  AnimationsListResponse,
+  SelectedAnimationResponse,
+  CreateAnimationRequest,
+  UpdateAnimationRequest,
+  AnimationTriggerResponse,
+  UpdateAnimationTriggerRequest,
 } from "@/src/types/api";
 
 // ==================== Auth API ====================
@@ -79,24 +115,55 @@ export const authApi = {
        * Response includes: { tokens: { accessToken, refreshToken }, user: {...} }
        * Multiple simultaneous logins are supported - user cookies won't interfere with admin/staff cookies
        */
-      login: async (data: LoginRequest): Promise<AuthResponse> => {
+      login: async (data: LoginRequest, guestToken?: string): Promise<AuthResponse> => {
+        const requestData: any = { ...data };
+        if (guestToken) {
+          requestData.guestToken = guestToken; // Merge guest cart/orders on login
+        }
+        
         const response = await axiosInstance.post<ApiResponse<AuthResponse>>(
           "/auth/user/login",
-          data
+          requestData
         );
         // Backend returns tokens in response body (for Safari/iOS) and sets cookies (for Chrome)
-        return response.data.data;
+        const authData = response.data.data;
+        
+        // Store tokens in localStorage for Safari/iOS compatibility
+        if (authData.tokens?.accessToken) {
+          if (typeof window !== "undefined") {
+            localStorage.setItem("accessToken_user", authData.tokens.accessToken);
+            localStorage.setItem("refreshToken_user", authData.tokens.refreshToken);
+          }
+        }
+        
+        return authData;
       },
 
   /**
    * Register new user
+   * Supports guest token to merge cart/orders
    */
-  register: async (data: RegisterRequest): Promise<AuthResponse> => {
+  register: async (data: RegisterRequest, guestToken?: string): Promise<AuthResponse> => {
+    const requestData: any = { ...data };
+    if (guestToken) {
+      requestData.guestToken = guestToken; // Merge guest cart/orders on register
+    }
+    
     const response = await axiosInstance.post<ApiResponse<AuthResponse>>(
       "/auth/user/register",
-      data
+      requestData
     );
-    return response.data.data;
+    const authData = response.data.data;
+    
+    // Store tokens in localStorage for Safari/iOS compatibility
+    if (authData.tokens?.accessToken) {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("accessToken_user", authData.tokens.accessToken);
+        localStorage.setItem("refreshToken_user", authData.tokens.refreshToken);
+      }
+    }
+    
+    return authData;
   },
 
   /**
@@ -145,7 +212,53 @@ export const authApi = {
         const body = refreshToken ? { refreshToken } : {};
         await axiosInstance.post("/auth/logout", body);
         // Backend clears role-specific cookies automatically
+        
+        // Clear tokens from localStorage
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("accessToken_user");
+          localStorage.removeItem("refreshToken_user");
+          localStorage.removeItem("accessToken_admin");
+          localStorage.removeItem("refreshToken_admin");
+          localStorage.removeItem("accessToken_staff");
+          localStorage.removeItem("refreshToken_staff");
+        }
       },
+
+  /**
+   * Get user profile
+   */
+  getUserProfile: async (): Promise<User> => {
+    const response = await axiosInstance.get<ApiResponse<{ user: User }>>(
+      "/auth/user/profile"
+    );
+    return response.data.data?.user || response.data.data || response.data;
+  },
+
+  /**
+   * Upload user profile image
+   */
+  uploadProfileImage: async (image: File): Promise<{ profileImageUrl: string }> => {
+    const formData = new FormData();
+    formData.append("image", image);
+
+    const response = await axiosInstance.put<ApiResponse<{ profileImageUrl: string }>>(
+      "/auth/user/profile/image",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Delete user profile image
+   */
+  deleteProfileImage: async (): Promise<void> => {
+    await axiosInstance.delete("/auth/user/profile/image");
+  },
 
   /**
    * Admin login
@@ -161,7 +274,17 @@ export const authApi = {
       data
     );
     // Backend returns tokens in response body (for Safari/iOS) and sets cookies (for Chrome)
-    return response.data.data;
+    const authData = response.data.data;
+    
+    // Store tokens in localStorage for Safari/iOS compatibility
+    if (authData.tokens?.accessToken) {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("accessToken_admin", authData.tokens.accessToken);
+        localStorage.setItem("refreshToken_admin", authData.tokens.refreshToken);
+      }
+    }
+    
+    return authData;
   },
 
   /**
@@ -192,7 +315,17 @@ export const authApi = {
     );
     
     // Backend returns tokens in response body (for Safari/iOS) and sets cookies (for Chrome)
-    return response.data.data;
+    const authData = response.data.data;
+    
+    // Store tokens in localStorage for Safari/iOS compatibility
+    if (authData.tokens?.accessToken) {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("accessToken_staff", authData.tokens.accessToken);
+        localStorage.setItem("refreshToken_staff", authData.tokens.refreshToken);
+      }
+    }
+    
+    return authData;
   },
 
   /**
@@ -513,62 +646,104 @@ export const productsApi = {
 
 export const cartApi = {
   /**
-   * Get user's cart
+   * Get user's cart (supports guest tokens)
    */
-  get: async (): Promise<CartItem[]> => {
+  get: async (guestToken?: string): Promise<{ items: CartItem[]; totalItems: number; totalPrice: number; guestToken?: string }> => {
+    const headers: any = {};
+    if (guestToken) {
+      headers["X-Guest-Token"] = guestToken;
+    }
+    
     const response = await axiosInstance.get<
-      ApiResponse<{ items: CartItem[]; totalItems: number; totalPrice: number }>
-    >("/cart");
-    return response.data.data.items;
+      ApiResponse<{ items: CartItem[]; totalItems: number; totalPrice: number } & GuestTokenResponse>
+    >("/cart", { headers });
+    
+    const data = response.data.data || response.data;
+    return {
+      items: data.items || [],
+      totalItems: data.totalItems || 0,
+      totalPrice: data.totalPrice || 0,
+      guestToken: data.guestToken,
+    };
   },
 
   /**
-   * Get cart item count
+   * Get cart item count (supports guest tokens)
    */
-  getCount: async (): Promise<number> => {
+  getCount: async (guestToken?: string): Promise<number> => {
+    const headers: any = {};
+    if (guestToken) {
+      headers["X-Guest-Token"] = guestToken;
+    }
+    
     const response = await axiosInstance.get<ApiResponse<{ count: number }>>(
-      "/cart/count"
+      "/cart/count",
+      { headers }
     );
     return response.data.data.count;
   },
 
   /**
-   * Add item to cart
+   * Add item to cart (supports guest tokens)
+   * Returns guestToken if provided or created
    */
-  addItem: async (data: AddToCartRequest): Promise<CartItem> => {
-    const response = await axiosInstance.post<ApiResponse<CartItem>>(
+  addItem: async (data: AddToCartRequest, guestToken?: string): Promise<CartItem & GuestTokenResponse> => {
+    const headers: any = {};
+    if (guestToken) {
+      headers["X-Guest-Token"] = guestToken;
+    }
+    
+    const response = await axiosInstance.post<ApiResponse<CartItem & GuestTokenResponse>>(
       "/cart/items",
-      data
+      data,
+      { headers }
     );
     return response.data.data;
   },
 
   /**
-   * Update cart item quantity
+   * Update cart item quantity (supports guest tokens)
    */
   updateItem: async (
     productId: string,
-    data: UpdateCartItemRequest
+    data: UpdateCartItemRequest,
+    guestToken?: string
   ): Promise<CartItem> => {
+    const headers: any = {};
+    if (guestToken) {
+      headers["X-Guest-Token"] = guestToken;
+    }
+    
     const response = await axiosInstance.put<ApiResponse<CartItem>>(
       `/cart/items/${productId}`,
-      data
+      data,
+      { headers }
     );
     return response.data.data;
   },
 
   /**
-   * Remove item from cart
+   * Remove item from cart (supports guest tokens)
    */
-  removeItem: async (productId: string): Promise<void> => {
-    await axiosInstance.delete(`/cart/items/${productId}`);
+  removeItem: async (productId: string, guestToken?: string): Promise<void> => {
+    const headers: any = {};
+    if (guestToken) {
+      headers["X-Guest-Token"] = guestToken;
+    }
+    
+    await axiosInstance.delete(`/cart/items/${productId}`, { headers });
   },
 
   /**
-   * Clear entire cart
+   * Clear entire cart (supports guest tokens)
    */
-  clear: async (): Promise<void> => {
-    await axiosInstance.delete("/cart");
+  clear: async (guestToken?: string): Promise<void> => {
+    const headers: any = {};
+    if (guestToken) {
+      headers["X-Guest-Token"] = guestToken;
+    }
+    
+    await axiosInstance.delete("/cart", { headers });
   },
 };
 
@@ -617,11 +792,18 @@ export const ordersApi = {
 
   /**
    * Create new order (checkout)
+   * Supports guest users with guestToken, email, phoneNumber, and billingAddress
    */
-  create: async (data: CreateOrderRequest): Promise<Order> => {
+  create: async (data: CreateOrderRequest, guestToken?: string): Promise<Order> => {
+    const headers: any = {};
+    if (guestToken) {
+      headers["X-Guest-Token"] = guestToken;
+    }
+    
     const response = await axiosInstance.post<ApiResponse<Order>>(
       "/orders",
-      data
+      data,
+      { headers }
     );
     return response.data.data;
   },
@@ -1646,6 +1828,501 @@ export const contactsApi = {
   },
 };
 
+// ==================== Billing Addresses API ====================
+
+export const billingAddressesApi = {
+  /**
+   * Get all billing addresses
+   */
+  getAll: async (): Promise<BillingAddressListResponse> => {
+    const response = await axiosInstance.get<ApiResponse<BillingAddressListResponse>>(
+      "/billing-addresses"
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Get prefill data
+   */
+  getPrefill: async (): Promise<BillingAddressPrefillResponse> => {
+    const response = await axiosInstance.get<ApiResponse<BillingAddressPrefillResponse>>(
+      "/billing-addresses/prefill"
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Create billing address
+   */
+  create: async (data: CreateBillingAddressRequest): Promise<BillingAddress> => {
+    const response = await axiosInstance.post<ApiResponse<BillingAddress>>(
+      "/billing-addresses",
+      data
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Update billing address
+   */
+  update: async (
+    id: string,
+    data: UpdateBillingAddressRequest
+  ): Promise<BillingAddress> => {
+    const response = await axiosInstance.put<ApiResponse<BillingAddress>>(
+      `/billing-addresses/${id}`,
+      data
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Delete billing address
+   */
+  delete: async (id: string): Promise<void> => {
+    await axiosInstance.delete(`/billing-addresses/${id}`);
+  },
+
+  /**
+   * Set default address
+   */
+  setDefault: async (id: string): Promise<BillingAddress> => {
+    const response = await axiosInstance.patch<ApiResponse<BillingAddress>>(
+      `/billing-addresses/${id}/default`
+    );
+    return response.data.data || response.data;
+  },
+};
+
+// ==================== Favourites API ====================
+
+export const favouritesApi = {
+  /**
+   * Get user's favourites
+   */
+  getAll: async (params?: PaginationParams): Promise<FavouritesListResponse> => {
+    const response = await axiosInstance.get<ApiResponse<FavouritesListResponse>>(
+      "/favourites",
+      { params }
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Add to favourites
+   */
+  add: async (productId: string): Promise<Favourite> => {
+    const response = await axiosInstance.post<ApiResponse<Favourite>>(
+      "/favourites",
+      { productId }
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Remove from favourites
+   */
+  remove: async (productId: string): Promise<void> => {
+    await axiosInstance.delete(`/favourites/${productId}`);
+  },
+
+  /**
+   * Check if product is favorited
+   */
+  check: async (productId: string): Promise<FavouriteCheckResponse> => {
+    const response = await axiosInstance.get<ApiResponse<FavouriteCheckResponse>>(
+      `/favourites/check/${productId}`
+    );
+    return response.data.data || response.data;
+  },
+};
+
+// ==================== Reviews API ====================
+
+export const reviewsApi = {
+  /**
+   * Get reviews for product
+   */
+  getByProduct: async (
+    productId: string,
+    filters?: ReviewFilters
+  ): Promise<ProductReviewsResponse> => {
+    const response = await axiosInstance.get<ApiResponse<ProductReviewsResponse>>(
+      `/reviews/product/${productId}`,
+      { params: filters }
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Get prefill data
+   */
+  getPrefill: async (productId: string, guestEmail?: string): Promise<ReviewPrefillResponse> => {
+    const response = await axiosInstance.get<ApiResponse<ReviewPrefillResponse>>(
+      "/reviews/prefill",
+      { params: { productId, guestEmail } }
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Create review
+   */
+  create: async (data: CreateReviewRequest): Promise<Review> => {
+    const response = await axiosInstance.post<ApiResponse<Review>>(
+      "/reviews",
+      data
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Vote helpful
+   */
+  voteHelpful: async (id: string): Promise<Review> => {
+    const response = await axiosInstance.post<ApiResponse<Review>>(
+      `/reviews/${id}/helpful`
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Get all reviews (admin)
+   */
+  getAll: async (filters?: ReviewFilters & PaginationParams): Promise<Review[]> => {
+    const response = await axiosInstance.get<ApiResponse<Review[]>>(
+      "/reviews/admin/all",
+      { params: filters }
+    );
+    return response.data.data || [];
+  },
+
+  /**
+   * Update review status (admin)
+   */
+  updateStatus: async (
+    id: string,
+    data: UpdateReviewStatusRequest
+  ): Promise<Review> => {
+    const response = await axiosInstance.patch<ApiResponse<Review>>(
+      `/reviews/admin/${id}/status`,
+      data
+    );
+    return response.data.data || response.data;
+  },
+};
+
+// ==================== FAQs API ====================
+
+export const faqsApi = {
+  /**
+   * Get all FAQs
+   */
+  getAll: async (filters?: FAQFilters): Promise<FAQsListResponse> => {
+    const response = await axiosInstance.get<ApiResponse<FAQsListResponse>>(
+      "/faqs",
+      { params: filters }
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Get FAQ by ID
+   */
+  getById: async (id: string): Promise<FAQ> => {
+    const response = await axiosInstance.get<ApiResponse<FAQ>>(
+      `/faqs/${id}`
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Create FAQ
+   */
+  create: async (data: CreateFAQRequest): Promise<FAQ> => {
+    const response = await axiosInstance.post<ApiResponse<FAQ>>(
+      "/faqs",
+      data
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Update FAQ
+   */
+  update: async (id: string, data: UpdateFAQRequest): Promise<FAQ> => {
+    const response = await axiosInstance.put<ApiResponse<FAQ>>(
+      `/faqs/${id}`,
+      data
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Update FAQ order
+   */
+  updateOrder: async (id: string, data: UpdateFAQOrderRequest): Promise<FAQ> => {
+    const response = await axiosInstance.patch<ApiResponse<FAQ>>(
+      `/faqs/${id}/order`,
+      data
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Toggle FAQ status
+   */
+  toggleStatus: async (id: string, isActive: boolean): Promise<FAQ> => {
+    const response = await axiosInstance.patch<ApiResponse<FAQ>>(
+      `/faqs/${id}/status`,
+      { isActive }
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Delete FAQ
+   */
+  delete: async (id: string): Promise<void> => {
+    await axiosInstance.delete(`/faqs/${id}`);
+  },
+};
+
+// ==================== Themes API ====================
+
+export const themesApi = {
+  /**
+   * Get all themes
+   */
+  getAll: async (): Promise<ThemesListResponse> => {
+    const response = await axiosInstance.get<ApiResponse<ThemesListResponse>>(
+      "/themes"
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Get selected theme
+   */
+  getSelected: async (): Promise<SelectedThemeResponse> => {
+    const response = await axiosInstance.get<ApiResponse<SelectedThemeResponse>>(
+      "/themes/selected"
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Create theme
+   */
+  create: async (data: CreateThemeRequest): Promise<Theme> => {
+    const response = await axiosInstance.post<ApiResponse<Theme>>(
+      "/themes",
+      data
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Update theme
+   */
+  update: async (id: string, data: UpdateThemeRequest): Promise<Theme> => {
+    const response = await axiosInstance.put<ApiResponse<Theme>>(
+      `/themes/${id}`,
+      data
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Select theme
+   */
+  select: async (id: string): Promise<Theme> => {
+    const response = await axiosInstance.patch<ApiResponse<Theme>>(
+      `/themes/${id}/select`
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Unselect theme
+   */
+  unselect: async (id: string): Promise<Theme> => {
+    const response = await axiosInstance.patch<ApiResponse<Theme>>(
+      `/themes/${id}/unselect`
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Delete theme
+   */
+  delete: async (id: string): Promise<void> => {
+    await axiosInstance.delete(`/themes/${id}`);
+  },
+};
+
+// ==================== Animations API ====================
+
+export const animationsApi = {
+  /**
+   * Get all animations
+   */
+  getAll: async (): Promise<AnimationsListResponse> => {
+    const response = await axiosInstance.get<ApiResponse<AnimationsListResponse>>(
+      "/animations"
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Get selected animation
+   */
+  getSelected: async (): Promise<SelectedAnimationResponse> => {
+    const response = await axiosInstance.get<ApiResponse<SelectedAnimationResponse>>(
+      "/animations/selected"
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Create animation
+   */
+  create: async (data: CreateAnimationRequest): Promise<Animation> => {
+    const formData = new FormData();
+    formData.append("name", data.name);
+    formData.append("image", data.image);
+
+    const response = await axiosInstance.post<ApiResponse<Animation>>(
+      "/animations",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Update animation
+   */
+  update: async (id: string, data: UpdateAnimationRequest): Promise<Animation> => {
+    const formData = new FormData();
+    if (data.name) formData.append("name", data.name);
+    if (data.image) formData.append("image", data.image);
+
+    const response = await axiosInstance.put<ApiResponse<Animation>>(
+      `/animations/${id}`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Select animation
+   */
+  select: async (id: string): Promise<Animation> => {
+    const response = await axiosInstance.patch<ApiResponse<Animation>>(
+      `/animations/${id}/select`
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Unselect animation
+   */
+  unselect: async (id: string): Promise<Animation> => {
+    const response = await axiosInstance.patch<ApiResponse<Animation>>(
+      `/animations/${id}/unselect`
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Delete animation
+   */
+  delete: async (id: string): Promise<void> => {
+    await axiosInstance.delete(`/animations/${id}`);
+  },
+};
+
+// ==================== Animation Trigger API ====================
+
+export const animationTriggerApi = {
+  /**
+   * Get trigger state
+   */
+  get: async (): Promise<AnimationTriggerResponse> => {
+    const response = await axiosInstance.get<ApiResponse<AnimationTriggerResponse>>(
+      "/animation-trigger"
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Update trigger state
+   */
+  update: async (data: UpdateAnimationTriggerRequest): Promise<AnimationTriggerResponse> => {
+    const response = await axiosInstance.patch<ApiResponse<AnimationTriggerResponse>>(
+      "/animation-trigger",
+      data
+    );
+    return response.data.data || response.data;
+  },
+};
+
+// ==================== Real-Time Polling API ====================
+
+export const realtimeApi = {
+  /**
+   * Poll order status
+   */
+  getOrderStatus: async (orderId: string): Promise<Order> => {
+    const response = await axiosInstance.get<ApiResponse<Order>>(
+      `/realtime/order/${orderId}`
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Poll product inventory
+   */
+  getProductInventory: async (productId: string): Promise<Product> => {
+    const response = await axiosInstance.get<ApiResponse<Product>>(
+      `/realtime/product/${productId}/inventory`
+    );
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Poll cart updates
+   */
+  getCart: async (): Promise<{ items: CartItem[]; totalItems: number; totalPrice: number }> => {
+    const response = await axiosInstance.get<ApiResponse<{
+      items: CartItem[];
+      totalItems: number;
+      totalPrice: number;
+    }>>("/realtime/cart");
+    return response.data.data || response.data;
+  },
+
+  /**
+   * Poll admin orders
+   */
+  getAdminOrders: async (): Promise<Order[]> => {
+    const response = await axiosInstance.get<ApiResponse<Order[]>>(
+      "/realtime/admin/orders"
+    );
+    return response.data.data || [];
+  },
+};
+
 // ==================== Export All APIs ====================
 
 const api = {
@@ -1666,6 +2343,14 @@ const api = {
   jobApplications: jobApplicationsApi,
   interviews: interviewsApi,
   contacts: contactsApi,
+  billingAddresses: billingAddressesApi,
+  favourites: favouritesApi,
+  reviews: reviewsApi,
+  faqs: faqsApi,
+  themes: themesApi,
+  animations: animationsApi,
+  animationTrigger: animationTriggerApi,
+  realtime: realtimeApi,
 };
 
 export default api;

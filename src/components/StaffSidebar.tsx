@@ -153,6 +153,31 @@ const navigationGroups: NavGroup[] = [
         href: "/staff/dashboard/contacts",
         permission: "CONTACT_MANAGEMENT",
       },
+      {
+        name: "FAQs",
+        href: "/staff/dashboard/faqs",
+        permission: "CONTENT_MANAGEMENT",
+      },
+    ],
+  },
+  {
+    title: "Content & Design",
+    items: [
+      {
+        name: "Themes",
+        href: "/staff/dashboard/themes",
+        permission: "THEME_AND_ANIMATION",
+      },
+      {
+        name: "Animations",
+        href: "/staff/dashboard/animations",
+        permission: "THEME_AND_ANIMATION",
+      },
+      {
+        name: "Reviews",
+        href: "/staff/dashboard/reviews",
+        permission: "REVIEW_MANAGEMENT",
+      },
     ],
   },
 ];

@@ -31,7 +31,7 @@ const productSchema = Yup.object().shape({
     .max(200, "Product name must not exceed 200 characters")
     .required("Product name is required"),
   categoryId: Yup.string().required("Category is required"),
-  description: Yup.string().max(1000, "Description must not exceed 1000 characters"),
+  description: Yup.string().max(1000, "Description must not exceed 1000 characters"), // Optional
   ingredients: Yup.string().max(500, "Ingredients must not exceed 500 characters"),
   price: Yup.number()
     .positive("Price must be greater than 0")
@@ -46,6 +46,20 @@ const productSchema = Yup.object().shape({
       // For create, images are required
       if (!parent.isEdit && (!value || (Array.isArray(value) && value.length === 0))) {
         return false;
+      }
+      return true;
+    })
+    .test("maxImages", "Maximum 20 images allowed per product", function (value) {
+      const { parent } = this;
+      // Get total image count (existing + new)
+      if (parent.isEdit) {
+        // In edit mode, check total count including existing images
+        // This will be validated in handleImageChange as well
+        return true; // Validation happens in handleImageChange
+      }
+      // For create, check new images only
+      if (value && Array.isArray(value)) {
+        return value.length <= 20;
       }
       return true;
     })
@@ -231,18 +245,66 @@ export default function ProductsManagementPage() {
     setFieldValue: any
   ) => {
     const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // Validate file types and sizes
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxImages = 20;
+
+    const invalidFiles = files.filter(
+      (file) => !validTypes.includes(file.type) || file.size > maxSize
+    );
+
+    if (invalidFiles.length > 0) {
+      modal.alert(
+        "Invalid files detected. Only JPEG, PNG, and WebP images under 5MB are allowed.",
+        "Invalid Files",
+        "error"
+      );
+      e.target.value = "";
+      return;
+    }
+
+    // Check total image count (existing + new)
+    const existingCount = editingProduct
+      ? imagePreviews.filter((p) => p.isExisting).length
+      : 0;
+    const newCount = files.length;
+    const totalCount = existingCount + newCount;
+
+    if (totalCount > maxImages) {
+      modal.alert(
+        `Maximum ${maxImages} images allowed. You currently have ${existingCount} existing image${existingCount !== 1 ? "s" : ""} and are trying to add ${newCount} more. Please remove some images first.`,
+        "Too Many Images",
+        "error"
+      );
+      e.target.value = "";
+      return;
+    }
+
     const newPreviews: ImagePreview[] = files.map((file) => ({
       url: URL.createObjectURL(file),
       file,
     }));
 
     // Combine with existing previews (for edit mode)
+    // Keep all existing images and append new ones
     const combinedPreviews = editingProduct
       ? [...imagePreviews.filter((p) => p.isExisting), ...newPreviews]
       : newPreviews;
 
     setImagePreviews(combinedPreviews);
-    setFieldValue("images", files);
+    
+    // Update form field - only include new files (not existing ones)
+    // Get all new files from combined previews
+    const allNewFiles = combinedPreviews
+      .filter((p) => !p.isExisting && p.file)
+      .map((p) => p.file!);
+    setFieldValue("images", allNewFiles);
+    
+    // Reset file input to allow selecting the same files again if needed
+    e.target.value = "";
   };
 
   const removeImagePreview = (index: number, setFieldValue: any) => {
@@ -283,10 +345,6 @@ export default function ProductsManagementPage() {
           .filter((p) => !p.isExisting && p.file)
           .map((p) => p.file!);
         
-        if (newImages.length > 0) {
-          updateData.images = newImages;
-        }
-
         // Calculate which existing images were removed
         const originalImageUrls = editingProduct.imageUrls || [];
         const remainingExistingUrls = imagePreviews
@@ -297,20 +355,30 @@ export default function ProductsManagementPage() {
           (url) => !remainingExistingUrls.includes(url)
         );
 
-        // If specific images were removed, use removeImageUrls
-        if (removedImageUrls.length > 0) {
+        // Handle image updates with professional logic
+        if (newImages.length > 0) {
+          // New images to add
+          updateData.images = newImages;
+          
+          // Determine if we should replace all images or add to existing ones
+          if (removedImageUrls.length === originalImageUrls.length && originalImageUrls.length > 0) {
+            // All existing images were removed - replace all
+            updateData.deleteOldImages = true;
+          } else {
+            // Add new images to existing ones (default behavior)
+            // Explicitly set to false to ensure backend adds images without replacing
+            updateData.deleteOldImages = false;
+            
+            // If specific images were removed, use removeImageUrls
+            if (removedImageUrls.length > 0) {
+              updateData.removeImageUrls = removedImageUrls;
+            }
+          }
+        } else if (removedImageUrls.length > 0) {
+          // No new images, but some existing images were removed
           updateData.removeImageUrls = removedImageUrls;
         }
-
-        // If user wants to replace all images (deleteOldImages=true)
-        // This takes precedence over removeImageUrls
-        // Only set if user explicitly wants to replace all AND has new images
-        if (newImages.length > 0 && removedImageUrls.length === originalImageUrls.length) {
-          // All existing images removed, replace all
-          updateData.deleteOldImages = true;
-          // Don't send removeImageUrls if replacing all
-          delete updateData.removeImageUrls;
-        }
+        // If no new images and no removals, images remain unchanged (no image fields sent)
 
         await api.products.update(editingProduct.id, updateData);
         setSubmitting(false); // Stop loading state
@@ -742,7 +810,11 @@ export default function ProductsManagementPage() {
                 </label>
                 {editingProduct && (
                   <p className="text-xs mb-2" style={{ color: "#6b7280" }}>
-                    Add new images or remove existing ones. New images will be added to existing ones by default.
+                    <strong>Add new images:</strong> Select new images to add them to existing ones. 
+                    <br />
+                    <strong>Remove images:</strong> Click the × button on any image to remove it.
+                    <br />
+                    New images will be added to existing ones by default.
                   </p>
                 )}
                 <input

@@ -26,6 +26,8 @@ import axios, {
 } from "axios";
 import { ApiError } from "@/src/types/api";
 import { tokenManager } from "./tokenManager";
+import { guestTokenManager } from "./guestTokenManager";
+import { showErrorToast } from "./toastManager";
 
 // Base API URL
 const BASE_URL =
@@ -85,9 +87,31 @@ axiosInstance.interceptors.request.use(
     // For non-auth endpoints, add Authorization header from localStorage (Safari/iOS support)
     // Cookies are still sent automatically (for Chrome compatibility)
     if (!isAuthEndpoint && typeof window !== "undefined") {
-      const accessToken = localStorage.getItem("accessToken");
+      // Check for role-specific tokens (priority order: admin > staff > user)
+      let accessToken: string | null = null;
+      let guestToken: string | null = null;
+      
+      // Determine which token to use based on URL path
+      if (config.url?.includes("/admin/") || config.url?.includes("/auth/admin/")) {
+        accessToken = localStorage.getItem("accessToken_admin");
+      } else if (config.url?.includes("/staff") || config.url?.includes("/staff-accounts")) {
+        accessToken = localStorage.getItem("accessToken_staff");
+      } else {
+        accessToken = localStorage.getItem("accessToken_user");
+      }
+      
+      // If no access token, check for guest token
+      if (!accessToken) {
+        guestToken = guestTokenManager.get();
+      }
+      
+      // Add Authorization header
       if (accessToken && !config.headers.Authorization) {
         config.headers.Authorization = `Bearer ${accessToken}`;
+      } else if (guestToken && !config.headers.Authorization && !config.headers["X-Guest-Token"]) {
+        // Guest token can be sent as Authorization header or X-Guest-Token header
+        config.headers.Authorization = `Guest ${guestToken}`;
+        config.headers["X-Guest-Token"] = guestToken;
       }
     }
 
@@ -144,12 +168,45 @@ axiosInstance.interceptors.request.use(
         originalRequest.url?.includes("/auth/admin/login") ||
         originalRequest.url?.includes("/auth/admin/register") ||
         originalRequest.url?.includes("/staff-accounts/login") ||
-        originalRequest.url?.includes("/staff-accounts/change-password");
+        originalRequest.url?.includes("/staff-accounts/change-password") ||
+        originalRequest.url?.includes("/auth/refresh");
 
       if (isAuthEndpoint) {
-        // Auth endpoint failed (login/register failed)
-        // Don't redirect - let the login page handle the error
-        // The login page will show the error message to the user
+        // Auth endpoint failed (login/register/refresh failed)
+        // If it's a refresh endpoint failure, show toast and redirect
+        if (originalRequest.url?.includes("/auth/refresh")) {
+          // Refresh endpoint failed - tokens are invalid/expired
+          const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
+          const isAdminPath = currentPath.startsWith("/admin");
+          const isStaffPath = currentPath.startsWith("/staff");
+          
+          tokenManager.clearUser();
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("refreshToken");
+            localStorage.removeItem("userRole");
+            localStorage.removeItem("accessToken_admin");
+            localStorage.removeItem("refreshToken_admin");
+            localStorage.removeItem("accessToken_staff");
+            localStorage.removeItem("refreshToken_staff");
+            localStorage.removeItem("accessToken_user");
+            localStorage.removeItem("refreshToken_user");
+            
+            if (!["/login", "/register", "/admin/login", "/staff/login"].includes(currentPath)) {
+              showErrorToast("Your session has expired. Please login again.", 5000);
+              setTimeout(() => {
+                if (isAdminPath) {
+                  window.location.href = "/admin/login";
+                } else if (isStaffPath) {
+                  window.location.href = "/staff/login";
+                } else {
+                  window.location.href = "/login";
+                }
+              }, 1000);
+            }
+          }
+        }
+        // Don't redirect for other auth endpoints - let the login page handle the error
         tokenManager.clearUser();
         return Promise.reject(error);
       }
@@ -224,6 +281,13 @@ axiosInstance.interceptors.request.use(
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");
           localStorage.removeItem("userRole");
+          // Clear role-specific tokens
+          localStorage.removeItem("accessToken_admin");
+          localStorage.removeItem("refreshToken_admin");
+          localStorage.removeItem("accessToken_staff");
+          localStorage.removeItem("refreshToken_staff");
+          localStorage.removeItem("accessToken_user");
+          localStorage.removeItem("refreshToken_user");
         }
         processQueue(refreshError, null);
         isRefreshing = false;
@@ -231,22 +295,29 @@ axiosInstance.interceptors.request.use(
         if (typeof window !== "undefined") {
           const currentPath = window.location.pathname;
           if (!["/login", "/register", "/admin/login", "/staff/login"].includes(currentPath)) {
-            // Use path-based detection as primary, userRole as fallback
+            // Determine login page based on current path
             const isAdminPath = currentPath.startsWith("/admin");
             const isStaffPath = currentPath.startsWith("/staff");
-            if (isAdminPath) {
-              window.location.href = "/admin/login";
-            } else if (isStaffPath) {
-              window.location.href = "/staff/login";
-            } else {
-              // Fallback to userRole or default to login
-              const loginPaths: Record<string, string> = {
-                staff: "/staff/login",
-                admin: "/admin/login",
-                user: "/login",
-              };
-              window.location.href = loginPaths[userRole || ""] || "/login";
-            }
+            
+            // Show toast message
+            showErrorToast("Your session has expired. Please login again.", 5000);
+            
+            // Redirect after a short delay to allow toast to be visible
+            setTimeout(() => {
+              if (isAdminPath) {
+                window.location.href = "/admin/login";
+              } else if (isStaffPath) {
+                window.location.href = "/staff/login";
+              } else {
+                // Fallback to userRole or default to login
+                const loginPaths: Record<string, string> = {
+                  staff: "/staff/login",
+                  admin: "/admin/login",
+                  user: "/login",
+                };
+                window.location.href = loginPaths[userRole || ""] || "/login";
+              }
+            }, 1000);
           }
         }
 
@@ -259,12 +330,52 @@ axiosInstance.interceptors.request.use(
       const { status, data } = error.response;
 
       switch (status) {
+        case 400:
+          // Bad Request - Order limits, duplicate orders, etc.
+          const errorMessage400 = data?.message || "Bad request";
+          const errorDetails = data?.details;
+          
+          // Check for specific order-related errors
+          if (
+            errorMessage400.includes("maximum value") ||
+            errorMessage400.includes("maximum limit") ||
+            errorMessage400.includes("Duplicate order") ||
+            errorMessage400.includes("maximum quantity")
+          ) {
+            console.error("Order validation error", {
+              message: errorMessage400,
+              details: errorDetails,
+            });
+          }
+          
+          return Promise.reject({
+            message: errorMessage400,
+            statusCode: status,
+            error: data?.error,
+            details: errorDetails,
+          } as ApiError);
         case 403:
           console.error("Access forbidden:", data?.message);
           break;
         case 404:
           // Not found - handled by caller
           break;
+        case 429:
+          // Rate Limit - Too Many Requests
+          const errorMessage429 = data?.message || "Too many requests. Please try again later.";
+          const retryAfter = error.response?.headers?.["retry-after"];
+          
+          console.error("Rate limit exceeded", {
+            message: errorMessage429,
+            retryAfter,
+          });
+          
+          return Promise.reject({
+            message: errorMessage429,
+            statusCode: status,
+            error: "RATE_LIMIT_EXCEEDED",
+            retryAfter: retryAfter ? parseInt(retryAfter, 10) : undefined,
+          } as ApiError);
         case 500:
           console.error("Server error:", data?.message);
           break;
