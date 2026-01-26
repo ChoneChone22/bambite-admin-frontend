@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Formik, Form, Field, FieldArray } from "formik";
 import * as Yup from "yup";
 import api from "@/src/services/api";
@@ -18,6 +18,8 @@ import {
 } from "@/src/types/api";
 import { formatDateTime, getErrorMessage } from "@/src/lib/utils";
 import { useModal } from "@/src/hooks/useModal";
+import { useTablePagination } from "@/src/hooks";
+import TablePagination from "@/src/components/TablePagination";
 import FormModal from "@/src/components/FormModal";
 
 // Validation Schema
@@ -64,9 +66,14 @@ export default function JobPostsManagementPage() {
       setError(null);
       const response = await api.jobPosts.getAll();
       setJobPosts(response);
-    } catch (err) {
-      setError("Failed to fetch job posts");
-      console.error(err);
+    } catch (err: any) {
+      const errorMsg = getErrorMessage(err);
+      console.error("Failed to fetch job posts:", {
+        error: errorMsg,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      setError(errorMsg || "Failed to fetch job posts. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -76,8 +83,14 @@ export default function JobPostsManagementPage() {
     try {
       const activeTags = await api.placeTags.getActive();
       setPlaceTags(activeTags);
-    } catch (err) {
-      console.error("Failed to fetch place tags:", err);
+    } catch (err: any) {
+      const errorMsg = getErrorMessage(err);
+      console.error("Failed to fetch place tags:", {
+        error: errorMsg,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      // Don't set error state for place tags as it's not critical
     }
   };
 
@@ -85,6 +98,21 @@ export default function JobPostsManagementPage() {
     fetchJobPosts();
     fetchPlaceTags();
   }, []);
+
+  // Table pagination
+  const {
+    paginatedData,
+    currentPage,
+    totalPages,
+    rowsPerPage,
+    totalRows,
+    handlePageChange,
+    handleRowsPerPageChange,
+  } = useTablePagination(jobPosts, {
+    initialRowsPerPage: 10,
+    minRowsPerPage: 10,
+    maxRowsPerPage: 50,
+  });
 
   const handleCreate = () => {
     setEditingJobPost(null);
@@ -234,7 +262,7 @@ export default function JobPostsManagementPage() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {jobPosts.map((jobPost) => (
+            {paginatedData.map((jobPost) => (
               <tr key={jobPost.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4">
                   <div
@@ -278,12 +306,25 @@ export default function JobPostsManagementPage() {
           </tbody>
         </table>
 
-        {jobPosts.length === 0 && (
+        {totalRows === 0 && (
           <div className="text-center py-12">
             <p style={{ color: "#6b7280" }}>No job posts found</p>
           </div>
         )}
       </div>
+
+      {totalRows > 0 && (
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          rowsPerPage={rowsPerPage}
+          totalRows={totalRows}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleRowsPerPageChange}
+          minRowsPerPage={10}
+          maxRowsPerPage={50}
+        />
+      )}
 
       {/* Job Post Form Modal */}
       <FormModal

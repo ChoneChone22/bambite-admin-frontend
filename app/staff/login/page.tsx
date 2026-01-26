@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import api from "@/src/services/api";
 import { tokenManager } from "@/src/lib/tokenManager";
@@ -179,6 +180,15 @@ export default function StaffLoginPage() {
                     "🔐 Staff Sign In"
                   )}
                 </button>
+              </div>
+
+              <div className="text-center">
+                <Link
+                  href="/staff/forgot-password"
+                  className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  Forgot Password?
+                </Link>
               </div>
 
             </Form>

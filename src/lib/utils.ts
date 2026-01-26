@@ -202,3 +202,158 @@ export const getCategoryColor = (category: string): string => {
   // Return legacy color if it exists, otherwise default
   return legacyColors[category] || "bg-blue-100 text-blue-800";
 };
+
+/**
+ * Parse API response to extract data array
+ * Handles multiple backend response formats:
+ * - { status: "success", data: [...] }
+ * - { success: true, data: [...] }
+ * - { data: [...] }
+ * - { data: { items: [...] } } (nested)
+ * - Direct array [...]
+ * 
+ * @param response - Axios response object
+ * @param arrayKey - Optional key for nested arrays (e.g., "placeTags", "applications")
+ * @returns Extracted array data
+ * @throws Error if data cannot be extracted
+ */
+export const parseArrayResponse = <T>(
+  response: any,
+  arrayKey?: string
+): T[] => {
+  const responseData = response?.data || response;
+  
+  if (!responseData) {
+    throw new Error("Empty response received from server");
+  }
+
+  // Case 1: Direct array
+  if (Array.isArray(responseData)) {
+    return responseData;
+  }
+
+  // Case 2: { status: "success", data: [...] }
+  if (responseData.status === "success" && responseData.data) {
+    if (Array.isArray(responseData.data)) {
+      return responseData.data;
+    }
+    // Handle nested: { status: "success", data: { items: [...] } }
+    if (arrayKey && responseData.data[arrayKey] && Array.isArray(responseData.data[arrayKey])) {
+      return responseData.data[arrayKey];
+    }
+  }
+
+  // Case 3: { success: true, data: [...] }
+  if (responseData.success === true && responseData.data) {
+    if (Array.isArray(responseData.data)) {
+      return responseData.data;
+    }
+    // Handle nested: { success: true, data: { items: [...] } }
+    if (arrayKey && responseData.data[arrayKey] && Array.isArray(responseData.data[arrayKey])) {
+      return responseData.data[arrayKey];
+    }
+  }
+
+  // Case 4: { data: [...] }
+  if (responseData.data) {
+    if (Array.isArray(responseData.data)) {
+      return responseData.data;
+    }
+    // Handle nested: { data: { items: [...] } }
+    if (arrayKey && responseData.data[arrayKey] && Array.isArray(responseData.data[arrayKey])) {
+      return responseData.data[arrayKey];
+    }
+  }
+
+  // Case 5: Nested object with array key
+  if (arrayKey && responseData[arrayKey] && Array.isArray(responseData[arrayKey])) {
+    return responseData[arrayKey];
+  }
+
+  // If we can't find an array, log the structure for debugging
+  console.error("Unable to parse array response. Response structure:", {
+    hasData: !!responseData.data,
+    hasStatus: !!responseData.status,
+    hasSuccess: responseData.success !== undefined,
+    arrayKey,
+    responseKeys: Object.keys(responseData),
+  });
+
+  // Return empty array as fallback (but log warning)
+  console.warn("Returning empty array as fallback. Check backend response format.");
+  return [];
+};
+
+/**
+ * Parse API response to extract single object
+ * Handles multiple backend response formats:
+ * - { status: "success", data: {...} }
+ * - { success: true, data: {...} }
+ * - { data: {...} }
+ * - { data: { item: {...} } } (nested)
+ * - Direct object {...}
+ * 
+ * @param response - Axios response object
+ * @param objectKey - Optional key for nested objects (e.g., "placeTag", "application")
+ * @returns Extracted object data
+ * @throws Error if data cannot be extracted
+ */
+export const parseObjectResponse = <T>(
+  response: any,
+  objectKey?: string
+): T => {
+  const responseData = response?.data || response;
+  
+  if (!responseData) {
+    throw new Error("Empty response received from server");
+  }
+
+  // Case 1: Direct object (not wrapped)
+  if (typeof responseData === "object" && !Array.isArray(responseData) && !responseData.data && !responseData.status) {
+    // Check if it's a nested object with the key
+    if (objectKey && responseData[objectKey]) {
+      return responseData[objectKey] as T;
+    }
+    return responseData as T;
+  }
+
+  // Case 2: { status: "success", data: {...} }
+  if (responseData.status === "success" && responseData.data) {
+    if (objectKey && responseData.data[objectKey]) {
+      return responseData.data[objectKey] as T;
+    }
+    return responseData.data as T;
+  }
+
+  // Case 3: { success: true, data: {...} }
+  if (responseData.success === true && responseData.data) {
+    if (objectKey && responseData.data[objectKey]) {
+      return responseData.data[objectKey] as T;
+    }
+    return responseData.data as T;
+  }
+
+  // Case 4: { data: {...} }
+  if (responseData.data) {
+    if (objectKey && responseData.data[objectKey]) {
+      return responseData.data[objectKey] as T;
+    }
+    return responseData.data as T;
+  }
+
+  // Case 5: Nested object with object key
+  if (objectKey && responseData[objectKey]) {
+    return responseData[objectKey] as T;
+  }
+
+  // If we can't find the object, log the structure for debugging
+  console.error("Unable to parse object response. Response structure:", {
+    hasData: !!responseData.data,
+    hasStatus: !!responseData.status,
+    hasSuccess: responseData.success !== undefined,
+    objectKey,
+    responseKeys: Object.keys(responseData),
+  });
+
+  throw new Error(`Unable to extract ${objectKey || "object"} from response`);
+};

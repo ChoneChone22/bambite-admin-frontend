@@ -40,13 +40,41 @@ export default function InventoryControlPage() {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const [productsResponse, changesData] = await Promise.all([
-        api.products.getAll(),
-        api.inventory.getChanges(),
-      ]);
-      // products.getAll() returns { data: Product[], meta?: {...} }
-      setProducts(productsResponse.data || productsResponse);
-      setChanges(changesData);
+      
+      // Fetch all products with pagination
+      let allProducts: Product[] = [];
+      let currentPage = 1;
+      const limit = 100; // Fetch 100 products per page
+      const maxPages = 1000; // Safety limit to prevent infinite loops
+      let hasMore = true;
+
+      while (hasMore && currentPage <= maxPages) {
+        const productsResponse = await api.products.getAll({
+          page: currentPage,
+          limit: limit,
+        });
+        
+        const products = productsResponse.data || [];
+        allProducts = [...allProducts, ...products];
+        
+        // Check if there are more pages
+        if (productsResponse.meta) {
+          const totalPages = Math.ceil(productsResponse.meta.total / limit);
+          hasMore = currentPage < totalPages;
+          currentPage++;
+        } else {
+          // If no meta, assume we got all products if less than limit
+          hasMore = products.length === limit;
+          currentPage++;
+        }
+      }
+
+      // Fetch inventory changes (this API might not support pagination)
+      const changesData = await api.inventory.getChanges();
+      const allChanges = Array.isArray(changesData) ? changesData : [];
+
+      setProducts(allProducts);
+      setChanges(allChanges);
     } catch (err) {
       console.error("Failed to fetch inventory data:", err);
     } finally {
@@ -400,7 +428,7 @@ export default function InventoryControlPage() {
             </tbody>
           </table>
         </div>
-        {filteredProducts.length > 0 && (
+        {productsTotalRows > 0 && (
           <TablePagination
             currentPage={productsPage}
             totalPages={productsTotalPages}
@@ -519,7 +547,7 @@ export default function InventoryControlPage() {
           </table>
 
         </div>
-        {filteredChanges.length > 0 && (
+        {changesTotalRows > 0 && (
           <TablePagination
             currentPage={changesPage}
             totalPages={changesTotalPages}

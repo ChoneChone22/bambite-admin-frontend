@@ -43,6 +43,21 @@ export default function ThemesManagementPage() {
   const [editingTheme, setEditingTheme] = useState<Theme | null>(null);
   const [showModal, setShowModal] = useState(false);
   const modal = useModal();
+  
+  // Tooltip state
+  const [tooltip, setTooltip] = useState<{
+    show: boolean;
+    colorName: string;
+    colorCode: string;
+    x: number;
+    y: number;
+  }>({
+    show: false,
+    colorName: "",
+    colorCode: "",
+    x: 0,
+    y: 0,
+  });
 
   const fetchThemes = async () => {
     try {
@@ -55,7 +70,7 @@ export default function ThemesManagementPage() {
       setSelectedTheme(selected || null);
     } catch (err) {
       setError("Failed to fetch themes");
-      console.error(err);
+      console.error("Error fetching themes:", err);
     } finally {
       setIsLoading(false);
     }
@@ -91,7 +106,11 @@ export default function ThemesManagementPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this theme?")) return;
+    const confirmed = await modal.confirm(
+      "Are you sure you want to delete this theme? This action cannot be undone.",
+      "Delete Theme"
+    );
+    if (!confirmed) return;
 
     try {
       await api.themes.delete(id);
@@ -132,6 +151,26 @@ export default function ThemesManagementPage() {
     setShowModal(true);
   };
 
+  // Tooltip handlers
+  const handleColorHover = (
+    e: React.MouseEvent<HTMLDivElement>,
+    colorName: string,
+    colorCode: string
+  ) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setTooltip({
+      show: true,
+      colorName,
+      colorCode,
+      x: rect.left + rect.width / 2,
+      y: rect.top - 10,
+    });
+  };
+
+  const handleColorLeave = () => {
+    setTooltip((prev) => ({ ...prev, show: false }));
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -142,6 +181,37 @@ export default function ThemesManagementPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
+      {modal.ModalComponent}
+      
+      {/* Color Tooltip */}
+      {tooltip.show && (
+        <div
+          className="fixed z-50 px-3 py-1.5 rounded-lg shadow-lg text-xs font-medium pointer-events-none transition-opacity duration-150"
+          style={{
+            left: `${tooltip.x}px`,
+            top: `${tooltip.y}px`,
+            transform: "translate(-50%, -100%)",
+            backgroundColor: "#1f2937",
+            color: "#ffffff",
+            marginTop: "-8px",
+          }}
+        >
+          <div className="font-semibold mb-0.5" style={{ color: "#ffffff" }}>
+            {tooltip.colorName}
+          </div>
+          <div className="font-mono text-[10px] opacity-90" style={{ color: "#d1d5db" }}>
+            {tooltip.colorCode}
+          </div>
+          {/* Arrow */}
+          <div
+            className="absolute left-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent"
+            style={{
+              transform: "translateX(-50%)",
+              borderTopColor: "#1f2937",
+            }}
+          />
+        </div>
+      )}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Theme Management</h1>
@@ -161,93 +231,224 @@ export default function ThemesManagementPage() {
       )}
 
       {themes.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg shadow">
-          <p className="text-gray-500 text-lg">No themes found</p>
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-gray-100">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center mb-6">
+            <svg
+              className="w-10 h-10 text-blue-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+              />
+            </svg>
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">No themes yet</h3>
+          <p className="text-gray-500 mb-8 max-w-sm text-center">
+            Create your first theme to customize the application&apos;s appearance
+          </p>
           <button
             onClick={openCreateModal}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white font-medium rounded-xl hover:bg-gray-800 transition-all shadow-sm hover:shadow-md"
           >
-            Create First Theme
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Create Theme
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
           {themes.map((theme) => (
             <div
               key={theme.id}
-              className={`bg-white rounded-lg shadow-lg overflow-hidden border-2 ${
-                theme.selected ? "border-blue-500" : "border-gray-200"
+              className={`group relative bg-white rounded-2xl border transition-all duration-200 ${
+                theme.selected
+                  ? "border-blue-500 shadow-lg shadow-blue-500/10"
+                  : "border-gray-200 hover:border-gray-300 hover:shadow-md"
               }`}
             >
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-bold text-gray-900">{theme.name}</h3>
-                  {theme.selected && (
-                    <span className="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">
-                      Selected
-                    </span>
-                  )}
+              {/* Header */}
+              <div className="p-6 pb-4">
+                <div className="flex items-start justify-between mb-6">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-lg font-semibold text-gray-900 truncate">{theme.name}</h3>
+                      {theme.selected && (
+                        <span className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-blue-50 text-blue-700">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          Active
+                        </span>
+                      )}
+                    </div>
+                    {theme.createdAt && (
+                      <p className="text-xs text-gray-500">
+                        {new Date(theme.createdAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
-                {/* Color Preview */}
-                <div className="space-y-2 mb-4">
-                  <div className="flex gap-2">
-                    <div
-                      className="flex-1 h-12 rounded"
-                      style={{ backgroundColor: theme.colors.primary }}
-                      title="Primary"
-                    />
-                    <div
-                      className="flex-1 h-12 rounded"
-                      style={{ backgroundColor: theme.colors.secondary }}
-                      title="Secondary"
-                    />
-                    <div
-                      className="flex-1 h-12 rounded"
-                      style={{ backgroundColor: theme.colors.accent }}
-                      title="Accent"
-                    />
+                {/* Color Palette Preview */}
+                <div className="space-y-4">
+                  {/* Main Colors */}
+                  <div>
+                    <div className="flex gap-2 mb-2">
+                      <div
+                        className="flex-1 aspect-square rounded-xl overflow-hidden shadow-sm cursor-pointer transition-transform hover:scale-105"
+                        onMouseEnter={(e) =>
+                          handleColorHover(e, "Primary", theme.colors.primary)
+                        }
+                        onMouseLeave={handleColorLeave}
+                      >
+                        <div
+                          className="w-full h-full"
+                          style={{ backgroundColor: theme.colors.primary }}
+                        />
+                      </div>
+                      <div
+                        className="flex-1 aspect-square rounded-xl overflow-hidden shadow-sm cursor-pointer transition-transform hover:scale-105"
+                        onMouseEnter={(e) =>
+                          handleColorHover(e, "Secondary", theme.colors.secondary)
+                        }
+                        onMouseLeave={handleColorLeave}
+                      >
+                        <div
+                          className="w-full h-full"
+                          style={{ backgroundColor: theme.colors.secondary }}
+                        />
+                      </div>
+                      <div
+                        className="flex-1 aspect-square rounded-xl overflow-hidden shadow-sm cursor-pointer transition-transform hover:scale-105"
+                        onMouseEnter={(e) =>
+                          handleColorHover(e, "Accent", theme.colors.accent)
+                        }
+                        onMouseLeave={handleColorLeave}
+                      >
+                        <div
+                          className="w-full h-full"
+                          style={{ backgroundColor: theme.colors.accent }}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2 text-xs text-gray-500">
+                      <span className="flex-1 truncate">{theme.colors.primary}</span>
+                      <span className="flex-1 truncate">{theme.colors.secondary}</span>
+                      <span className="flex-1 truncate">{theme.colors.accent}</span>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
+
+                  {/* Background Preview */}
+                  <div className="relative">
                     <div
-                      className="flex-1 h-8 rounded"
+                      className="h-20 rounded-xl p-4 flex items-center justify-between border border-gray-200 relative"
                       style={{ backgroundColor: theme.colors.background }}
-                      title="Background"
-                    />
-                    <div
-                      className="flex-1 h-8 rounded"
-                      style={{ backgroundColor: theme.colors.card }}
-                      title="Card"
-                    />
+                      onMouseEnter={(e) =>
+                        handleColorHover(e, "Background", theme.colors.background)
+                      }
+                      onMouseLeave={handleColorLeave}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm cursor-pointer transition-transform hover:scale-110"
+                          style={{
+                            backgroundColor: theme.colors.background,
+                            color: theme.colors.logo,
+                            border: `2px solid ${theme.colors.logo}`,
+                          }}
+                          onMouseEnter={(e) => {
+                            e.stopPropagation();
+                            handleColorHover(e, "Logo", theme.colors.logo);
+                          }}
+                          onMouseLeave={handleColorLeave}
+                        >
+                          L
+                        </div>
+                        <div>
+                          <div
+                            className="h-2 w-16 rounded mb-1 cursor-pointer transition-opacity hover:opacity-80"
+                            style={{ backgroundColor: theme.colors.card }}
+                            onMouseEnter={(e) => {
+                              e.stopPropagation();
+                              handleColorHover(e, "Card", theme.colors.card);
+                            }}
+                            onMouseLeave={handleColorLeave}
+                          />
+                          <div
+                            className="h-2 w-12 rounded cursor-pointer transition-opacity hover:opacity-80"
+                            style={{ backgroundColor: theme.colors.card, opacity: 0.6 }}
+                            onMouseEnter={(e) => {
+                              e.stopPropagation();
+                              handleColorHover(e, "Card", theme.colors.card);
+                            }}
+                            onMouseLeave={handleColorLeave}
+                          />
+                        </div>
+                      </div>
+                      <div
+                        className="text-xs font-semibold px-2 py-1 rounded cursor-pointer transition-opacity hover:opacity-80"
+                        style={{
+                          backgroundColor: theme.colors.card,
+                          color: theme.colors.text,
+                        }}
+                        onMouseEnter={(e) => {
+                          e.stopPropagation();
+                          handleColorHover(e, "Text", theme.colors.text);
+                        }}
+                        onMouseLeave={handleColorLeave}
+                      >
+                        Preview
+                      </div>
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Actions */}
-                <div className="flex flex-wrap gap-2">
+              {/* Actions */}
+              <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                <div className="flex gap-2">
                   {theme.selected ? (
                     <button
                       onClick={() => handleUnselect(theme.id)}
-                      className="flex-1 px-3 py-2 bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200 transition-colors text-sm"
+                      className="flex-1 px-4 py-2 text-sm font-medium bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                      style={{ color: "#374151" }}
                     >
-                      Unselect
+                      Deselect
                     </button>
                   ) : (
                     <button
                       onClick={() => handleSelect(theme.id)}
-                      className="flex-1 px-3 py-2 bg-green-100 text-green-800 rounded hover:bg-green-200 transition-colors text-sm"
+                      className="flex-1 px-4 py-2 text-sm font-medium bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
+                      style={{ color: "#ffffff" }}
                     >
-                      Select
+                      Apply
                     </button>
                   )}
                   <button
                     onClick={() => openEditModal(theme)}
-                    className="flex-1 px-3 py-2 bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors text-sm"
+                    className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                    style={{ color: "#374151" }}
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(theme.id)}
-                    className="flex-1 px-3 py-2 bg-red-100 text-red-800 rounded hover:bg-red-200 transition-colors text-sm"
+                    className="px-4 py-2 text-sm font-medium bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                    style={{ color: "#dc2626" }}
                   >
                     Delete
                   </button>

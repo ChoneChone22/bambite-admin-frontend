@@ -8,6 +8,8 @@ export { useTableSort } from "./useTableSort";
 export type { SortConfig, SortDirection } from "./useTableSort";
 export { useTablePagination } from "./useTablePagination";
 export type { PaginationConfig, UseTablePaginationOptions } from "./useTablePagination";
+export { useModal } from "./useModal";
+export type { ModalOptions } from "./useModal";
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";

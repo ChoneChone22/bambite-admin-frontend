@@ -80,16 +80,49 @@ const permissionGroups: PermissionGroup[] = [
     title: "Communications",
     permissionCodes: ["contact_management"],
   },
+  {
+    title: "Content & Design",
+    permissionCodes: [
+      "content_management",
+      "theme_and_animation",
+      "review_management",
+    ],
+  },
 ];
 
 // Helper function to group permissions
 const groupPermissions = (permissions: Permission[]) => {
-  return permissionGroups.map((group) => ({
+  // Get all permission codes that are in predefined groups
+  const groupedCodes = new Set(
+    permissionGroups.flatMap((group) => group.permissionCodes)
+  );
+
+  // Find permissions that don't belong to any predefined group
+  const ungroupedPermissions = permissions.filter(
+    (perm) =>
+      !groupedCodes.has(perm.code?.toLowerCase() || "") &&
+      perm.code &&
+      perm.code.trim().length > 0
+  );
+
+  // Map predefined groups with their permissions
+  const grouped = permissionGroups.map((group) => ({
     ...group,
     permissions: permissions.filter((perm) =>
       group.permissionCodes.includes(perm.code?.toLowerCase() || "")
     ),
   }));
+
+  // Add "Other" group if there are ungrouped permissions
+  if (ungroupedPermissions.length > 0) {
+    grouped.push({
+      title: "Other",
+      permissionCodes: [],
+      permissions: ungroupedPermissions,
+    });
+  }
+
+  return grouped;
 };
 
 export default function StaffAccountManagementPage() {

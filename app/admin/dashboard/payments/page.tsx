@@ -13,6 +13,8 @@ import api from "@/src/services/api";
 import { Payment, Staff, PaymentSummary } from "@/src/types/api";
 import { formatPrice } from "@/src/lib/utils";
 import { useModal } from "@/src/hooks/useModal";
+import { useTablePagination } from "@/src/hooks";
+import TablePagination from "@/src/components/TablePagination";
 import FormModal from "@/src/components/FormModal";
 
 const paymentSchema = Yup.object().shape({
@@ -139,6 +141,21 @@ export default function PaymentManagementPage() {
       paidCount,
     };
   }, [payments, paymentSummary]);
+
+  // Table pagination
+  const {
+    paginatedData,
+    currentPage,
+    totalPages,
+    rowsPerPage,
+    totalRows,
+    handlePageChange,
+    handleRowsPerPageChange,
+  } = useTablePagination(filteredPayments, {
+    initialRowsPerPage: 10,
+    minRowsPerPage: 10,
+    maxRowsPerPage: 50,
+  });
 
   const handleCreate = () => {
     setEditingPayment(null);
@@ -381,7 +398,7 @@ export default function PaymentManagementPage() {
                 </td>
               </tr>
             ) : (
-              filteredPayments.map((payment) => (
+              paginatedData.map((payment) => (
               <tr key={payment.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div
@@ -462,12 +479,25 @@ export default function PaymentManagementPage() {
           </tbody>
         </table>
 
-        {payments.length === 0 && (
+        {totalRows === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-500">No payments found.</p>
           </div>
         )}
       </div>
+
+      {totalRows > 0 && (
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          rowsPerPage={rowsPerPage}
+          totalRows={totalRows}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleRowsPerPageChange}
+          minRowsPerPage={10}
+          maxRowsPerPage={50}
+        />
+      )}
 
       {/* Payment Form Modal */}
       <FormModal

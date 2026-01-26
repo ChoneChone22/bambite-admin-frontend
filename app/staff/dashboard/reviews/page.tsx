@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import api from "@/src/services/api";
 import { Review, ReviewStatus, ReviewSortBy } from "@/src/types/api";
 import { getErrorMessage } from "@/src/lib/utils";
-import { useTablePagination } from "@/src/hooks";
+import { useTablePagination, useModal } from "@/src/hooks";
 import TablePagination from "@/src/components/TablePagination";
 import LoadingSpinner from "@/src/components/LoadingSpinner";
 import Toast from "@/src/components/Toast";
@@ -25,6 +25,7 @@ export default function StaffReviewsModerationPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<ReviewStatus | "ALL">("ALL");
   const [sortBy, setSortBy] = useState<ReviewSortBy>("newest" as ReviewSortBy);
+  const modal = useModal();
 
   // Check permissions
   useEffect(() => {
@@ -89,7 +90,11 @@ export default function StaffReviewsModerationPage() {
   };
 
   const handleReject = async (id: string) => {
-    if (!confirm("Are you sure you want to reject this review?")) return;
+    const confirmed = await modal.confirm(
+      "Are you sure you want to reject this review?",
+      "Reject Review"
+    );
+    if (!confirmed) return;
 
     try {
       await api.reviews.updateStatus(id, { status: ReviewStatus.REJECTED });
@@ -97,6 +102,22 @@ export default function StaffReviewsModerationPage() {
       fetchReviews();
     } catch (err) {
       setError(getErrorMessage(err) || "Failed to reject review");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    const confirmed = await modal.confirm(
+      "Are you sure you want to delete this review? This action cannot be undone.",
+      "Delete Review"
+    );
+    if (!confirmed) return;
+
+    try {
+      await api.reviews.delete(id);
+      setSuccessMessage("Review deleted successfully");
+      fetchReviews();
+    } catch (err) {
+      setError(getErrorMessage(err) || "Failed to delete review");
     }
   };
 
@@ -167,6 +188,7 @@ export default function StaffReviewsModerationPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
+      {modal.ModalComponent}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Review Moderation</h1>
         <p className="text-gray-600 mt-1">Moderate product reviews</p>
@@ -291,13 +313,15 @@ export default function StaffReviewsModerationPage() {
                             </>
                           )}
                           {review.status === ReviewStatus.APPROVED && (
-                            <button
-                              onClick={() => handleReject(review.id)}
-                              className="px-3 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200 transition-colors cursor-pointer"
-                              style={{ backgroundColor: "#fee2e2", color: "#991b1b" }}
-                            >
-                              Reject
-                            </button>
+                            <>
+                              <button
+                                onClick={() => handleReject(review.id)}
+                                className="px-3 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200 transition-colors cursor-pointer"
+                                style={{ backgroundColor: "#fee2e2", color: "#991b1b" }}
+                              >
+                                Reject
+                              </button>
+                            </>
                           )}
                           {review.status === ReviewStatus.REJECTED && (
                             <button
@@ -308,6 +332,13 @@ export default function StaffReviewsModerationPage() {
                               Approve
                             </button>
                           )}
+                          <button
+                            onClick={() => handleDelete(review.id)}
+                            className="px-3 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200 transition-colors cursor-pointer"
+                            style={{ backgroundColor: "#fee2e2", color: "#991b1b" }}
+                          >
+                            Delete
+                          </button>
                         </div>
                       </td>
                     </tr>

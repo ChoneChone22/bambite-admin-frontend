@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import api from "@/src/services/api";
 import {
   JobApplication,
@@ -16,6 +16,8 @@ import {
 } from "@/src/types/api";
 import { formatDateTime, getErrorMessage } from "@/src/lib/utils";
 import { useModal } from "@/src/hooks/useModal";
+import { useTablePagination } from "@/src/hooks";
+import TablePagination from "@/src/components/TablePagination";
 import FormModal from "@/src/components/FormModal";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
@@ -66,10 +68,15 @@ export default function JobApplicationsManagementPage() {
       }
       const response = await api.jobApplications.getAll(filters);
       setApplications(response);
-    } catch (err) {
+    } catch (err: any) {
       const errorMsg = getErrorMessage(err);
-      setError(errorMsg || "Failed to fetch applications");
-      console.error("Failed to fetch applications:", err);
+      console.error("Failed to fetch applications:", {
+        error: errorMsg,
+        status: err?.response?.status,
+        data: err?.response?.data,
+        filters: { statusFilter, jobPostFilter, emailSearch },
+      });
+      setError(errorMsg || "Failed to fetch applications. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -79,8 +86,14 @@ export default function JobApplicationsManagementPage() {
     try {
       const response = await api.jobPosts.getAll();
       setJobPosts(response);
-    } catch (err) {
-      console.error("Failed to fetch job posts:", err);
+    } catch (err: any) {
+      const errorMsg = getErrorMessage(err);
+      console.error("Failed to fetch job posts:", {
+        error: errorMsg,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      // Don't set error state for job posts as it's not critical
     }
   };
 
@@ -88,6 +101,26 @@ export default function JobApplicationsManagementPage() {
     fetchApplications();
     fetchJobPosts();
   }, [statusFilter, jobPostFilter, emailSearch]);
+
+  // Filter applications based on filters (already filtered by API, but keep for consistency)
+  const filteredApplications = useMemo(() => {
+    return applications;
+  }, [applications]);
+
+  // Table pagination
+  const {
+    paginatedData,
+    currentPage,
+    totalPages,
+    rowsPerPage,
+    totalRows,
+    handlePageChange,
+    handleRowsPerPageChange,
+  } = useTablePagination(filteredApplications, {
+    initialRowsPerPage: 10,
+    minRowsPerPage: 10,
+    maxRowsPerPage: 50,
+  });
 
   const handleStatusChange = async (
     id: string,
@@ -109,7 +142,7 @@ export default function JobApplicationsManagementPage() {
 
   const handleViewDetails = async (id: string) => {
     try {
-      const tableApplication = applications.find((app) => app.id === id);
+      const tableApplication = filteredApplications.find((app) => app.id === id);
       const fetchedApplication = await api.jobApplications.getById(id);
       const mergedApplication: JobApplication = {
         ...tableApplication,
@@ -118,7 +151,7 @@ export default function JobApplicationsManagementPage() {
       };
       setSelectedApplication(mergedApplication);
     } catch (err: any) {
-      const tableApplication = applications.find((app) => app.id === id);
+      const tableApplication = filteredApplications.find((app) => app.id === id);
       if (tableApplication) {
         setSelectedApplication(tableApplication);
       } else {
@@ -307,7 +340,7 @@ export default function JobApplicationsManagementPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {applications.map((application) => (
+              {paginatedData.map((application) => (
                 <tr key={application.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div
@@ -397,7 +430,7 @@ export default function JobApplicationsManagementPage() {
                   </td>
                 </tr>
               ))}
-              {applications.length === 0 && (
+              {totalRows === 0 && (
                 <tr>
                   <td
                     colSpan={5}
@@ -412,6 +445,19 @@ export default function JobApplicationsManagementPage() {
           </table>
         </div>
       </div>
+
+      {totalRows > 0 && (
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          rowsPerPage={rowsPerPage}
+          totalRows={totalRows}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleRowsPerPageChange}
+          minRowsPerPage={10}
+          maxRowsPerPage={50}
+        />
+      )}
 
       {/* Application Detail Modal */}
       {selectedApplication && !showEmailModal && (

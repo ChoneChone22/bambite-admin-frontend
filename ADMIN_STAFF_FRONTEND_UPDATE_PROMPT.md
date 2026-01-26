@@ -19,7 +19,8 @@ This document provides a comprehensive guide for updating the **Admin Dashboard*
 9. [Order Security Enhancements](#9-order-security-enhancements)
 10. [Product Updates](#10-product-updates)
 11. [Authentication System](#11-authentication-system)
-12. [API Endpoints Reference](#12-api-endpoints-reference)
+12. [Forgot Password (Admin & Staff)](#12-forgot-password-admin--staff)
+13. [API Endpoints Reference](#13-api-endpoints-reference)
 
 ---
 
@@ -1048,7 +1049,642 @@ headers['X-Guest-Token'] = guestToken;
 
 ---
 
-## 12. API Endpoints Reference
+## 12. Forgot Password (Admin & Staff)
+
+### 🆕 NEW FEATURE: Password Reset with OTP
+
+This feature allows **Admin and Staff** users to reset their passwords using a 6-digit OTP code sent via email.
+
+**IMPORTANT:** This feature is **NOT available for regular users/customers**. Only Admin and Staff accounts can use forgot password functionality.
+
+### API Endpoints
+
+**1. Request Password Reset OTP (Forgot Password)**
+
+```http
+POST /api/v1/auth/admin/forgot-password
+POST /api/v1/staff-accounts/forgot-password
+```
+
+**Request Body:**
+```json
+{
+  "email": "admin@bambite.com"
+}
+```
+
+**Request Headers:**
+- `Content-Type: application/json`
+- No authentication required (public endpoint)
+
+**Response (Success - 200):**
+```json
+{
+  "status": "success",
+  "message": "If an account exists with this email, a password reset OTP has been sent. Please check your email."
+}
+```
+
+**Response (Rate Limited - 429):**
+```json
+{
+  "status": "error",
+  "statusCode": 429,
+  "message": "Too many password reset requests. Please wait before requesting another OTP."
+}
+```
+
+**Response (Validation Error - 400):**
+```json
+{
+  "status": "error",
+  "statusCode": 400,
+  "message": "Email is required"
+}
+```
+
+**Backend Behavior:**
+- Always returns success message (doesn't reveal if email exists - security feature)
+- Sends 6-digit OTP code to email if account exists
+- OTP expires in **15 minutes**
+- Rate limited to **3 requests per hour** per email
+- Invalidates any existing unused OTPs for the email/role
+
+**2. Reset Password with OTP**
+
+```http
+POST /api/v1/auth/admin/reset-password
+POST /api/v1/staff-accounts/reset-password
+```
+
+**Request Body:**
+```json
+{
+  "email": "admin@bambite.com",
+  "otp": "123456",
+  "newPassword": "NewSecurePassword123!"
+}
+```
+
+**Request Headers:**
+- `Content-Type: application/json`
+- No authentication required (public endpoint)
+
+**Response (Success - 200):**
+```json
+{
+  "status": "success",
+  "message": "Password reset successful. You can now login with your new password."
+}
+```
+
+**Response (Invalid OTP - 400):**
+```json
+{
+  "status": "error",
+  "statusCode": 400,
+  "message": "Invalid or expired OTP. Please request a new one."
+}
+```
+
+**Response (Validation Error - 400):**
+```json
+{
+  "status": "error",
+  "statusCode": 400,
+  "message": "Email, OTP, and new password are required"
+}
+```
+
+**Response (OTP Format Error - 400):**
+```json
+{
+  "status": "error",
+  "statusCode": 400,
+  "message": "OTP must be exactly 6 digits"
+}
+```
+
+**Response (Password Validation Error - 400):**
+```json
+{
+  "status": "error",
+  "statusCode": 400,
+  "message": "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character"
+}
+```
+
+**Backend Behavior:**
+- Validates 6-digit OTP code
+- Checks OTP expiry (15 minutes)
+- Verifies OTP hasn't been used (single-use)
+- Updates password with new hashed password
+- Invalidates all other unused OTPs for the email/role
+- New password must meet complexity requirements:
+  - Minimum 8 characters
+  - At least one uppercase letter
+  - At least one lowercase letter
+  - At least one number
+  - At least one special character (@$!%*?&)
+
+### Frontend Implementation Requirements
+
+**1. Forgot Password Page/Modal**
+
+Create a "Forgot Password" page or modal accessible from the login page:
+
+```typescript
+interface ForgotPasswordRequest {
+  email: string;
+}
+
+async function requestPasswordResetOTP(email: string, role: 'admin' | 'staff'): Promise<void> {
+  const endpoint = role === 'admin' 
+    ? '/api/v1/auth/admin/forgot-password'
+    : '/api/v1/staff-accounts/forgot-password';
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to send OTP');
+  }
+
+  return response.json();
+}
+```
+
+**UI Requirements:**
+- Email input field with validation
+- "Send OTP" button
+- Success message: "If an account exists with this email, a password reset OTP has been sent. Please check your email."
+- Error handling for rate limiting (429) - show "Too many requests. Please wait before requesting another OTP."
+- Loading state during request
+- Link back to login page
+- Clear, user-friendly design
+
+**2. Reset Password Page/Modal**
+
+Create a "Reset Password" page or modal with OTP input:
+
+```typescript
+interface ResetPasswordRequest {
+  email: string;
+  otp: string;
+  newPassword: string;
+}
+
+async function resetPassword(
+  email: string,
+  otp: string,
+  newPassword: string,
+  role: 'admin' | 'staff'
+): Promise<void> {
+  const endpoint = role === 'admin'
+    ? '/api/v1/auth/admin/reset-password'
+    : '/api/v1/staff-accounts/reset-password';
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, otp, newPassword }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to reset password');
+  }
+
+  return response.json();
+}
+```
+
+**UI Requirements:**
+- Email input field (pre-filled if coming from forgot password page)
+- OTP input field (6 digits, numeric only)
+  - Consider using a 6-input field component for better UX
+  - Auto-advance to next field on input
+  - Paste support for full OTP
+  - Clear visual feedback for each digit
+- New password input field (with show/hide toggle)
+- Password strength indicator showing requirements
+- Confirm password field (client-side validation)
+- "Reset Password" button
+- Success message: "Password reset successful. You can now login with your new password."
+- Error handling:
+  - Invalid/expired OTP: "Invalid or expired OTP. Please request a new one."
+  - Validation errors: Show specific field errors
+- Loading state during request
+- Link to request new OTP if expired
+- Link back to login page
+- OTP expiry countdown timer (15 minutes)
+
+**3. OTP Input Component (Recommended)**
+
+Create a reusable 6-digit OTP input component:
+
+```typescript
+interface OTPInputProps {
+  value: string;
+  onChange: (otp: string) => void;
+  error?: string;
+  disabled?: boolean;
+}
+
+function OTPInput({ value, onChange, error, disabled }: OTPInputProps) {
+  const inputs = Array(6).fill(0);
+  
+  const handleChange = (index: number, digit: string) => {
+    if (!/^\d$/.test(digit) && digit !== '') return;
+    
+    const newValue = value.split('');
+    newValue[index] = digit;
+    onChange(newValue.join('').slice(0, 6));
+    
+    // Auto-advance to next input
+    if (digit && index < 5) {
+      const nextInput = document.getElementById(`otp-${index + 1}`);
+      nextInput?.focus();
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !value[index] && index > 0) {
+      const prevInput = document.getElementById(`otp-${index - 1}`);
+      prevInput?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').slice(0, 6);
+    if (/^\d+$/.test(pasted)) {
+      onChange(pasted);
+      // Focus last input after paste
+      const lastInput = document.getElementById(`otp-${Math.min(pasted.length - 1, 5)}`);
+      lastInput?.focus();
+    }
+  };
+
+  return (
+    <div className="otp-input-container">
+      <div className="otp-inputs">
+        {inputs.map((_, index) => (
+          <input
+            key={index}
+            id={`otp-${index}`}
+            type="text"
+            inputMode="numeric"
+            maxLength={1}
+            value={value[index] || ''}
+            onChange={(e) => handleChange(index, e.target.value)}
+            onKeyDown={(e) => handleKeyDown(index, e)}
+            onPaste={handlePaste}
+            disabled={disabled}
+            className={error ? 'error' : ''}
+            aria-label={`OTP digit ${index + 1}`}
+          />
+        ))}
+      </div>
+      {error && <div className="error-message">{error}</div>}
+    </div>
+  );
+}
+```
+
+**4. Password Strength Indicator**
+
+Show password requirements and strength:
+
+```typescript
+interface PasswordStrengthProps {
+  password: string;
+}
+
+function PasswordStrength({ password }: PasswordStrengthProps) {
+  const checks = {
+    length: password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /\d/.test(password),
+    special: /[@$!%*?&]/.test(password),
+  };
+
+  const strength = Object.values(checks).filter(Boolean).length;
+  const strengthLabels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
+
+  return (
+    <div className="password-strength">
+      <div className="strength-bar" data-strength={strength}>
+        <div className="strength-fill" style={{ width: `${(strength / 5) * 100}%` }} />
+      </div>
+      <p className="strength-label">{strengthLabels[strength - 1] || 'Very Weak'}</p>
+      <ul className="password-requirements">
+        <li className={checks.length ? 'valid' : ''}>
+          ✓ At least 8 characters
+        </li>
+        <li className={checks.uppercase ? 'valid' : ''}>
+          ✓ One uppercase letter
+        </li>
+        <li className={checks.lowercase ? 'valid' : ''}>
+          ✓ One lowercase letter
+        </li>
+        <li className={checks.number ? 'valid' : ''}>
+          ✓ One number
+        </li>
+        <li className={checks.special ? 'valid' : ''}>
+          ✓ One special character (@$!%*?&)
+        </li>
+      </ul>
+    </div>
+  );
+}
+```
+
+**5. Complete Flow Example**
+
+```typescript
+// ForgotPasswordPage.tsx
+function ForgotPasswordPage() {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
+  const role = 'admin'; // or 'staff' - determine from context
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      await requestPasswordResetOTP(email, role);
+      setSuccess(true);
+    } catch (err: any) {
+      if (err.message.includes('429') || err.message.includes('Too many')) {
+        setError('Too many requests. Please wait before requesting another OTP.');
+      } else {
+        setError(err.message || 'Failed to send OTP. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (success) {
+    return (
+      <div className="forgot-password-success">
+        <h2>Check Your Email</h2>
+        <p>If an account exists with this email, a password reset OTP has been sent. Please check your email.</p>
+        <p className="otp-info">The OTP code will expire in 15 minutes.</p>
+        <Link to={`/reset-password?email=${encodeURIComponent(email)}&role=${role}`}>
+          Enter OTP
+        </Link>
+        <Link to="/login">Back to Login</Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="forgot-password-page">
+      <h2>Forgot Password</h2>
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="email">Email Address</label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your email"
+            required
+            disabled={loading}
+          />
+        </div>
+        {error && <div className="error-message">{error}</div>}
+        <button type="submit" disabled={loading || !email}>
+          {loading ? 'Sending...' : 'Send OTP'}
+        </button>
+        <Link to="/login">Back to Login</Link>
+      </form>
+    </div>
+  );
+}
+
+// ResetPasswordPage.tsx
+function ResetPasswordPage() {
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [role, setRole] = useState<'admin' | 'staff'>('admin');
+
+  useEffect(() => {
+    // Get email and role from URL params if coming from forgot password page
+    const params = new URLSearchParams(window.location.search);
+    const emailParam = params.get('email');
+    const roleParam = params.get('role');
+    if (emailParam) setEmail(emailParam);
+    if (roleParam === 'staff' || roleParam === 'admin') setRole(roleParam);
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setOtpError('');
+    
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    if (otp.length !== 6) {
+      setOtpError('OTP must be 6 digits');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await resetPassword(email, otp, newPassword, role);
+      setSuccess(true);
+      // Redirect to login after 2 seconds
+      setTimeout(() => {
+        window.location.href = '/login?passwordReset=success';
+      }, 2000);
+    } catch (err: any) {
+      const errorMessage = err.message || 'Failed to reset password';
+      if (errorMessage.includes('OTP') || errorMessage.includes('otp')) {
+        setOtpError(errorMessage);
+      } else {
+        setError(errorMessage);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (success) {
+    return (
+      <div className="reset-password-success">
+        <h2>Password Reset Successful</h2>
+        <p>Your password has been reset successfully. Redirecting to login...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="reset-password-page">
+      <h2>Reset Password</h2>
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="email">Email Address</label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            required
+            disabled={loading}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="otp">OTP Code (6 digits)</label>
+          <OTPInput 
+            value={otp} 
+            onChange={setOtp} 
+            error={otpError}
+            disabled={loading}
+          />
+          <p className="otp-help">Enter the 6-digit code sent to your email. Expires in 15 minutes.</p>
+          <Link to={`/forgot-password?email=${encodeURIComponent(email)}&role=${role}`}>
+            Request New OTP
+          </Link>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="newPassword">New Password</label>
+          <input
+            id="newPassword"
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="New Password"
+            required
+            disabled={loading}
+          />
+          <PasswordStrength password={newPassword} />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="confirmPassword">Confirm Password</label>
+          <input
+            id="confirmPassword"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Confirm Password"
+            required
+            disabled={loading}
+          />
+          {confirmPassword && newPassword !== confirmPassword && (
+            <div className="error-message">Passwords do not match</div>
+          )}
+        </div>
+
+        {(error || otpError) && (
+          <div className="error-message">
+            {otpError || error}
+          </div>
+        )}
+
+        <button 
+          type="submit" 
+          disabled={loading || otp.length !== 6 || newPassword !== confirmPassword}
+        >
+          {loading ? 'Resetting...' : 'Reset Password'}
+        </button>
+
+        <Link to="/login">Back to Login</Link>
+      </form>
+    </div>
+  );
+}
+```
+
+**6. Integration with Login Page**
+
+Add "Forgot Password?" link on login page:
+
+```typescript
+// LoginPage.tsx
+function LoginPage() {
+  const role = 'admin'; // or 'staff' - determine from context
+  
+  return (
+    <div className="login-page">
+      <form onSubmit={handleLogin}>
+        {/* Login form fields */}
+        <div className="login-actions">
+          <a href={`/forgot-password?role=${role}`}>Forgot Password?</a>
+        </div>
+      </form>
+    </div>
+  );
+}
+```
+
+### Security Considerations
+
+1. **Rate Limiting:** Show appropriate error message when user hits rate limit (3 requests/hour)
+2. **OTP Expiry:** Display countdown timer showing OTP expiry (15 minutes)
+3. **Email Privacy:** Never reveal if email exists in system (always show success message)
+4. **Password Validation:** Validate password strength client-side before submission
+5. **OTP Format:** Ensure OTP input only accepts 6 numeric digits
+6. **Error Messages:** Show user-friendly error messages without revealing system details
+7. **Single-Use OTP:** Inform users that OTP can only be used once
+8. **Auto-Logout:** Consider logging out user from all sessions after password reset (if applicable)
+
+### Testing Checklist
+
+- [ ] Forgot password page accessible from login page
+- [ ] Email validation works correctly
+- [ ] OTP sent successfully (check email)
+- [ ] Rate limiting works (try 4 requests in 1 hour)
+- [ ] OTP input accepts only 6 digits
+- [ ] OTP paste functionality works
+- [ ] OTP auto-advance works
+- [ ] OTP backspace navigation works
+- [ ] Password strength indicator works
+- [ ] Password reset with valid OTP succeeds
+- [ ] Password reset with invalid OTP shows error
+- [ ] Password reset with expired OTP shows error
+- [ ] Password reset with used OTP shows error
+- [ ] Password validation errors show correctly
+- [ ] Success redirect to login page works
+- [ ] Error messages are user-friendly
+- [ ] Loading states work correctly
+- [ ] Works for both admin and staff accounts
+- [ ] OTP expiry countdown timer works (if implemented)
+- [ ] Form validation prevents submission with invalid data
+
+---
+
+## 13. API Endpoints Reference
 
 ### Complete Endpoint List
 
@@ -1060,6 +1696,8 @@ headers['X-Guest-Token'] = guestToken;
 - `DELETE /api/v1/auth/user/profile/image` - Delete profile image
 - `POST /api/v1/auth/admin/login` - Admin login
 - `GET /api/v1/auth/admin/profile` - Get admin profile
+- `POST /api/v1/auth/admin/forgot-password` - Request password reset OTP (Admin)
+- `POST /api/v1/auth/admin/reset-password` - Reset password with OTP (Admin)
 - `POST /api/v1/auth/refresh` - Refresh token
 - `POST /api/v1/auth/logout` - Logout
 
@@ -1147,6 +1785,9 @@ headers['X-Guest-Token'] = guestToken;
 - `GET /api/v1/staff-accounts` - List staff accounts (Admin)
 - `POST /api/v1/staff-accounts` - Create staff account (Admin)
 - `GET /api/v1/staff-accounts/profile` - Get staff profile
+- `POST /api/v1/staff-accounts/login` - Staff login
+- `POST /api/v1/staff-accounts/forgot-password` - Request password reset OTP (Staff)
+- `POST /api/v1/staff-accounts/reset-password` - Reset password with OTP (Staff)
 - `POST /api/v1/staff-accounts/change-password` - Change password
 
 #### Inventory
@@ -1200,6 +1841,18 @@ headers['X-Guest-Token'] = guestToken;
 - [ ] Add billing address management (for order viewing)
 - [ ] Update product creation form (description optional)
 - [ ] Add profile image upload for admin
+- [ ] **Add Forgot Password functionality (Admin accounts)**
+  - [ ] Forgot Password page/modal accessible from login
+  - [ ] OTP request form with email input
+  - [ ] Reset Password page/modal with OTP input
+  - [ ] 6-digit OTP input component (numeric only, auto-advance, paste support)
+  - [ ] Password strength indicator component
+  - [ ] Password confirmation field
+  - [ ] Error handling for rate limiting (429)
+  - [ ] Error handling for invalid/expired OTP
+  - [ ] Success message display
+  - [ ] Loading states
+  - [ ] Integration with login page ("Forgot Password?" link)
 
 ### Staff Portal
 
@@ -1209,6 +1862,18 @@ headers['X-Guest-Token'] = guestToken;
 - [ ] Add Theme/Animation management (if has theme_and_animation permission)
 - [ ] Implement Review moderation (if has review_management permission)
 - [ ] Update product management (description optional)
+- [ ] **Add Forgot Password functionality (Staff accounts)**
+  - [ ] Forgot Password page/modal accessible from login
+  - [ ] OTP request form with email input
+  - [ ] Reset Password page/modal with OTP input
+  - [ ] 6-digit OTP input component (numeric only, auto-advance, paste support)
+  - [ ] Password strength indicator component
+  - [ ] Password confirmation field
+  - [ ] Error handling for rate limiting (429)
+  - [ ] Error handling for invalid/expired OTP
+  - [ ] Success message display
+  - [ ] Loading states
+  - [ ] Integration with login page ("Forgot Password?" link)
 
 ### Common Updates
 

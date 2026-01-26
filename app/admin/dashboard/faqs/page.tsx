@@ -6,13 +6,16 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import React from "react";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import api from "@/src/services/api";
 import { FAQ, CreateFAQRequest, UpdateFAQRequest } from "@/src/types/api";
 import { getErrorMessage } from "@/src/lib/utils";
 import { useModal } from "@/src/hooks/useModal";
+import { useTablePagination } from "@/src/hooks";
+import TablePagination from "@/src/components/TablePagination";
 import FormModal from "@/src/components/FormModal";
 import LoadingSpinner from "@/src/components/LoadingSpinner";
 import Toast from "@/src/components/Toast";
@@ -40,6 +43,7 @@ export default function FAQsManagementPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [editingFAQ, setEditingFAQ] = useState<FAQ | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [expandedFAQId, setExpandedFAQId] = useState<string | null>(null);
   const modal = useModal();
 
   const fetchFAQs = async () => {
@@ -93,7 +97,11 @@ export default function FAQsManagementPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this FAQ?")) return;
+    const confirmed = await modal.confirm(
+      "Are you sure you want to delete this FAQ? This action cannot be undone.",
+      "Delete FAQ"
+    );
+    if (!confirmed) return;
 
     try {
       await api.faqs.delete(id);
@@ -121,17 +129,35 @@ export default function FAQsManagementPage() {
     const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
     if (newIndex < 0 || newIndex >= faqs.length) return;
 
-    const currentFAQ = faqs[currentIndex];
-    const targetFAQ = faqs[newIndex];
+    // Create updated FAQs array with swapped orders
+    const updatedFAQs = [...faqs];
+    
+    // Swap the FAQs in the array
+    [updatedFAQs[currentIndex], updatedFAQs[newIndex]] = [
+      updatedFAQs[newIndex],
+      updatedFAQs[currentIndex],
+    ];
+
+    // Prepare bulk update payload with all FAQs and their new orders
+    const bulkUpdatePayload = updatedFAQs.map((faq, index) => ({
+      id: faq.id,
+      order: index,
+    }));
 
     try {
-      // Swap orders
-      await api.faqs.updateOrder(id, { order: targetFAQ.order });
-      await api.faqs.updateOrder(targetFAQ.id, { order: currentFAQ.order });
+      await api.faqs.bulkUpdateOrders({ updates: bulkUpdatePayload });
       setSuccessMessage("FAQ order updated successfully");
       fetchFAQs();
-    } catch (err) {
-      setError(getErrorMessage(err) || "Failed to update FAQ order");
+    } catch (err: any) {
+      const errorMsg = getErrorMessage(err);
+      console.error("Failed to update FAQ order:", {
+        error: errorMsg,
+        status: err?.response?.status,
+        data: err?.response?.data,
+        direction,
+        faqId: id,
+      });
+      setError(errorMsg || "Failed to update FAQ order");
     }
   };
 
@@ -145,6 +171,21 @@ export default function FAQsManagementPage() {
     setShowModal(true);
   };
 
+  // Table pagination
+  const {
+    paginatedData,
+    currentPage,
+    totalPages,
+    rowsPerPage,
+    totalRows,
+    handlePageChange,
+    handleRowsPerPageChange,
+  } = useTablePagination(faqs, {
+    initialRowsPerPage: 10,
+    minRowsPerPage: 10,
+    maxRowsPerPage: 50,
+  });
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -155,6 +196,7 @@ export default function FAQsManagementPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
+      {modal.ModalComponent}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">FAQ Management</h1>
@@ -218,84 +260,182 @@ export default function FAQsManagementPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {faqs.map((faq, index) => (
-                  <tr key={faq.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-900">{faq.order}</span>
-                        <div className="flex flex-col gap-1">
+                {paginatedData.map((faq) => {
+                  const index = faqs.findIndex((f) => f.id === faq.id);
+                  return (
+                  <React.Fragment key={faq.id}>
+                    <tr className="hover:bg-gray-50">
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-900">{faq.order}</span>
+                          <div className="flex flex-col gap-1">
+                            <button
+                              onClick={() => handleMoveOrder(faq.id, "up")}
+                              disabled={index === 0}
+                              className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                              title="Move up"
+                            >
+                              ↑
+                            </button>
+                            <button
+                              onClick={() => handleMoveOrder(faq.id, "down")}
+                              disabled={index === faqs.length - 1}
+                              className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                              title="Move down"
+                            >
+                              ↓
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="text-sm font-medium text-gray-900 max-w-md truncate">
+                          {faq.question}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="text-sm text-gray-500 max-w-md truncate">
+                          {faq.answer}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                            faq.isActive
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {faq.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center justify-end gap-2">
                           <button
-                            onClick={() => handleMoveOrder(faq.id, "up")}
-                            disabled={index === 0}
-                            className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
-                            title="Move up"
+                            onClick={() => setExpandedFAQId(expandedFAQId === faq.id ? null : faq.id)}
+                            className="font-semibold hover:underline cursor-pointer"
+                            style={{ color: "#2C5BBB", cursor: "pointer" }}
                           >
-                            ↑
+                            {expandedFAQId === faq.id ? "Hide Details" : "View Details"}
                           </button>
                           <button
-                            onClick={() => handleMoveOrder(faq.id, "down")}
-                            disabled={index === faqs.length - 1}
-                            className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
-                            title="Move down"
+                            onClick={() => handleToggleStatus(faq.id, faq.isActive)}
+                            className={`px-3 py-1 rounded transition-colors cursor-pointer ${
+                              faq.isActive
+                                ? "hover:bg-yellow-200"
+                                : "hover:bg-green-200"
+                            }`}
+                            style={{
+                              backgroundColor: faq.isActive ? "#fef3c7" : "#d1fae5",
+                              color: faq.isActive ? "#92400e" : "#166534",
+                            }}
                           >
-                            ↓
+                            {faq.isActive ? "Deactivate" : "Activate"}
+                          </button>
+                          <button
+                            onClick={() => openEditModal(faq)}
+                            className="px-3 py-1 rounded hover:bg-blue-200 transition-colors cursor-pointer"
+                            style={{ backgroundColor: "#dbeafe", color: "#1e40af" }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(faq.id)}
+                            className="px-3 py-1 rounded hover:bg-red-200 transition-colors cursor-pointer"
+                            style={{ backgroundColor: "#fee2e2", color: "#991b1b" }}
+                          >
+                            Delete
                           </button>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="text-sm font-medium text-gray-900 max-w-md truncate">
-                        {faq.question}
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="text-sm text-gray-500 max-w-md truncate">
-                        {faq.answer}
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          faq.isActive
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {faq.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleToggleStatus(faq.id, faq.isActive)}
-                          className={`px-3 py-1 rounded ${
-                            faq.isActive
-                              ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
-                              : "bg-green-100 text-green-800 hover:bg-green-200"
-                          } transition-colors`}
-                        >
-                          {faq.isActive ? "Deactivate" : "Activate"}
-                        </button>
-                        <button
-                          onClick={() => openEditModal(faq)}
-                          className="px-3 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition-colors"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(faq.id)}
-                          className="px-3 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200 transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                    {expandedFAQId === faq.id && (
+                      <tr key={`${faq.id}-details`}>
+                        <td colSpan={5} className="px-4 py-4 bg-gray-50">
+                          <div className="bg-white rounded-lg border border-gray-200 p-6">
+                            <h3 className="text-lg font-semibold mb-4" style={{ color: "#000000" }}>
+                              FAQ Details
+                            </h3>
+                            <div className="space-y-4">
+                              <div>
+                                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                                  Question
+                                </label>
+                                <div className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                  {faq.question}
+                                </div>
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                                  Answer
+                                </label>
+                                <div className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg border border-gray-200 whitespace-pre-wrap">
+                                  {faq.answer}
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4 pt-2">
+                                <div>
+                                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                                    Order
+                                  </label>
+                                  <div className="text-sm text-gray-900">{faq.order}</div>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                                    Status
+                                  </label>
+                                  <span
+                                    className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                                      faq.isActive
+                                        ? "bg-green-100 text-green-800"
+                                        : "bg-gray-100 text-gray-800"
+                                    }`}
+                                  >
+                                    {faq.isActive ? "Active" : "Inactive"}
+                                  </span>
+                                </div>
+                              </div>
+                              {faq.createdAt && (
+                                <div>
+                                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                                    Created At
+                                  </label>
+                                  <div className="text-sm text-gray-600">
+                                    {new Date(faq.createdAt).toLocaleString("en-US", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
+      )}
+
+      {totalRows > 0 && (
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          rowsPerPage={rowsPerPage}
+          totalRows={totalRows}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleRowsPerPageChange}
+          minRowsPerPage={10}
+          maxRowsPerPage={50}
+        />
       )}
 
       <FormModal

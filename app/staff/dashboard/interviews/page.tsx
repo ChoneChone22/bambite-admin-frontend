@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import api from "@/src/services/api";
@@ -18,6 +18,8 @@ import {
 } from "@/src/types/api";
 import { formatDateTime, getErrorMessage } from "@/src/lib/utils";
 import { useModal } from "@/src/hooks/useModal";
+import { useTablePagination } from "@/src/hooks";
+import TablePagination from "@/src/components/TablePagination";
 import FormModal from "@/src/components/FormModal";
 
 // Validation Schema
@@ -63,10 +65,15 @@ export default function InterviewsManagementPage() {
       }
       const response = await api.interviews.getAll(filters);
       setInterviews(response);
-    } catch (err) {
+    } catch (err: any) {
       const errorMsg = getErrorMessage(err);
-      setError(errorMsg || "Failed to fetch interviews");
-      console.error("Failed to fetch interviews:", err);
+      console.error("Failed to fetch interviews:", {
+        error: errorMsg,
+        status: err?.response?.status,
+        data: err?.response?.data,
+        filters: { applyJobFilter, dateFilter },
+      });
+      setError(errorMsg || "Failed to fetch interviews. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -76,8 +83,14 @@ export default function InterviewsManagementPage() {
     try {
       const response = await api.jobApplications.getAll({ status: "approved" });
       setApprovedApplications(response);
-    } catch (err) {
-      console.error("Failed to fetch approved applications:", err);
+    } catch (err: any) {
+      const errorMsg = getErrorMessage(err);
+      console.error("Failed to fetch approved applications:", {
+        error: errorMsg,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      // Don't set error state for approved applications as it's not critical
     }
   };
 
@@ -85,6 +98,21 @@ export default function InterviewsManagementPage() {
     fetchInterviews();
     fetchApprovedApplications();
   }, [applyJobFilter, dateFilter]);
+
+  // Table pagination
+  const {
+    paginatedData,
+    currentPage,
+    totalPages,
+    rowsPerPage,
+    totalRows,
+    handlePageChange,
+    handleRowsPerPageChange,
+  } = useTablePagination(interviews, {
+    initialRowsPerPage: 10,
+    minRowsPerPage: 10,
+    maxRowsPerPage: 50,
+  });
 
   const handleCreate = () => {
     setEditingInterview(null);
@@ -239,7 +267,7 @@ export default function InterviewsManagementPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {interviews.map((interview) => (
+              {paginatedData.map((interview) => (
                 <tr key={interview.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div
@@ -294,7 +322,7 @@ export default function InterviewsManagementPage() {
                   </td>
                 </tr>
               ))}
-              {interviews.length === 0 && (
+              {totalRows === 0 && (
                 <tr>
                   <td
                     colSpan={5}
@@ -309,6 +337,19 @@ export default function InterviewsManagementPage() {
           </table>
         </div>
       </div>
+
+      {totalRows > 0 && (
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          rowsPerPage={rowsPerPage}
+          totalRows={totalRows}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleRowsPerPageChange}
+          minRowsPerPage={10}
+          maxRowsPerPage={50}
+        />
+      )}
 
       {/* Interview Form Modal */}
       <FormModal

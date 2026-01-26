@@ -163,6 +163,15 @@ export default function AdminLoginPage() {
                 </button>
               </div>
 
+              <div className="text-center">
+                <Link
+                  href="/admin/forgot-password"
+                  className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  Forgot Password?
+                </Link>
+              </div>
+
             </Form>
           )}
         </Formik>

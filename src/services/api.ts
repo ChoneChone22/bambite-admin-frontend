@@ -9,6 +9,8 @@ import {
   AuthResponse,
   LoginRequest,
   RegisterRequest,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
   User,
   Product,
   CreateProductRequest,
@@ -89,6 +91,7 @@ import {
   CreateFAQRequest,
   UpdateFAQRequest,
   UpdateFAQOrderRequest,
+  BulkUpdateFAQOrdersRequest,
   FAQFilters,
   Theme,
   ThemesListResponse,
@@ -103,12 +106,13 @@ import {
   AnimationTriggerResponse,
   UpdateAnimationTriggerRequest,
 } from "@/src/types/api";
+import { parseArrayResponse, parseObjectResponse, getErrorMessage } from "@/src/lib/utils";
 
 // ==================== Auth API ====================
 
 export const authApi = {
-      /**
-       * Login user
+  /**
+   * Login user
        * Backend supports both authentication methods:
        * 1. Cookies (Priority 1 - Chrome): Sets role-specific cookies (accessToken_user, refreshToken_user)
        * 2. Authorization header (Priority 2 - Safari/iOS): Returns tokens in response body
@@ -121,8 +125,8 @@ export const authApi = {
           requestData.guestToken = guestToken; // Merge guest cart/orders on login
         }
         
-        const response = await axiosInstance.post<ApiResponse<AuthResponse>>(
-          "/auth/user/login",
+    const response = await axiosInstance.post<ApiResponse<AuthResponse>>(
+      "/auth/user/login",
           requestData
         );
         // Backend returns tokens in response body (for Safari/iOS) and sets cookies (for Chrome)
@@ -137,7 +141,7 @@ export const authApi = {
         }
         
         return authData;
-      },
+  },
 
   /**
    * Register new user
@@ -195,10 +199,10 @@ export const authApi = {
         );
         // Backend returns tokens in response body (for Safari/iOS) and sets cookies (for Chrome)
         return response.data.data || ({} as AuthResponse);
-      },
+  },
 
-      /**
-       * Logout user
+  /**
+   * Logout user
        * Backend automatically detects which role's refresh token cookie to use and clears:
        * - accessToken_user, refreshToken_user (for user logout)
        * - accessToken_admin, refreshToken_admin (for admin logout)
@@ -295,6 +299,56 @@ export const authApi = {
       "/auth/admin/profile"
     );
     return response.data.data;
+  },
+
+  /**
+   * Admin forgot password - Request OTP
+   * Public endpoint - no authentication required
+   */
+  adminForgotPassword: async (data: ForgotPasswordRequest): Promise<{ status: string; message: string }> => {
+    try {
+      const response = await axiosInstance.post<ApiResponse<{ message: string }>>(
+        "/auth/admin/forgot-password",
+        data
+      );
+      return {
+        status: "success",
+        message: response.data.message || response.data.data?.message || "If an account exists with this email, a password reset OTP has been sent. Please check your email.",
+      };
+    } catch (error: any) {
+      console.error("Failed to request password reset OTP:", {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+        email: data.email,
+      });
+      throw error;
+    }
+  },
+
+  /**
+   * Admin reset password - Reset with OTP
+   * Public endpoint - no authentication required
+   */
+  adminResetPassword: async (data: ResetPasswordRequest): Promise<{ status: string; message: string }> => {
+    try {
+      const response = await axiosInstance.post<ApiResponse<{ message: string }>>(
+        "/auth/admin/reset-password",
+        data
+      );
+      return {
+        status: "success",
+        message: response.data.message || response.data.data?.message || "Password reset successful. You can now login with your new password.",
+      };
+    } catch (error: any) {
+      console.error("Failed to reset password:", {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+        email: data.email,
+      });
+      throw error;
+    }
   },
 
   /**
@@ -1438,6 +1492,56 @@ export const staffAccountsApi = {
   }): Promise<void> => {
     await axiosInstance.post("/staff-accounts/change-password", data);
   },
+
+  /**
+   * Staff forgot password - Request OTP
+   * Public endpoint - no authentication required
+   */
+  forgotPassword: async (data: ForgotPasswordRequest): Promise<{ status: string; message: string }> => {
+    try {
+      const response = await axiosInstance.post<ApiResponse<{ message: string }>>(
+        "/staff-accounts/forgot-password",
+        data
+      );
+      return {
+        status: "success",
+        message: response.data.message || response.data.data?.message || "If an account exists with this email, a password reset OTP has been sent. Please check your email.",
+      };
+    } catch (error: any) {
+      console.error("Failed to request password reset OTP:", {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+        email: data.email,
+      });
+      throw error;
+    }
+  },
+
+  /**
+   * Staff reset password - Reset with OTP
+   * Public endpoint - no authentication required
+   */
+  resetPassword: async (data: ResetPasswordRequest): Promise<{ status: string; message: string }> => {
+    try {
+      const response = await axiosInstance.post<ApiResponse<{ message: string }>>(
+        "/staff-accounts/reset-password",
+        data
+      );
+      return {
+        status: "success",
+        message: response.data.message || response.data.data?.message || "Password reset successful. You can now login with your new password.",
+      };
+    } catch (error: any) {
+      console.error("Failed to reset password:", {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+        email: data.email,
+      });
+      throw error;
+    }
+  },
 };
 
 // ==================== Permissions API ====================
@@ -1470,42 +1574,86 @@ export const placeTagsApi = {
    * Get all place tags
    */
   getAll: async (filters?: PlaceTagFilters): Promise<PlaceTag[]> => {
-    const response = await axiosInstance.get<ApiResponse<PlaceTag[]>>(
-      "/place-tags",
-      { params: filters }
-    );
-    return response.data.data || [];
+    try {
+      const response = await axiosInstance.get<any>("/place-tags", {
+        params: filters,
+      });
+      const placeTags = parseArrayResponse<PlaceTag>(response, "placeTags");
+      
+      if (!Array.isArray(placeTags)) {
+        console.error("Invalid response format for place tags:", response.data);
+        throw new Error("Invalid response format from server");
+      }
+      
+      return placeTags;
+    } catch (error: any) {
+      console.error("Failed to fetch place tags:", {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+        filters,
+      });
+      throw error;
+    }
   },
 
   /**
    * Get active place tags only
    */
   getActive: async (): Promise<PlaceTag[]> => {
-    const response = await axiosInstance.get<ApiResponse<PlaceTag[]>>(
-      "/place-tags/active"
-    );
-    return response.data.data || [];
+    try {
+      const response = await axiosInstance.get<any>("/place-tags/active");
+      const placeTags = parseArrayResponse<PlaceTag>(response, "placeTags");
+      
+      if (!Array.isArray(placeTags)) {
+        console.error("Invalid response format for active place tags:", response.data);
+        throw new Error("Invalid response format from server");
+      }
+      
+      return placeTags;
+    } catch (error: any) {
+      console.error("Failed to fetch active place tags:", {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+      });
+      throw error;
+    }
   },
 
   /**
    * Get place tag by ID
    */
   getById: async (id: string): Promise<PlaceTag> => {
-    const response = await axiosInstance.get<ApiResponse<PlaceTag>>(
-      `/place-tags/${id}`
-    );
-    return response.data.data || response.data;
+    try {
+      const response = await axiosInstance.get<any>(`/place-tags/${id}`);
+      return parseObjectResponse<PlaceTag>(response, "placeTag");
+    } catch (error: any) {
+      console.error(`Failed to fetch place tag ${id}:`, {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+      });
+      throw error;
+    }
   },
 
   /**
    * Create place tag
    */
   create: async (data: CreatePlaceTagRequest): Promise<PlaceTag> => {
-    const response = await axiosInstance.post<ApiResponse<{ placeTag: PlaceTag }>>(
-      "/place-tags",
-      data
-    );
-    return response.data.data?.placeTag || response.data.data || response.data;
+    try {
+      const response = await axiosInstance.post<any>("/place-tags", data);
+      return parseObjectResponse<PlaceTag>(response, "placeTag");
+    } catch (error: any) {
+      console.error("Failed to create place tag:", {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+        requestData: data,
+      });
+      throw error;
+    }
   },
 
   /**
@@ -1515,11 +1663,18 @@ export const placeTagsApi = {
     id: string,
     data: UpdatePlaceTagRequest
   ): Promise<PlaceTag> => {
-    const response = await axiosInstance.put<ApiResponse<PlaceTag>>(
-      `/place-tags/${id}`,
-      data
-    );
-    return response.data.data || response.data;
+    try {
+      const response = await axiosInstance.put<any>(`/place-tags/${id}`, data);
+      return parseObjectResponse<PlaceTag>(response, "placeTag");
+    } catch (error: any) {
+      console.error(`Failed to update place tag ${id}:`, {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+        requestData: data,
+      });
+      throw error;
+    }
   },
 
   /**
@@ -1529,11 +1684,21 @@ export const placeTagsApi = {
     id: string,
     status: "active" | "inactive"
   ): Promise<PlaceTag> => {
-    const response = await axiosInstance.patch<ApiResponse<PlaceTag>>(
-      `/place-tags/${id}/status`,
-      { status }
-    );
-    return response.data.data || response.data;
+    try {
+      const response = await axiosInstance.patch<any>(
+        `/place-tags/${id}/status`,
+        { status }
+      );
+      return parseObjectResponse<PlaceTag>(response, "placeTag");
+    } catch (error: any) {
+      console.error(`Failed to update place tag status ${id}:`, {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+        requestStatus: status,
+      });
+      throw error;
+    }
   },
 
   /**
@@ -1551,32 +1716,62 @@ export const jobPostsApi = {
    * Get all job posts
    */
   getAll: async (filters?: JobPostFilters): Promise<JobPost[]> => {
-    const response = await axiosInstance.get<ApiResponse<JobPost[]>>(
-      "/job-posts",
-      { params: filters }
-    );
-    return response.data.data || [];
+    try {
+      const response = await axiosInstance.get<any>("/job-posts", {
+        params: filters,
+      });
+      const jobPosts = parseArrayResponse<JobPost>(response, "jobPosts");
+      
+      if (!Array.isArray(jobPosts)) {
+        console.error("Invalid response format for job posts:", response.data);
+        throw new Error("Invalid response format from server");
+      }
+      
+      return jobPosts;
+    } catch (error: any) {
+      console.error("Failed to fetch job posts:", {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+        filters,
+      });
+      throw error;
+    }
   },
 
   /**
    * Get job post by ID
    */
   getById: async (id: string): Promise<JobPost> => {
-    const response = await axiosInstance.get<ApiResponse<JobPost>>(
-      `/job-posts/${id}`
-    );
-    return response.data.data || response.data;
+    try {
+      const response = await axiosInstance.get<any>(`/job-posts/${id}`);
+      return parseObjectResponse<JobPost>(response, "jobPost");
+    } catch (error: any) {
+      console.error(`Failed to fetch job post ${id}:`, {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+      });
+      throw error;
+    }
   },
 
   /**
    * Create job post
    */
   create: async (data: CreateJobPostRequest): Promise<JobPost> => {
-    const response = await axiosInstance.post<ApiResponse<{ jobPost: JobPost }>>(
-      "/job-posts",
-      data
-    );
-    return response.data.data?.jobPost || response.data.data || response.data;
+    try {
+      const response = await axiosInstance.post<any>("/job-posts", data);
+      return parseObjectResponse<JobPost>(response, "jobPost");
+    } catch (error: any) {
+      console.error("Failed to create job post:", {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+        requestData: data,
+      });
+      throw error;
+    }
   },
 
   /**
@@ -1586,11 +1781,18 @@ export const jobPostsApi = {
     id: string,
     data: UpdateJobPostRequest
   ): Promise<JobPost> => {
-    const response = await axiosInstance.put<ApiResponse<JobPost>>(
-      `/job-posts/${id}`,
-      data
-    );
-    return response.data.data || response.data;
+    try {
+      const response = await axiosInstance.put<any>(`/job-posts/${id}`, data);
+      return parseObjectResponse<JobPost>(response, "jobPost");
+    } catch (error: any) {
+      console.error(`Failed to update job post ${id}:`, {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+        requestData: data,
+      });
+      throw error;
+    }
   },
 
   /**
@@ -1608,64 +1810,86 @@ export const jobApplicationsApi = {
    * Get all job applications
    */
   getAll: async (filters?: JobApplicationFilters): Promise<JobApplication[]> => {
-    const response = await axiosInstance.get<ApiResponse<JobApplication[]>>(
-      "/apply-jobs",
-      { params: filters }
-    );
-    return response.data.data || [];
+    try {
+      const response = await axiosInstance.get<any>("/apply-jobs", {
+        params: filters,
+      });
+      const applications = parseArrayResponse<JobApplication>(
+        response,
+        "applications"
+      );
+      
+      if (!Array.isArray(applications)) {
+        console.error("Invalid response format for job applications:", response.data);
+        throw new Error("Invalid response format from server");
+      }
+      
+      return applications;
+    } catch (error: any) {
+      console.error("Failed to fetch job applications:", {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+        filters,
+      });
+      throw error;
+    }
   },
 
   /**
    * Get job application by ID
    */
   getById: async (id: string): Promise<JobApplication> => {
-    const response = await axiosInstance.get<any>(`/apply-jobs/${id}`);
-    const data = response.data;
-
-    // Handle different response structures
-    if (data?.data?.application) {
-      return data.data.application as JobApplication;
+    try {
+      const response = await axiosInstance.get<any>(`/apply-jobs/${id}`);
+      return parseObjectResponse<JobApplication>(response, "application");
+    } catch (error: any) {
+      console.error(`Failed to fetch job application ${id}:`, {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+      });
+      throw error;
     }
-    if (data?.application) {
-      return data.application as JobApplication;
-    }
-    if (data?.data) {
-      return data.data as JobApplication;
-    }
-    return data as JobApplication;
   },
 
   /**
    * Create job application (public endpoint)
    */
   create: async (data: CreateJobApplicationRequest): Promise<JobApplication> => {
-    const formData = new FormData();
-    formData.append("jobPostId", data.jobPostId);
-    formData.append("name", data.name);
-    formData.append("email", data.email);
-    if (data.joiningReason) {
-      formData.append("joiningReason", data.joiningReason);
-    }
-    if (data.additionalQuestion) {
-      formData.append("additionalQuestion", data.additionalQuestion);
-    }
-    if (data.coverLetter) {
-      formData.append("coverLetter", data.coverLetter);
-    }
-    if (data.uploadedFile) {
-      formData.append("uploadedFile", data.uploadedFile);
-    }
+    try {
+      const formData = new FormData();
+      formData.append("jobPostId", data.jobPostId);
+      formData.append("name", data.name);
+      formData.append("email", data.email);
+      if (data.joiningReason) {
+        formData.append("joiningReason", data.joiningReason);
+      }
+      if (data.additionalQuestion) {
+        formData.append("additionalQuestion", data.additionalQuestion);
+      }
+      if (data.coverLetter) {
+        formData.append("coverLetter", data.coverLetter);
+      }
+      if (data.uploadedFile) {
+        formData.append("uploadedFile", data.uploadedFile);
+      }
 
-    const response = await axiosInstance.post<ApiResponse<{ application: JobApplication }>>(
-      "/apply-jobs",
-      formData,
-      {
+      const response = await axiosInstance.post<any>("/apply-jobs", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
-      }
-    );
-    return response.data.data?.application || response.data.data || response.data;
+      });
+      return parseObjectResponse<JobApplication>(response, "application");
+    } catch (error: any) {
+      console.error("Failed to create job application:", {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+        requestData: { ...data, uploadedFile: data.uploadedFile ? "[File]" : undefined },
+      });
+      throw error;
+    }
   },
 
   /**
@@ -1675,11 +1899,21 @@ export const jobApplicationsApi = {
     id: string,
     data: UpdateJobApplicationStatusRequest
   ): Promise<JobApplication> => {
-    const response = await axiosInstance.patch<ApiResponse<JobApplication>>(
-      `/apply-jobs/${id}/status`,
-      data
-    );
-    return response.data.data || response.data;
+    try {
+      const response = await axiosInstance.patch<any>(
+        `/apply-jobs/${id}/status`,
+        data
+      );
+      return parseObjectResponse<JobApplication>(response, "application");
+    } catch (error: any) {
+      console.error(`Failed to update job application status ${id}:`, {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+        requestData: data,
+      });
+      throw error;
+    }
   },
 
   /**
@@ -1707,21 +1941,44 @@ export const interviewsApi = {
    * Get all interviews
    */
   getAll: async (filters?: InterviewFilters): Promise<Interview[]> => {
-    const response = await axiosInstance.get<ApiResponse<Interview[]>>(
-      "/interviews",
-      { params: filters }
-    );
-    return response.data.data || [];
+    try {
+      const response = await axiosInstance.get<any>("/interviews", {
+        params: filters,
+      });
+      const interviews = parseArrayResponse<Interview>(response, "interviews");
+      
+      if (!Array.isArray(interviews)) {
+        console.error("Invalid response format for interviews:", response.data);
+        throw new Error("Invalid response format from server");
+      }
+      
+      return interviews;
+    } catch (error: any) {
+      console.error("Failed to fetch interviews:", {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+        filters,
+      });
+      throw error;
+    }
   },
 
   /**
    * Get interview by ID
    */
   getById: async (id: string): Promise<Interview> => {
-    const response = await axiosInstance.get<ApiResponse<Interview>>(
-      `/interviews/${id}`
-    );
-    return response.data.data || response.data;
+    try {
+      const response = await axiosInstance.get<any>(`/interviews/${id}`);
+      return parseObjectResponse<Interview>(response, "interview");
+    } catch (error: any) {
+      console.error(`Failed to fetch interview ${id}:`, {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+      });
+      throw error;
+    }
   },
 
   /**
@@ -1729,14 +1986,19 @@ export const interviewsApi = {
    */
   getByApplyJobId: async (applyJobId: string): Promise<Interview | null> => {
     try {
-      const response = await axiosInstance.get<ApiResponse<Interview>>(
+      const response = await axiosInstance.get<any>(
         `/interviews/by-apply-job/${applyJobId}`
       );
-      return response.data.data || response.data;
+      return parseObjectResponse<Interview>(response, "interview");
     } catch (error: any) {
       if (error.response?.status === 404) {
         return null;
       }
+      console.error(`Failed to fetch interview by apply job ${applyJobId}:`, {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+      });
       throw error;
     }
   },
@@ -1745,11 +2007,18 @@ export const interviewsApi = {
    * Create interview
    */
   create: async (data: CreateInterviewRequest): Promise<Interview> => {
-    const response = await axiosInstance.post<ApiResponse<{ interview: Interview }>>(
-      "/interviews",
-      data
-    );
-    return response.data.data?.interview || response.data.data || response.data;
+    try {
+      const response = await axiosInstance.post<any>("/interviews", data);
+      return parseObjectResponse<Interview>(response, "interview");
+    } catch (error: any) {
+      console.error("Failed to create interview:", {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+        requestData: data,
+      });
+      throw error;
+    }
   },
 
   /**
@@ -1759,11 +2028,18 @@ export const interviewsApi = {
     id: string,
     data: UpdateInterviewRequest
   ): Promise<Interview> => {
-    const response = await axiosInstance.put<ApiResponse<Interview>>(
-      `/interviews/${id}`,
-      data
-    );
-    return response.data.data || response.data;
+    try {
+      const response = await axiosInstance.put<any>(`/interviews/${id}`, data);
+      return parseObjectResponse<Interview>(response, "interview");
+    } catch (error: any) {
+      console.error(`Failed to update interview ${id}:`, {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+        requestData: data,
+      });
+      throw error;
+    }
   },
 
   /**
@@ -1781,43 +2057,62 @@ export const contactsApi = {
    * Get all contacts
    */
   getAll: async (filters?: ContactFilters): Promise<Contact[]> => {
-    const response = await axiosInstance.get<ApiResponse<Contact[]>>(
-      "/contacts",
-      { params: filters }
-    );
-    return response.data.data || [];
+    try {
+      const response = await axiosInstance.get<any>("/contacts", {
+        params: filters,
+      });
+      const contacts = parseArrayResponse<Contact>(response, "contacts");
+      
+      if (!Array.isArray(contacts)) {
+        console.error("Invalid response format for contacts:", response.data);
+        throw new Error("Invalid response format from server");
+      }
+      
+      return contacts;
+    } catch (error: any) {
+      console.error("Failed to fetch contacts:", {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+        filters,
+      });
+      throw error;
+    }
   },
 
   /**
    * Get contact by ID
    */
   getById: async (id: string): Promise<Contact> => {
-    const response = await axiosInstance.get<any>(
-      `/contacts/${id}`
-    );
-    const data = response.data;
-    // Handle various response structures
-    if (data?.data?.contact) {
-      return data.data.contact as Contact;
+    try {
+      const response = await axiosInstance.get<any>(`/contacts/${id}`);
+      return parseObjectResponse<Contact>(response, "contact");
+    } catch (error: any) {
+      console.error(`Failed to fetch contact ${id}:`, {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+      });
+      throw error;
     }
-    if ((data as any)?.contact) {
-      return (data as any).contact as Contact;
-    }
-    if (data?.data) {
-      return data.data as Contact;
-    }
-    return data as Contact;
   },
 
   /**
    * Create contact (public endpoint)
    */
   create: async (data: CreateContactRequest): Promise<Contact> => {
-    const response = await axiosInstance.post<ApiResponse<{ contact: Contact }>>(
-      "/contacts",
-      data
-    );
-    return response.data.data?.contact || response.data.data || response.data;
+    try {
+      const response = await axiosInstance.post<any>("/contacts", data);
+      return parseObjectResponse<Contact>(response, "contact");
+    } catch (error: any) {
+      console.error("Failed to create contact:", {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+        requestData: data,
+      });
+      throw error;
+    }
   },
 
   /**
@@ -2010,6 +2305,13 @@ export const reviewsApi = {
     );
     return response.data.data || response.data;
   },
+
+  /**
+   * Delete review (admin)
+   */
+  delete: async (id: string): Promise<void> => {
+    await axiosInstance.delete(`/reviews/admin/${id}`);
+  },
 };
 
 // ==================== FAQs API ====================
@@ -2019,11 +2321,18 @@ export const faqsApi = {
    * Get all FAQs
    */
   getAll: async (filters?: FAQFilters): Promise<FAQsListResponse> => {
-    const response = await axiosInstance.get<ApiResponse<FAQsListResponse>>(
+    const response = await axiosInstance.get<ApiResponse<FAQ[] | FAQsListResponse>>(
       "/faqs",
       { params: filters }
     );
-    return response.data.data || response.data;
+    // Backend returns: { status: "success", data: FAQ[] }
+    // Convert to FAQsListResponse format: { faqs: FAQ[], total: number }
+    const data = response.data.data || [];
+    if (Array.isArray(data)) {
+      return { faqs: data, total: data.length };
+    }
+    // If already in FAQsListResponse format
+    return data as FAQsListResponse;
   },
 
   /**
@@ -2070,6 +2379,36 @@ export const faqsApi = {
   },
 
   /**
+   * Bulk update FAQ orders
+   * Backend expects: { updates: [{ id: string, order: number }, ...] }
+   */
+  bulkUpdateOrders: async (data: BulkUpdateFAQOrdersRequest): Promise<FAQ[]> => {
+    try {
+      // Send the object with updates array as backend expects
+      const response = await axiosInstance.patch<any>(
+        "/faqs/bulk/orders",
+        data
+      );
+      const updatedFAQs = parseArrayResponse<FAQ>(response, "faqs");
+      
+      if (!Array.isArray(updatedFAQs)) {
+        console.error("Invalid response format for bulk FAQ orders update:", response.data);
+        throw new Error("Invalid response format from server");
+      }
+      
+      return updatedFAQs;
+    } catch (error: any) {
+      console.error("Failed to bulk update FAQ orders:", {
+        error: getErrorMessage(error),
+        status: error?.response?.status,
+        data: error?.response?.data,
+        requestData: data,
+      });
+      throw error;
+    }
+  },
+
+  /**
    * Toggle FAQ status
    */
   toggleStatus: async (id: string, isActive: boolean): Promise<FAQ> => {
@@ -2095,10 +2434,13 @@ export const themesApi = {
    * Get all themes
    */
   getAll: async (): Promise<ThemesListResponse> => {
-    const response = await axiosInstance.get<ApiResponse<ThemesListResponse>>(
+    const response = await axiosInstance.get<ApiResponse<Theme[]>>(
       "/themes"
     );
-    return response.data.data || response.data;
+    // Backend returns: { status: "success", data: Theme[] }
+    // Return as ThemesListResponse format: { themes: Theme[] }
+    const themes = response.data.data || [];
+    return { themes };
   },
 
   /**
@@ -2147,10 +2489,14 @@ export const themesApi = {
    * Unselect theme
    */
   unselect: async (id: string): Promise<Theme> => {
-    const response = await axiosInstance.patch<ApiResponse<Theme>>(
-      `/themes/${id}/unselect`
+    const response = await axiosInstance.put<ApiResponse<Theme[]>>(
+      `/themes/${id}`,
+      { selected: false }
     );
-    return response.data.data || response.data;
+    // Backend returns: { status: "success", data: Theme[] }
+    // Return the first theme from the array
+    const themes = response.data.data || [];
+    return themes[0];
   },
 
   /**
@@ -2168,10 +2514,13 @@ export const animationsApi = {
    * Get all animations
    */
   getAll: async (): Promise<AnimationsListResponse> => {
-    const response = await axiosInstance.get<ApiResponse<AnimationsListResponse>>(
+    const response = await axiosInstance.get<ApiResponse<Animation[]>>(
       "/animations"
     );
-    return response.data.data || response.data;
+    // Backend returns: { status: "success", data: Animation[] }
+    // Return as AnimationsListResponse format: { animations: Animation[] }
+    const animations = response.data.data || [];
+    return { animations };
   },
 
   /**
@@ -2238,10 +2587,14 @@ export const animationsApi = {
    * Unselect animation
    */
   unselect: async (id: string): Promise<Animation> => {
-    const response = await axiosInstance.patch<ApiResponse<Animation>>(
-      `/animations/${id}/unselect`
+    const response = await axiosInstance.put<ApiResponse<Animation[]>>(
+      `/animations/${id}`,
+      { selected: false }
     );
-    return response.data.data || response.data;
+    // Backend returns: { status: "success", data: Animation[] }
+    // Return the first animation from the array
+    const animations = response.data.data || [];
+    return animations[0];
   },
 
   /**

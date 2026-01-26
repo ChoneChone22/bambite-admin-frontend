@@ -236,6 +236,16 @@ export interface RegisterRequest {
   address: string;
 }
 
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  email: string;
+  otp: string;
+  newPassword: string;
+}
+
 export interface CreateProductRequest {
   name: string;
   thaiName?: string; // Thai name (optional)
@@ -839,6 +849,13 @@ export interface UpdateFAQOrderRequest {
   order: number;
 }
 
+export interface BulkUpdateFAQOrdersRequest {
+  updates: Array<{
+    id: string;
+    order: number;
+  }>;
+}
+
 export interface FAQFilters {
   activeOnly?: boolean;
 }
@@ -880,6 +897,7 @@ export interface CreateThemeRequest {
 export interface UpdateThemeRequest {
   name?: string;
   colors?: ThemeColors;
+  selected?: boolean;
 }
 
 // ==================== Animation Model ====================
@@ -909,6 +927,7 @@ export interface CreateAnimationRequest {
 export interface UpdateAnimationRequest {
   name?: string;
   image?: File;
+  selected?: boolean;
 }
 
 export interface AnimationTriggerResponse {

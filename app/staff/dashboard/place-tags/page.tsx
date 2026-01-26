@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import api from "@/src/services/api";
@@ -18,6 +18,8 @@ import {
 } from "@/src/types/api";
 import { getErrorMessage } from "@/src/lib/utils";
 import { useModal } from "@/src/hooks/useModal";
+import { useTablePagination } from "@/src/hooks";
+import TablePagination from "@/src/components/TablePagination";
 import FormModal from "@/src/components/FormModal";
 
 // Validation Schema
@@ -50,10 +52,15 @@ export default function PlaceTagsManagementPage() {
       }
       const response = await api.placeTags.getAll(filters);
       setPlaceTags(response);
-    } catch (err) {
+    } catch (err: any) {
       const errorMsg = getErrorMessage(err);
-      setError(errorMsg || "Failed to fetch place tags");
-      console.error("Failed to fetch place tags:", err);
+      console.error("Failed to fetch place tags:", {
+        error: errorMsg,
+        status: err?.response?.status,
+        data: err?.response?.data,
+        filters: statusFilter,
+      });
+      setError(errorMsg || "Failed to fetch place tags. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -62,6 +69,29 @@ export default function PlaceTagsManagementPage() {
   useEffect(() => {
     fetchPlaceTags();
   }, [statusFilter]);
+
+  // Filter place tags based on status
+  const filteredPlaceTags = useMemo(() => {
+    if (statusFilter === "all") {
+      return placeTags;
+    }
+    return placeTags.filter((tag) => tag.status === statusFilter);
+  }, [placeTags, statusFilter]);
+
+  // Table pagination
+  const {
+    paginatedData,
+    currentPage,
+    totalPages,
+    rowsPerPage,
+    totalRows,
+    handlePageChange,
+    handleRowsPerPageChange,
+  } = useTablePagination(filteredPlaceTags, {
+    initialRowsPerPage: 10,
+    minRowsPerPage: 10,
+    maxRowsPerPage: 50,
+  });
 
   const handleCreate = () => {
     setEditingPlaceTag(null);
@@ -294,7 +324,7 @@ export default function PlaceTagsManagementPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {placeTags.map((placeTag) => (
+              {paginatedData.map((placeTag) => (
                 <tr key={placeTag.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div
@@ -349,7 +379,7 @@ export default function PlaceTagsManagementPage() {
                   </td>
                 </tr>
               ))}
-              {placeTags.length === 0 && (
+              {totalRows === 0 && (
                 <tr>
                   <td
                     colSpan={4}
@@ -364,6 +394,19 @@ export default function PlaceTagsManagementPage() {
           </table>
         </div>
       </div>
+
+      {totalRows > 0 && (
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          rowsPerPage={rowsPerPage}
+          totalRows={totalRows}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleRowsPerPageChange}
+          minRowsPerPage={10}
+          maxRowsPerPage={50}
+        />
+      )}
 
       {/* Place Tag Form Modal */}
       <FormModal

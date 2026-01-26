@@ -6,11 +6,13 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import api from "@/src/services/api";
 import { Contact, ContactReason } from "@/src/types/api";
 import { formatDateTime, getErrorMessage } from "@/src/lib/utils";
 import { useModal } from "@/src/hooks/useModal";
+import { useTablePagination } from "@/src/hooks";
+import TablePagination from "@/src/components/TablePagination";
 
 const CONTACT_REASONS: { value: ContactReason; label: string }[] = [
   { value: "general_inquiry", label: "General Inquiry" },
@@ -42,9 +44,15 @@ export default function ContactsManagementPage() {
       }
       const response = await api.contacts.getAll(filters);
       setContacts(response);
-    } catch (err) {
-      setError("Failed to fetch contacts");
-      console.error(err);
+    } catch (err: any) {
+      const errorMsg = getErrorMessage(err);
+      console.error("Failed to fetch contacts:", {
+        error: errorMsg,
+        status: err?.response?.status,
+        data: err?.response?.data,
+        filters: { reasonFilter, emailSearch },
+      });
+      setError(errorMsg || "Failed to fetch contacts. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -53,6 +61,41 @@ export default function ContactsManagementPage() {
   useEffect(() => {
     fetchContacts();
   }, [reasonFilter, emailSearch]);
+
+  // Filter contacts based on reason and email search
+  const filteredContacts = useMemo(() => {
+    let filtered = contacts;
+    
+    if (reasonFilter !== "all") {
+      filtered = filtered.filter((contact) => contact.reason === reasonFilter);
+    }
+    
+    if (emailSearch.trim()) {
+      const query = emailSearch.toLowerCase().trim();
+      filtered = filtered.filter((contact) => {
+        const email = contact.email?.toLowerCase() || "";
+        const name = contact.name?.toLowerCase() || "";
+        return email.includes(query) || name.includes(query);
+      });
+    }
+    
+    return filtered;
+  }, [contacts, reasonFilter, emailSearch]);
+
+  // Table pagination
+  const {
+    paginatedData,
+    currentPage,
+    totalPages,
+    rowsPerPage,
+    totalRows,
+    handlePageChange,
+    handleRowsPerPageChange,
+  } = useTablePagination(filteredContacts, {
+    initialRowsPerPage: 10,
+    minRowsPerPage: 10,
+    maxRowsPerPage: 50,
+  });
 
   const handleDelete = async (id: string) => {
     const confirmed = await modal.confirm(
@@ -95,7 +138,7 @@ export default function ContactsManagementPage() {
       }
     } catch (err: any) {
       // Fallback: try to find in current list if API fails
-      const contactFromList = contacts.find((c) => c.id === id);
+      const contactFromList = filteredContacts.find((c) => c.id === id);
       if (contactFromList) {
         setSelectedContact(contactFromList);
       } else {
@@ -180,112 +223,127 @@ export default function ContactsManagementPage() {
 
       {/* Contacts Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th
-                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                style={{ color: "#374151" }}
-              >
-                Name
-              </th>
-              <th
-                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                style={{ color: "#374151" }}
-              >
-                Email
-              </th>
-              <th
-                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                style={{ color: "#374151" }}
-              >
-                Reason
-              </th>
-              <th
-                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                style={{ color: "#374151" }}
-              >
-                Message Preview
-              </th>
-              <th
-                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                style={{ color: "#374151" }}
-              >
-                Date
-              </th>
-              <th
-                className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider"
-                style={{ color: "#374151" }}
-              >
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {contacts.map((contact) => (
-              <tr key={contact.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div
-                    className="text-sm font-medium"
-                    style={{ color: "#000000" }}
-                  >
-                    {contact.name}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm" style={{ color: "#000000" }}>
-                    {contact.email}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-800">
-                    {CONTACT_REASONS.find((r) => r.value === contact.reason)?.label ||
-                      contact.reason}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <div
-                    className="text-sm truncate max-w-xs"
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th
+                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  style={{ color: "#374151" }}
+                >
+                  Name
+                </th>
+                <th
+                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  style={{ color: "#374151" }}
+                >
+                  Email
+                </th>
+                <th
+                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  style={{ color: "#374151" }}
+                >
+                  Reason
+                </th>
+                <th
+                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  style={{ color: "#374151" }}
+                >
+                  Message Preview
+                </th>
+                <th
+                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                  style={{ color: "#374151" }}
+                >
+                  Date
+                </th>
+                <th
+                  className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider"
+                  style={{ color: "#374151" }}
+                >
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {paginatedData.map((contact) => (
+                <tr key={contact.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div
+                      className="text-sm font-medium"
+                      style={{ color: "#000000" }}
+                    >
+                      {contact.name}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm" style={{ color: "#000000" }}>
+                      {contact.email}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-800">
+                      {CONTACT_REASONS.find((r) => r.value === contact.reason)?.label ||
+                        contact.reason}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div
+                      className="text-sm truncate max-w-xs"
+                      style={{ color: "#6b7280" }}
+                    >
+                      {contact.message || "No message"}
+                    </div>
+                  </td>
+                  <td
+                    className="px-6 py-4 whitespace-nowrap text-sm"
                     style={{ color: "#6b7280" }}
                   >
-                    {contact.message || "No message"}
-                  </div>
-                </td>
-                <td
-                  className="px-6 py-4 whitespace-nowrap text-sm"
-                  style={{ color: "#6b7280" }}
-                >
-                  {contact.createdAt
-                    ? formatDateTime(contact.createdAt)
-                    : "N/A"}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => handleViewDetails(contact.id)}
-                    className="font-semibold hover:underline mr-4 cursor-pointer"
-                    style={{ color: "#2C5BBB", cursor: "pointer" }}
-                  >
-                    View
-                  </button>
-                  <button
-                    onClick={() => handleDelete(contact.id)}
-                    className="font-semibold hover:underline cursor-pointer"
-                    style={{ color: "#DC2626", cursor: "pointer" }}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                    {contact.createdAt
+                      ? formatDateTime(contact.createdAt)
+                      : "N/A"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                      onClick={() => handleViewDetails(contact.id)}
+                      className="font-semibold hover:underline mr-4 cursor-pointer"
+                      style={{ color: "#2C5BBB", cursor: "pointer" }}
+                    >
+                      View
+                    </button>
+                    <button
+                      onClick={() => handleDelete(contact.id)}
+                      className="font-semibold hover:underline cursor-pointer"
+                      style={{ color: "#DC2626", cursor: "pointer" }}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-        {contacts.length === 0 && (
+        {filteredContacts.length === 0 && (
           <div className="text-center py-12">
             <p style={{ color: "#6b7280" }}>No contacts found</p>
           </div>
         )}
       </div>
+
+      {filteredContacts.length > 0 && (
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          rowsPerPage={rowsPerPage}
+          totalRows={totalRows}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleRowsPerPageChange}
+          minRowsPerPage={10}
+          maxRowsPerPage={50}
+        />
+      )}
 
       {/* Contact Detail Modal */}
       {selectedContact && (
