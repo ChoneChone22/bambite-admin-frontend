@@ -394,8 +394,7 @@ export default function StaffAnimationsManagementPage() {
                   </button>
                   <button
                     onClick={() => handleDelete(animation.id)}
-                    className="px-4 py-2 text-sm font-medium bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
-                    style={{ color: "#dc2626" }}
+                    className="px-4 py-2 text-sm font-medium rounded-lg btn-destructive transition-colors cursor-pointer"
                   >
                     Delete
                   </button>

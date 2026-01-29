@@ -1,7 +1,7 @@
 /**
  * Staff Theme Management Page
  * CRUD operations for themes (requires THEME_AND_ANIMATION permission).
- * Theme colors: primary, foreground, background, nav, header1, header2, border, body, card, logo.
+ * Theme colors (5 only): primary, foreground, background, logo, card.
  */
 
 "use client";
@@ -28,13 +28,8 @@ const THEME_COLOR_KEYS: (keyof ThemeColors)[] = [
   "primary",
   "foreground",
   "background",
-  "nav",
-  "header1",
-  "header2",
-  "border",
-  "body",
-  "card",
   "logo",
+  "card",
 ];
 
 const themeColorsSchema = Yup.object().shape(
@@ -126,9 +121,21 @@ export default function StaffThemesManagementPage() {
     }
   }, [hasPermission]);
 
+  /** Ensure only the 5 supported color keys are sent/used (ignore legacy secondary, accent, text, etc.) */
+  const pickThemeColors = (colors: Partial<ThemeColors>): ThemeColors => ({
+    primary: colors.primary ?? DEFAULT_THEME_COLORS.primary,
+    foreground: colors.foreground ?? DEFAULT_THEME_COLORS.foreground,
+    background: colors.background ?? DEFAULT_THEME_COLORS.background,
+    logo: colors.logo ?? DEFAULT_THEME_COLORS.logo,
+    card: colors.card ?? DEFAULT_THEME_COLORS.card,
+  });
+
   const handleCreate = async (values: CreateThemeRequest) => {
     try {
-      await api.themes.create(values);
+      await api.themes.create({
+        name: values.name,
+        colors: pickThemeColors(values.colors),
+      });
       setSuccessMessage("Theme created successfully");
       setShowModal(false);
       fetchThemes();
@@ -140,7 +147,10 @@ export default function StaffThemesManagementPage() {
 
   const handleUpdate = async (id: string, values: UpdateThemeRequest) => {
     try {
-      await api.themes.update(id, values);
+      await api.themes.update(id, {
+        name: values.name,
+        colors: values.colors ? pickThemeColors(values.colors) : undefined,
+      });
       setSuccessMessage("Theme updated successfully");
       setShowModal(false);
       setEditingTheme(null);
@@ -360,7 +370,7 @@ export default function StaffThemesManagementPage() {
                   </div>
                 </div>
 
-                {/* Color Palette Preview — primary, foreground, background, nav, header1, header2, border, body, card, logo */}
+                {/* Color Palette Preview — primary, foreground, background, logo, card (5-color schema) */}
                 <div className="space-y-4">
                   <div className="flex flex-wrap gap-2">
                     {THEME_COLOR_KEYS.map((key) => (
@@ -377,43 +387,20 @@ export default function StaffThemesManagementPage() {
                     ))}
                   </div>
 
-                  {/* Live preview strip: nav, header, body, card, logo */}
+                  {/* Live preview strip: primary, foreground, background, logo, card */}
                   <div
-                    className="rounded-xl overflow-hidden border relative"
-                    style={{
-                      backgroundColor: theme.colors.background,
-                      borderColor: theme.colors.border ?? "#e5e7eb",
-                    }}
+                    className="rounded-xl overflow-hidden border border-border relative"
+                    style={{ backgroundColor: theme.colors.background }}
                   >
                     <div
                       className="h-8 px-3 flex items-center justify-between"
-                      style={{ backgroundColor: theme.colors.nav, color: theme.colors.foreground }}
+                      style={{ backgroundColor: theme.colors.primary, color: theme.colors.foreground }}
                       onMouseEnter={(e) =>
-                        handleColorHover(e, "Nav", theme.colors.nav)
+                        handleColorHover(e, "Primary", theme.colors.primary)
                       }
                       onMouseLeave={handleColorLeave}
                     >
-                      <span className="text-xs font-medium opacity-80">Nav</span>
-                      <span
-                        className="shrink-0 px-2 py-0.5 rounded text-[10px] font-medium"
-                        style={{ backgroundColor: theme.colors.primary, color: theme.colors.foreground }}
-                        onMouseEnter={(e) => {
-                          e.stopPropagation();
-                          handleColorHover(e, "Primary", theme.colors.primary);
-                        }}
-                        onMouseLeave={handleColorLeave}
-                      >
-                        Primary
-                      </span>
-                    </div>
-                    <div
-                      className="h-10 px-3 flex items-center gap-2"
-                      style={{ backgroundColor: theme.colors.header1, color: theme.colors.foreground }}
-                      onMouseEnter={(e) =>
-                        handleColorHover(e, "Header1", theme.colors.header1)
-                      }
-                      onMouseLeave={handleColorLeave}
-                    >
+                      <span className="text-xs font-medium opacity-80">Primary</span>
                       <div
                         className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold border"
                         style={{
@@ -429,15 +416,12 @@ export default function StaffThemesManagementPage() {
                       >
                         L
                       </div>
-                      <span className="text-sm font-semibold" style={{ color: theme.colors.header2 }}>
-                        Header
-                      </span>
                     </div>
                     <div
                       className="p-3 min-h-16"
-                      style={{ backgroundColor: theme.colors.body, color: theme.colors.foreground }}
+                      style={{ backgroundColor: theme.colors.background, color: theme.colors.foreground }}
                       onMouseEnter={(e) =>
-                        handleColorHover(e, "Body", theme.colors.body)
+                        handleColorHover(e, "Foreground", theme.colors.foreground)
                       }
                       onMouseLeave={handleColorLeave}
                     >
@@ -458,33 +442,36 @@ export default function StaffThemesManagementPage() {
               </div>
 
               {/* Actions */}
-              <div className="px-6 py-4 border-t border-gray-100 bg-background/50">
+              <div className="px-6 py-4 border-t border-border bg-muted/30">
                 <div className="flex gap-2">
                   {theme.selected ? (
                     <button
                       onClick={() => handleUnselect(theme.id)}
-                      className="flex-1 px-4 py-2 text-sm font-medium bg-card border border-border rounded-lg hover:bg-background transition-colors cursor-pointer text-foreground"
+                      className="flex-1 px-4 py-2 text-sm font-medium btn-secondary rounded-lg transition-colors cursor-pointer"
                     >
                       Deselect
                     </button>
                   ) : (
                     <button
                       onClick={() => handleSelect(theme.id)}
-                      className="flex-1 px-4 py-2 text-sm font-medium bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
-                      style={{ color: "#ffffff" }}
+                      className="flex-1 px-4 py-2 text-sm font-medium rounded-lg hover:opacity-90 transition-colors cursor-pointer"
+                      style={{
+                        backgroundColor: "hsl(var(--primary))",
+                        color: "hsl(var(--primary-foreground))",
+                      }}
                     >
                       Apply
                     </button>
                   )}
                   <button
                     onClick={() => openEditModal(theme)}
-                    className="px-4 py-2 text-sm font-medium bg-card border border-border rounded-lg hover:bg-background transition-colors cursor-pointer text-foreground"
+                    className="px-4 py-2 text-sm font-medium btn-secondary rounded-lg transition-colors cursor-pointer"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(theme.id)}
-                    className="px-4 py-2 text-sm font-medium bg-card border border-red-200 rounded-lg hover:bg-red-50 transition-colors cursor-pointer text-foreground"
+                    className="px-4 py-2 text-sm font-medium rounded-lg btn-destructive transition-colors cursor-pointer"
                   >
                     Delete
                   </button>
@@ -508,7 +495,7 @@ export default function StaffThemesManagementPage() {
           initialValues={{
             name: editingTheme?.name || "",
             colors: editingTheme?.colors
-              ? { ...DEFAULT_THEME_COLORS, ...editingTheme.colors }
+              ? { ...DEFAULT_THEME_COLORS, ...pickThemeColors(editingTheme.colors as Partial<ThemeColors>) }
               : { ...DEFAULT_THEME_COLORS },
           }}
           validationSchema={themeSchema}
@@ -559,7 +546,10 @@ export default function StaffThemesManagementPage() {
                         id={`colors.${colorKey}`}
                         value={values.colors[colorKey] ?? "#000000"}
                         onChange={(e) =>
-                          setFieldValue(`colors.${colorKey}`, e.target.value)
+                          setFieldValue("colors", {
+                            ...values.colors,
+                            [colorKey]: e.target.value,
+                          })
                         }
                         className="h-12 w-12 rounded border border-border cursor-pointer shrink-0"
                         style={{ minWidth: "3rem", minHeight: "3rem" }}
@@ -584,49 +574,33 @@ export default function StaffThemesManagementPage() {
                 ))}
               </div>
 
-              {/* Color Preview — matches card preview structure: background, border, nav, primary, header1, header2, logo, body, card, foreground */}
-              <div className="p-4 bg-gray-100 rounded-xl border border-border">
+              {/* Color Preview — 5-color schema: primary, foreground, background, logo, card */}
+              <div className="p-4 bg-muted rounded-xl border border-border">
                 <p className="text-sm font-medium text-muted-foreground mb-3">Preview</p>
                 <div
-                  className="rounded-xl overflow-hidden border"
-                  style={{
-                    backgroundColor: values.colors.background,
-                    borderColor: values.colors.border ?? "#e5e7eb",
-                  }}
+                  className="rounded-xl overflow-hidden border border-border"
+                  style={{ backgroundColor: values.colors.background }}
                 >
                   <div
                     className="h-8 px-3 flex items-center justify-between text-xs"
-                    style={{ backgroundColor: values.colors.nav, color: values.colors.foreground }}
+                    style={{ backgroundColor: values.colors.primary, color: values.colors.foreground }}
                   >
-                    <span className="font-medium opacity-80">Nav</span>
+                    <span className="font-medium opacity-80">Primary</span>
                     <span
-                      className="shrink-0 px-2 py-0.5 rounded text-[10px] font-medium"
-                      style={{ backgroundColor: values.colors.primary, color: values.colors.foreground }}
-                    >
-                      Primary
-                    </span>
-                  </div>
-                  <div
-                    className="h-10 px-3 flex items-center gap-2"
-                    style={{ backgroundColor: values.colors.header1, color: values.colors.foreground }}
-                  >
-                    <span
+                      key={`preview-logo-${values.colors?.logo ?? ""}`}
                       className="w-6 h-6 rounded border flex items-center justify-center text-xs font-bold shrink-0"
                       style={{
-                        backgroundColor: values.colors.background,
-                        color: values.colors.logo,
-                        borderColor: values.colors.logo,
+                        backgroundColor: values.colors?.background ?? DEFAULT_THEME_COLORS.background,
+                        color: values.colors?.logo ?? DEFAULT_THEME_COLORS.logo,
+                        borderColor: values.colors?.logo ?? DEFAULT_THEME_COLORS.logo,
                       }}
                     >
                       L
                     </span>
-                    <span className="text-sm font-semibold" style={{ color: values.colors.header2 }}>
-                      Header
-                    </span>
                   </div>
                   <div
                     className="p-3 min-h-16"
-                    style={{ backgroundColor: values.colors.body, color: values.colors.foreground }}
+                    style={{ backgroundColor: values.colors.background, color: values.colors.foreground }}
                   >
                     <div
                       className="rounded-lg p-2 text-xs"

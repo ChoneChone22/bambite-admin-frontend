@@ -7,6 +7,7 @@ import { formatPrice } from "@/src/lib/utils";
 import { useTablePagination } from "@/src/hooks";
 import TablePagination from "@/src/components/TablePagination";
 import LoadingSpinner from "@/src/components/LoadingSpinner";
+import { MonthPicker } from "@/components/ui/month-picker";
 
 // Helper function to format permission code (replace underscores with spaces and capitalize)
 const formatPermissionCode = (code: string): string => {
@@ -214,16 +215,16 @@ export default function StaffProfilePage() {
               Filter by Paid Month (YYYY-MM)
             </label>
             <div className="flex gap-2">
-              <input
-                type="month"
-                className="input-field"
-                value={paymentFilters.paidMonth || ""}
-                onChange={(e) =>
+              <MonthPicker
+                value={paymentFilters.paidMonth ?? ""}
+                onChange={(v) =>
                   setPaymentFilters((prev) => ({
                     ...prev,
-                    paidMonth: e.target.value || undefined,
+                    paidMonth: v || undefined,
                   }))
                 }
+                placeholder="Filter by month"
+                className="min-w-[200px]"
               />
               {paymentFilters.paidMonth && (
                 <button

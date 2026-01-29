@@ -207,7 +207,6 @@ export default function StaffReviewsModerationPage() {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as ReviewStatus | "ALL")}
             className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
-            style={{ backgroundColor: "#ffffff", color: "#111827" }}
           >
             <option value="ALL">All Reviews</option>
             <option value={ReviewStatus.PENDING}>Pending</option>
@@ -221,7 +220,6 @@ export default function StaffReviewsModerationPage() {
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as ReviewSortBy)}
             className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
-            style={{ backgroundColor: "#ffffff", color: "#111827" }}
           >
             <option value="newest">Newest First</option>
             <option value="highest">Highest Rating</option>

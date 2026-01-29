@@ -17,6 +17,7 @@ import { useTablePagination } from "@/src/hooks";
 import TablePagination from "@/src/components/TablePagination";
 import FormModal from "@/src/components/FormModal";
 import LoadingSpinner from "@/src/components/LoadingSpinner";
+import { MonthPicker } from "@/components/ui/month-picker";
 
 const paymentSchema = Yup.object().shape({
   staffId: Yup.string().required("Staff is required"),
@@ -311,13 +312,13 @@ export default function PaymentManagementPage() {
             <label className="block text-sm font-medium text-muted-foreground mb-1">
               Paid Month (YYYY-MM)
             </label>
-            <input
-              type="month"
-              className="input-field"
-              value={filters.paidMonth || ""}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, paidMonth: e.target.value }))
+            <MonthPicker
+              value={filters.paidMonth ?? ""}
+              onChange={(v) =>
+                setFilters((prev) => ({ ...prev, paidMonth: v }))
               }
+              placeholder="All months"
+              className="min-w-[200px]"
             />
           </div>
           <div>
@@ -574,7 +575,18 @@ export default function PaymentManagementPage() {
                       <label className="block text-sm font-medium text-muted-foreground mb-1">
                         Paid Month *
                       </label>
-                      <Field name="paidMonth" type="month" className="input-field" />
+                      <Field name="paidMonth">
+                        {({ field, form }: any) => (
+                          <MonthPicker
+                            value={field.value}
+                            onChange={(v) => form.setFieldValue("paidMonth", v)}
+                            onBlur={field.onBlur}
+                            name={field.name}
+                            placeholder="Pick a month"
+                            className="min-w-[200px]"
+                          />
+                        )}
+                      </Field>
                       {errors.paidMonth && touched.paidMonth && (
                         <p className="text-red-600 text-sm mt-1">
                           {errors.paidMonth}

@@ -22,6 +22,7 @@ import { useTablePagination } from "@/src/hooks";
 import TablePagination from "@/src/components/TablePagination";
 import FormModal from "@/src/components/FormModal";
 import LoadingSpinner from "@/src/components/LoadingSpinner";
+import { DatePicker } from "@/components/ui/date-picker";
 
 // Validation Schema
 const interviewSchema = Yup.object().shape({
@@ -225,12 +226,11 @@ export default function InterviewsManagementPage() {
           </select>
         </div>
         <div className="min-w-[200px]">
-          <input
-            type="date"
+          <DatePicker
             value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className="input-field w-full"
+            onChange={setDateFilter}
             placeholder="Filter by date"
+            className="w-full"
           />
         </div>
         {dateFilter && (
@@ -431,11 +431,16 @@ export default function InterviewsManagementPage() {
                   >
                     Meeting Date * (YYYY-MM-DD)
                   </label>
-                  <Field
-                    name="meetingDate"
-                    type="date"
-                    className="input-field"
-                  />
+                  <Field name="meetingDate">
+                    {({ field, form }: any) => (
+                      <DatePicker
+                        value={field.value}
+                        onChange={(v) => form.setFieldValue("meetingDate", v)}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                      />
+                    )}
+                  </Field>
                   {errors.meetingDate && touched.meetingDate && (
                     <p className="text-red-600 text-sm mt-1">
                       {errors.meetingDate}

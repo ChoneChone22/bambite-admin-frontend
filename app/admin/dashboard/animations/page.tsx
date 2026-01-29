@@ -183,37 +183,37 @@ export default function AnimationsManagementPage() {
       {modal.ModalComponent}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Animation Management</h1>
-          <p className="text-gray-600 mt-1">Manage application animations</p>
+          <h1 className="text-3xl font-bold text-foreground">Animation Management</h1>
+          <p className="text-muted-foreground mt-1">Manage application animations</p>
         </div>
         <div className="flex gap-4 items-center">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-gray-700">Enable Animations</span>
+            <span className="text-sm font-medium text-foreground">Enable Animations</span>
             <button
               type="button"
               role="switch"
               aria-checked={animationEnabled}
               onClick={handleToggleTrigger}
-              className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-border transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
               style={{
-                backgroundColor: animationEnabled ? "#2563eb" : "#e5e7eb",
+                backgroundColor: animationEnabled ? "hsl(var(--primary))" : "hsl(var(--input))",
               }}
             >
               <span
                 className="pointer-events-none inline-block h-5 w-5 transform rounded-full shadow ring-0 transition duration-200 ease-in-out"
                 style={{
-                  backgroundColor: "#ffffff",
                   transform: animationEnabled ? "translateX(1.25rem)" : "translateX(0)",
+                  backgroundColor: "hsl(var(--primary-foreground))",
                 }}
               />
             </button>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-muted-foreground">
               {animationEnabled ? "On" : "Off"}
             </span>
           </div>
           <button
             onClick={openCreateModal}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="btn-primary px-4 py-2 rounded-lg transition-colors"
           >
             + Add Animation
           </button>
@@ -226,10 +226,10 @@ export default function AnimationsManagementPage() {
       )}
 
       {animations.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-gray-100">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center mb-6">
+        <div className="flex flex-col items-center justify-center py-20 bg-card rounded-2xl border border-border">
+          <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
             <svg
-              className="w-10 h-10 text-purple-500"
+              className="w-10 h-10 text-primary"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -242,13 +242,13 @@ export default function AnimationsManagementPage() {
               />
             </svg>
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No animations yet</h3>
-          <p className="text-gray-500 mb-8 max-w-sm text-center">
+          <h3 className="text-xl font-semibold text-foreground mb-2">No animations yet</h3>
+          <p className="text-muted-foreground mb-8 max-w-sm text-center">
             Create your first animation to enhance the application&apos;s user experience
           </p>
           <button
             onClick={openCreateModal}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white font-medium rounded-xl hover:bg-gray-800 transition-all shadow-sm hover:shadow-md"
+            className="btn-primary inline-flex items-center gap-2 px-6 py-3 font-medium rounded-xl transition-all shadow-sm hover:shadow-md"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -261,14 +261,14 @@ export default function AnimationsManagementPage() {
           {animations.map((animation) => (
             <div
               key={animation.id}
-              className={`group relative bg-white rounded-2xl border transition-all duration-200 overflow-hidden ${
+              className={`group relative bg-card rounded-2xl border transition-all duration-200 overflow-hidden ${
                 animation.selected
-                  ? "border-blue-500 shadow-lg shadow-blue-500/10"
-                  : "border-gray-200 hover:border-gray-300 hover:shadow-md"
+                  ? "border-primary shadow-lg shadow-primary/10"
+                  : "border-border hover:border-primary/50 hover:shadow-md"
               }`}
             >
               {/* Image Section */}
-              <div className="relative aspect-video bg-gray-100 overflow-hidden">
+              <div className="relative aspect-video bg-muted overflow-hidden">
                 {animation.imageUrl ? (
                   <img
                     src={animation.imageUrl}
@@ -276,9 +276,9 @@ export default function AnimationsManagementPage() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+                  <div className="w-full h-full flex items-center justify-center bg-muted">
                     <svg
-                      className="w-12 h-12 text-gray-400"
+                      className="w-12 h-12 text-muted-foreground"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -294,7 +294,7 @@ export default function AnimationsManagementPage() {
                 )}
                 {animation.selected && (
                   <div className="absolute top-3 right-3">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-600 text-white shadow-md">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-primary text-primary-foreground shadow-md">
                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                         <path
                           fillRule="evenodd"
@@ -311,9 +311,9 @@ export default function AnimationsManagementPage() {
               {/* Content Section */}
               <div className="p-6">
                 <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{animation.name}</h3>
+                  <h3 className="text-lg font-semibold text-foreground mb-1">{animation.name}</h3>
                   {animation.createdAt && (
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       {new Date(animation.createdAt).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
@@ -328,31 +328,31 @@ export default function AnimationsManagementPage() {
                   {animation.selected ? (
                     <button
                       onClick={() => handleUnselect(animation.id)}
-                      className="flex-1 px-4 py-2 text-sm font-medium bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-                      style={{ color: "#374151" }}
+                      className="flex-1 px-4 py-2 text-sm font-medium btn-secondary rounded-lg transition-colors cursor-pointer"
                     >
                       Deselect
                     </button>
                   ) : (
                     <button
                       onClick={() => handleSelect(animation.id)}
-                      className="flex-1 px-4 py-2 text-sm font-medium bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
-                      style={{ color: "#ffffff" }}
+                      className="flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer"
+                      style={{
+                        backgroundColor: "hsl(var(--primary))",
+                        color: "hsl(var(--primary-foreground))",
+                      }}
                     >
                       Apply
                     </button>
                   )}
                   <button
                     onClick={() => openEditModal(animation)}
-                    className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-                    style={{ color: "#374151" }}
+                    className="px-4 py-2 text-sm font-medium btn-secondary rounded-lg transition-colors cursor-pointer"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(animation.id)}
-                    className="px-4 py-2 text-sm font-medium bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
-                    style={{ color: "#dc2626" }}
+                    className="px-4 py-2 text-sm font-medium rounded-lg btn-destructive transition-colors cursor-pointer"
                   >
                     Delete
                   </button>
@@ -402,23 +402,23 @@ export default function AnimationsManagementPage() {
           {({ isSubmitting, errors, touched, setFieldValue, values }) => (
             <Form className="space-y-4">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
                   Animation Name *
                 </label>
                 <Field
                   id="name"
                   name="name"
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:border-transparent"
                   placeholder="e.g., Christmas Animation"
                 />
                 {errors.name && touched.name && (
-                  <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+                  <p className="mt-1 text-sm text-destructive">{errors.name}</p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="image" className="block text-sm font-medium text-foreground mb-1">
                   Animation Image {!editingAnimation && "*"}
                 </label>
                 {editingAnimation?.imageUrl && (
@@ -426,9 +426,9 @@ export default function AnimationsManagementPage() {
                     <img
                       src={editingAnimation.imageUrl}
                       alt={editingAnimation.name}
-                      className="w-full h-48 object-cover rounded-lg border border-gray-300"
+                      className="w-full h-48 object-cover rounded-lg border border-border"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Current image</p>
+                    <p className="text-xs text-muted-foreground mt-1">Current image</p>
                   </div>
                 )}
                 <input
@@ -442,20 +442,19 @@ export default function AnimationsManagementPage() {
                       setFieldValue("image", file);
                     }
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  style={{ color: "#111827" }}
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground focus:ring-2 focus:ring-ring focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                 />
                 {errors.image && touched.image && (
-                  <p className="mt-1 text-sm text-red-600">{errors.image}</p>
+                  <p className="mt-1 text-sm text-destructive">{errors.image}</p>
                 )}
                 {values.image && (
                   <div className="mt-2">
                     <img
                       src={URL.createObjectURL(values.image)}
                       alt="Preview"
-                      className="w-full h-48 object-cover rounded-lg border border-gray-300"
+                      className="w-full h-48 object-cover rounded-lg border border-border"
                     />
-                    <p className="text-xs text-gray-500 mt-1">New image preview</p>
+                    <p className="text-xs text-muted-foreground mt-1">New image preview</p>
                   </div>
                 )}
               </div>

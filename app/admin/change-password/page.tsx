@@ -360,14 +360,14 @@ export default function AdminChangePasswordPage() {
           <div className="flex space-x-3">
             <Link
               href="/admin/dashboard"
-              className="flex-1 bg-gray-100 hover:bg-gray-200 text-muted-foreground font-semibold py-3 px-4 rounded-lg transition-colors duration-200 text-center"
+              className="flex-1 btn-secondary py-3 px-4 rounded-lg transition-colors duration-200 text-center cursor-pointer flex items-center justify-center"
             >
               Cancel
             </Link>
             <button
               type="submit"
               disabled={loading || !isPasswordValid || !passwordsMatch || !currentPassword}
-              className="flex-1 bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="flex-1 btn-primary py-3 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {loading ? (
                 <>

@@ -8,6 +8,7 @@ import { formatPrice } from "@/src/lib/utils";
 import { useTablePagination } from "@/src/hooks";
 import TablePagination from "@/src/components/TablePagination";
 import LoadingSpinner from "@/src/components/LoadingSpinner";
+import { MonthPicker } from "@/components/ui/month-picker";
 
 export default function StaffDetailPage() {
   const params = useParams();
@@ -140,15 +141,12 @@ export default function StaffDetailPage() {
     return (
       <div className="max-w-3xl">
         <button
-          className="mb-4 text-sm font-semibold cursor-pointer"
-          style={{ color: "#2C5BBB", cursor: "pointer" }}
+          className="mb-4 text-sm font-semibold text-primary hover:underline cursor-pointer"
           onClick={() => router.push("/admin/dashboard/staff")}
         >
           ← Back to Staff List
         </button>
-        <div
-          className="bg-red-50 border border-red-200 p-4 rounded-lg text-foreground"
-        >
+        <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-lg text-destructive">
           {error || "Staff member not found."}
         </div>
       </div>
@@ -158,8 +156,7 @@ export default function StaffDetailPage() {
   return (
     <div className="space-y-6">
       <button
-        className="text-sm font-semibold cursor-pointer"
-        style={{ color: "#2C5BBB", cursor: "pointer" }}
+        className="text-sm font-semibold text-primary hover:underline cursor-pointer"
         onClick={() => router.push("/admin/dashboard/staff")}
       >
         ← Back to Staff List
@@ -180,9 +177,7 @@ export default function StaffDetailPage() {
         <div
           className="bg-card rounded-lg shadow p-6 space-y-3 bg-card"
         >
-          <h2
-            className="text-lg font-semibold mb-2"
-          >
+          <h2 className="text-lg font-semibold mb-2 text-foreground">
             Basic Information
           </h2>
           <DetailRow label="Employee ID" value={staff.employeeId || "—"} />
@@ -204,9 +199,9 @@ export default function StaffDetailPage() {
             value={staff.status || "—"}
             valueClassName={
               staff.status === "active"
-                ? "text-green-600"
+                ? "text-success"
                 : staff.status === "on_leave"
-                ? "text-yellow-600"
+                ? "text-warning"
                 : "text-muted-foreground"
             }
           />
@@ -258,16 +253,16 @@ export default function StaffDetailPage() {
               Filter by Paid Month (YYYY-MM)
             </label>
             <div className="flex gap-2">
-              <input
-                type="month"
-                className="input-field"
-                value={paymentFilters.paidMonth || ""}
-                onChange={(e) =>
+              <MonthPicker
+                value={paymentFilters.paidMonth ?? ""}
+                onChange={(v) =>
                   setPaymentFilters((prev) => ({
                     ...prev,
-                    paidMonth: e.target.value || undefined,
+                    paidMonth: v || undefined,
                   }))
                 }
+                placeholder="Filter by month"
+                className="min-w-[200px]"
               />
               {paymentFilters.paidMonth && (
                 <button
@@ -289,8 +284,8 @@ export default function StaffDetailPage() {
             <>
               <div className="bg-card rounded-lg shadow overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-background">
+                  <table className="min-w-full divide-y divide-border">
+                    <thead className="bg-muted">
                       <tr>
                         <th
                           className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground"
@@ -334,10 +329,10 @@ export default function StaffDetailPage() {
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="bg-card divide-y divide-gray-200">
+                    <tbody className="bg-card divide-y divide-border">
                       {paginatedPayments.length > 0 ? (
                         paginatedPayments.map((payment) => (
-                          <tr key={payment.id} className="hover:bg-background">
+                          <tr key={payment.id} className="hover:bg-muted/50 text-foreground">
                             <td
                               className="px-6 py-4 whitespace-nowrap text-sm"
                             >
@@ -374,8 +369,8 @@ export default function StaffDetailPage() {
                               <span
                                 className={`px-3 py-1 text-xs font-medium rounded-full ${
                                   payment.isPaid
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-yellow-100 text-yellow-800"
+                                    ? "bg-success/10 text-success border border-success/20"
+                                    : "bg-warning/10 text-warning border border-warning/20"
                                 }`}
                               >
                                 {payment.isPaid ? "Paid" : "Pending"}
@@ -434,18 +429,12 @@ function DetailRow({
   value: string | number;
   valueClassName?: string;
 }) {
-  // Determine value color based on valueClassName or default
-  const getValueColor = () => {
-    if (valueClassName?.includes("green")) return "#16a34a";
-    if (valueClassName?.includes("yellow")) return "#ca8a04";
-    if (valueClassName?.includes("gray")) return "#4b5563";
-    return "#000000";
-  };
-
   return (
     <div className="flex justify-between text-sm">
-      <span className="text-foreground">{label}</span>
-      <span className="font-medium" style={{ color: getValueColor() }}>
+      <span className="text-muted-foreground">{label}</span>
+      <span
+        className={`font-medium ${valueClassName ?? "text-foreground"}`}
+      >
         {value}
       </span>
     </div>

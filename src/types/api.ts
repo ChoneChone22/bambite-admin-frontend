@@ -923,32 +923,24 @@ export interface FAQFilters {
 }
 
 // ==================== Theme Model ====================
+// Backend theme colors: exactly 5 fields (primary, foreground, background, logo, card).
+// Do not use or send: secondary, accent, text.
 
 export interface ThemeColors {
   primary: string;
   foreground: string;
   background: string;
-  nav: string;
-  header1: string;
-  header2: string;
-  border: string;
-  body: string;
-  card: string;
   logo: string;
+  card: string;
 }
 
-/** Default theme colors for new themes (production-ready palette) */
+/** Default theme colors for new themes (5-color schema) */
 export const DEFAULT_THEME_COLORS: ThemeColors = {
-  primary: "#bba07a",
-  foreground: "#121212",
-  background: "#000000",
-  nav: "#c9c5c5",
-  header1: "#ffffff",
-  header2: "#d1d5db",
-  border: "#dadde1",
-  body: "#000000",
-  card: "#121212",
-  logo: "#ffffff",
+  primary: "#3b82f6",
+  foreground: "#0f172a",
+  background: "#ffffff",
+  logo: "#1e293b",
+  card: "#f8fafc",
 };
 
 export interface Theme {

@@ -8,6 +8,7 @@ import { useTablePagination } from "@/src/hooks";
 import TablePagination from "@/src/components/TablePagination";
 import { formatPrice } from "@/src/lib/utils";
 import LoadingSpinner from "@/src/components/LoadingSpinner";
+import { MonthPicker } from "@/components/ui/month-picker";
 
 // Helper function to format permission code (replace underscores with spaces and capitalize)
 const formatPermissionCode = (code: string): string => {
@@ -103,14 +104,7 @@ export default function StaffAccountDetailPage() {
         <div className="mb-6">
           <button
             onClick={() => router.back()}
-            className="text-sm mb-4 cursor-pointer"
-            style={{ color: "#4b5563", cursor: "pointer" }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = "#111827";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = "#4b5563";
-            }}
+            className="text-sm mb-4 text-primary hover:underline cursor-pointer"
           >
             ← Back to Staff Accounts
           </button>
@@ -132,14 +126,7 @@ export default function StaffAccountDetailPage() {
       <div className="mb-6">
         <button
           onClick={() => router.back()}
-          className="text-sm mb-4 cursor-pointer"
-          style={{ color: "#4b5563", cursor: "pointer" }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = "#111827";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = "#4b5563";
-          }}
+          className="text-sm mb-4 text-primary hover:underline cursor-pointer"
         >
           ← Back to Staff Accounts
         </button>
@@ -161,14 +148,14 @@ export default function StaffAccountDetailPage() {
             label="Account Status"
             value={account.staff?.status === "active" ? "Active" : "Inactive"}
             valueClassName={
-              account.staff?.status === "active" ? "text-green-600" : "text-muted-foreground"
+              account.staff?.status === "active" ? "text-success" : "text-muted-foreground"
             }
           />
           {account.mustChangePassword && (
             <DetailRow
               label="Password Status"
               value="Must change password"
-              valueClassName="text-yellow-600"
+              valueClassName="text-warning"
             />
           )}
         </div>
@@ -196,9 +183,9 @@ export default function StaffAccountDetailPage() {
             value={staff?.status || "—"}
             valueClassName={
               staff?.status === "active"
-                ? "text-green-600"
+                ? "text-success"
                 : staff?.status === "on_leave"
-                ? "text-yellow-600"
+                ? "text-warning"
                 : "text-muted-foreground"
             }
           />
@@ -241,16 +228,16 @@ export default function StaffAccountDetailPage() {
               Filter by Paid Month (YYYY-MM)
             </label>
             <div className="flex gap-2">
-              <input
-                type="month"
-                className="input-field"
-                value={paymentFilters.paidMonth || ""}
-                onChange={(e) =>
+              <MonthPicker
+                value={paymentFilters.paidMonth ?? ""}
+                onChange={(v) =>
                   setPaymentFilters((prev) => ({
                     ...prev,
-                    paidMonth: e.target.value || undefined,
+                    paidMonth: v || undefined,
                   }))
                 }
+                placeholder="Filter by month"
+                className="input-field min-w-[200px]"
               />
               {paymentFilters.paidMonth && (
                 <button
@@ -272,8 +259,8 @@ export default function StaffAccountDetailPage() {
             <>
               <div className="bg-card rounded-lg shadow overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-background">
+                  <table className="min-w-full divide-y divide-border">
+                    <thead className="bg-muted">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Paid Month
@@ -301,10 +288,10 @@ export default function StaffAccountDetailPage() {
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="bg-card divide-y divide-gray-200">
+                    <tbody className="bg-card divide-y divide-border">
                       {paginatedPayments.length > 0 ? (
                         paginatedPayments.map((payment) => (
-                          <tr key={payment.id} className="hover:bg-background">
+                          <tr key={payment.id} className="hover:bg-muted/50 text-foreground">
                             <td
                               className="px-6 py-4 whitespace-nowrap text-sm"
                             >
@@ -339,8 +326,8 @@ export default function StaffAccountDetailPage() {
                               <span
                                 className={`px-3 py-1 text-xs font-medium rounded-full ${
                                   payment.isPaid
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-yellow-100 text-yellow-800"
+                                    ? "bg-success/10 text-success border border-success/20"
+                                    : "bg-warning/10 text-warning border border-warning/20"
                                 }`}
                               >
                                 {payment.isPaid ? "Paid" : "Pending"}
@@ -399,18 +386,10 @@ function DetailRow({
   value: string;
   valueClassName?: string;
 }) {
-  // Determine value color based on valueClassName or default
-  const getValueColor = () => {
-    if (valueClassName?.includes("green")) return "#16a34a";
-    if (valueClassName?.includes("yellow")) return "#ca8a04";
-    if (valueClassName?.includes("gray")) return "#4b5563";
-    return "#000000"; // Default black
-  };
-
   return (
     <div className="flex justify-between text-sm">
-      <span className="text-foreground">{label}</span>
-      <span className="font-medium" style={{ color: getValueColor() }}>
+      <span className="text-muted-foreground">{label}</span>
+      <span className={`font-medium ${valueClassName ?? "text-foreground"}`}>
         {value}
       </span>
     </div>
