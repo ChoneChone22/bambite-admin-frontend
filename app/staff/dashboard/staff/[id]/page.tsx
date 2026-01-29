@@ -7,6 +7,7 @@ import { Staff, Payment } from "@/src/types/api";
 import { formatPrice } from "@/src/lib/utils";
 import { useTablePagination } from "@/src/hooks";
 import TablePagination from "@/src/components/TablePagination";
+import LoadingSpinner from "@/src/components/LoadingSpinner";
 
 export default function StaffDetailPage() {
   const params = useParams();
@@ -105,7 +106,7 @@ export default function StaffDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[--primary]"></div>
+        <LoadingSpinner size="md" />
       </div>
     );
   }
@@ -127,12 +128,12 @@ export default function StaffDetailPage() {
           >
             ← Back to Staff List
           </button>
-          <h1 className="text-3xl font-bold mb-1" style={{ color: "#000000" }}>
+          <h1 className="text-3xl font-bold mb-1 text-foreground">
             Staff Details
           </h1>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm" style={{ color: "#dc2626" }}>
+        <div className="bg-card rounded-lg shadow p-6">
+          <p className="text-sm text-foreground">
             {error || "Staff member not found."}
           </p>
         </div>
@@ -156,17 +157,17 @@ export default function StaffDetailPage() {
         >
           ← Back to Staff List
         </button>
-        <h1 className="text-3xl font-bold mb-1" style={{ color: "#000000" }}>
+        <h1 className="text-3xl font-bold mb-1 text-foreground">
           {staff.name || staff.user?.email || "Staff Detail"}
         </h1>
-        <p className="text-sm" style={{ color: "#4b5563" }}>
+        <p className="text-sm text-foreground">
           Employee ID: {staff.employeeId || "—"}
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow p-6 space-y-4">
-          <h2 className="text-lg font-semibold mb-2" style={{ color: "#000000" }}>
+        <div className="bg-card rounded-lg shadow p-6 space-y-4">
+          <h2 className="text-lg font-semibold mb-2 text-foreground">
             Basic Information
           </h2>
           <DetailRow label="Employee ID" value={staff.employeeId || "—"} />
@@ -191,13 +192,13 @@ export default function StaffDetailPage() {
                 ? "text-green-600"
                 : staff.status === "on_leave"
                 ? "text-yellow-600"
-                : "text-gray-600"
+                : "text-muted-foreground"
             }
           />
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6 space-y-4">
-          <h2 className="text-lg font-semibold mb-2" style={{ color: "#000000" }}>
+        <div className="bg-card rounded-lg shadow p-6 space-y-4">
+          <h2 className="text-lg font-semibold mb-2 text-foreground">
             Compensation
           </h2>
           <DetailRow
@@ -205,7 +206,7 @@ export default function StaffDetailPage() {
             value={
               typeof staff.salary === "number" && !isNaN(staff.salary)
                 ? formatPrice(staff.salary)
-                : "$0.00"
+                : "฿0.00"
             }
           />
           <DetailRow label="Bonus" value={formatPrice(staff.totalBonus || 0)} />
@@ -223,16 +224,16 @@ export default function StaffDetailPage() {
 
       {/* Payment History */}
       {staff?.id && (
-        <div className="mt-6 bg-white rounded-lg shadow p-6">
+        <div className="mt-6 bg-card rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold" style={{ color: "#000000" }}>
+            <h2 className="text-lg font-semibold text-foreground">
               Payment History
             </h2>
           </div>
 
           {/* Date Filter */}
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-2" style={{ color: "#374151" }}>
+            <label className="block text-sm font-medium mb-2 text-foreground">
               Filter by Paid Month (YYYY-MM)
             </label>
             <div className="flex gap-2">
@@ -261,78 +262,72 @@ export default function StaffDetailPage() {
           {/* Payments Table */}
           {isLoadingPayments ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[--primary]"></div>
+              <LoadingSpinner size="sm" />
             </div>
           ) : (
             <>
-              <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="bg-card rounded-lg shadow overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-background">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Paid Month
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Payment Method
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Salary
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Bonus
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Tax
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Total Payment
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Status
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Note
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="bg-card divide-y divide-gray-200">
                       {paginatedPayments.length > 0 ? (
                         paginatedPayments.map((payment) => (
-                          <tr key={payment.id} className="hover:bg-gray-50">
+                          <tr key={payment.id} className="hover:bg-background">
                             <td
                               className="px-6 py-4 whitespace-nowrap text-sm"
-                              style={{ color: "#000000" }}
                             >
                               {payment.paidMonth}
                             </td>
                             <td
                               className="px-6 py-4 whitespace-nowrap text-sm capitalize"
-                              style={{ color: "#000000" }}
                             >
                               {payment.paymentMethod?.replace("_", " ") || "—"}
                             </td>
                             <td
                               className="px-6 py-4 whitespace-nowrap text-sm"
-                              style={{ color: "#000000" }}
                             >
                               {formatPrice(staff?.salary || payment.staff?.salary || 0)}
                             </td>
                             <td
                               className="px-6 py-4 whitespace-nowrap text-sm"
-                              style={{ color: "#000000" }}
                             >
                               {formatPrice(payment.bonus || 0)}
                             </td>
                             <td
                               className="px-6 py-4 whitespace-nowrap text-sm"
-                              style={{ color: "#000000" }}
                             >
                               {formatPrice(payment.tax || 0)}
                             </td>
                             <td
                               className="px-6 py-4 whitespace-nowrap text-sm font-semibold"
-                              style={{ color: "#000000" }}
                             >
                               {formatPrice(payment.totalPayment || 0)}
                             </td>
@@ -348,8 +343,7 @@ export default function StaffDetailPage() {
                               </span>
                             </td>
                             <td
-                              className="px-6 py-4 text-sm max-w-xs truncate"
-                              style={{ color: "#4b5563" }}
+                              className="px-6 py-4 text-sm max-w-xs truncate text-foreground"
                               title={payment.note || ""}
                             >
                               {payment.note || "—"}
@@ -360,7 +354,7 @@ export default function StaffDetailPage() {
                         <tr>
                           <td
                             colSpan={8}
-                            className="px-6 py-12 text-center text-gray-500"
+                            className="px-6 py-12 text-center text-muted-foreground"
                           >
                             No payment records found.
                           </td>
@@ -411,7 +405,7 @@ function DetailRow({
 
   return (
     <div className="flex justify-between text-sm">
-      <span style={{ color: "#4b5563" }}>{label}</span>
+      <span className="text-foreground">{label}</span>
       <span className="font-medium" style={{ color: getValueColor() }}>
         {value}
       </span>

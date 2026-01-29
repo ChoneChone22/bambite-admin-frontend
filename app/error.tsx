@@ -25,7 +25,7 @@ export default function Error({
           Something went wrong!
         </h2>
         <p className="text-gray-600 mb-6">{error.message}</p>
-        <button onClick={() => reset()} className="btn-primary">
+        <button onClick={() => reset()} className="btn-primary cursor-pointer">
           Try again
         </button>
       </div>

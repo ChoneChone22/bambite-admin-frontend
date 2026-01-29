@@ -89,7 +89,7 @@ export const staffSchema = Yup.object().shape({
     .required("Position is required"),
   salary: Yup.number()
     .positive("Salary must be greater than 0")
-    .max(1000000, "Salary must not exceed $1,000,000")
+    .max(1000000, "Salary must not exceed ฿1,000,000")
     .required("Salary is required"),
   overtimePayment: Yup.number()
     .min(0, "Overtime payment cannot be negative")

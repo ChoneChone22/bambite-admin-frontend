@@ -103,52 +103,42 @@ export default function Modal({
       case "error":
         return {
           icon: "✕",
-          iconBgColor: "#fee2e2",
-          iconColor: "#dc2626",
-          titleColor: "#991b1b",
-          borderColor: "#fecaca",
-          buttonBg: "#dc2626",
-          buttonBgHover: "#b91c1c",
+          iconClass: "bg-destructive/10 text-destructive",
+          titleClass: "text-destructive",
+          borderClass: "border-destructive/20",
+          buttonClass: "bg-destructive hover:bg-destructive/90 text-destructive-foreground",
         };
       case "success":
         return {
           icon: "✓",
-          iconBgColor: "#d1fae5",
-          iconColor: "#16a34a",
-          titleColor: "#065f46",
-          borderColor: "#bbf7d0",
-          buttonBg: "#16a34a",
-          buttonBgHover: "#15803d",
+          iconClass: "bg-success/10 text-success",
+          titleClass: "text-success",
+          borderClass: "border-success/20",
+          buttonClass: "bg-success hover:bg-success/90 text-success-foreground",
         };
       case "warning":
         return {
           icon: "⚠",
-          iconBgColor: "#fef3c7",
-          iconColor: "#ca8a04",
-          titleColor: "#854d0e",
-          borderColor: "#fde68a",
-          buttonBg: "#ca8a04",
-          buttonBgHover: "#a16207",
+          iconClass: "bg-warning/10 text-warning",
+          titleClass: "text-warning",
+          borderClass: "border-warning/20",
+          buttonClass: "bg-warning hover:bg-warning/90 text-warning-foreground",
         };
       case "confirm":
         return {
           icon: "?",
-          iconBgColor: "#dbeafe",
-          iconColor: "#2563eb",
-          titleColor: "#1e3a8a",
-          borderColor: "#bfdbfe",
-          buttonBg: "var(--primary)",
-          buttonBgHover: "var(--primary-dark)",
+          iconClass: "bg-primary/10 text-primary",
+          titleClass: "text-primary",
+          borderClass: "border-primary/20",
+          buttonClass: "bg-primary hover:bg-primary/90 text-primary-foreground",
         };
       default: // info or alert
         return {
           icon: "ℹ",
-          iconBgColor: "#dbeafe",
-          iconColor: "#2563eb",
-          titleColor: "#1e3a8a",
-          borderColor: "#bfdbfe",
-          buttonBg: "var(--primary)",
-          buttonBgHover: "var(--primary-dark)",
+          iconClass: "bg-info/10 text-info",
+          titleClass: "text-info",
+          borderClass: "border-info/20",
+          buttonClass: "bg-primary hover:bg-primary/90 text-primary-foreground",
         };
     }
   };
@@ -158,50 +148,56 @@ export default function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn"
+      className="no-glass fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
       aria-describedby="modal-description"
     >
-      {/* Backdrop with glass effect - light overlay with subtle blur */}
-      <div 
-        className="fixed inset-0 bg-white/30 backdrop-blur-[2px] transition-opacity duration-300 ease-out"
+      {/* Backdrop - solid overlay, no glass/blur */}
+      <div
+        className="fixed inset-0 transition-opacity duration-300 ease-out"
+        style={{
+          backgroundColor: "rgba(0, 0, 0, 0.75)",
+          backdropFilter: "none",
+          WebkitBackdropFilter: "none",
+        }}
         onClick={handleBackdropClick}
       />
 
-      {/* Modal */}
+      {/* Modal - solid background, no glass effect (light/dark/mobile) */}
       <div
         ref={modalRef}
-        className="relative rounded-lg shadow-2xl max-w-md w-full transform animate-slideUp border border-gray-100 z-10"
-        style={{ backgroundColor: "#ffffff" }}
+        className="relative rounded-lg shadow-2xl max-w-md w-full transform animate-slideUp z-10"
+        style={{
+          backgroundColor: "hsl(var(--card))",
+          opacity: 1,
+          backdropFilter: "none",
+          WebkitBackdropFilter: "none",
+          border: `1px solid hsl(var(--${type === "error" ? "destructive" : type === "success" ? "success" : type === "warning" ? "warning" : type === "confirm" ? "primary" : "info"}) / 0.2)`,
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div 
-          className="flex items-start p-6 border-b"
-          style={{ borderBottomColor: styles.borderColor }}
+          className="flex items-start p-6"
+          style={{
+            borderBottom: `1px solid hsl(var(--${type === 'error' ? 'destructive' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : type === 'confirm' ? 'primary' : 'info'}) / 0.2)`
+          }}
         >
-          <div 
-            className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center mr-4"
-            style={{ backgroundColor: styles.iconBgColor }}
-          >
-            <span 
-              className="text-xl font-bold"
-              style={{ color: styles.iconColor }}
-            >
+          <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center mr-4 ${styles.iconClass}`}>
+            <span className="text-xl font-bold">
               {styles.icon}
             </span>
           </div>
           <div className="flex-1">
             <h3
               id="modal-title"
-              className="text-lg font-semibold mb-1"
-              style={{ color: styles.titleColor }}
+              className={`text-lg font-semibold mb-1 ${styles.titleClass}`}
             >
               {title || defaultTitle}
             </h3>
-            <p id="modal-description" className="text-sm" style={{ color: "#4b5563" }}>
+            <p id="modal-description" className="text-sm text-muted-foreground">
               {message}
             </p>
           </div>
@@ -213,18 +209,7 @@ export default function Modal({
             <button
               type="button"
               onClick={handleCancel}
-              className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[--primary] transition-colors cursor-pointer"
-              style={{ 
-                color: "#374151",
-                backgroundColor: "#ffffff",
-                cursor: "pointer"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#f9fafb";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#ffffff";
-              }}
+              className="px-4 py-2 text-sm font-medium border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors cursor-pointer bg-background text-foreground hover:bg-accent"
             >
               {cancelText}
             </button>
@@ -233,18 +218,7 @@ export default function Modal({
             ref={confirmButtonRef}
             type="button"
             onClick={handleConfirm}
-            className="px-4 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[--primary] transition-colors cursor-pointer"
-            style={{ 
-              color: "#ffffff",
-              backgroundColor: styles.buttonBg,
-              cursor: "pointer"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = styles.buttonBgHover;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = styles.buttonBg;
-            }}
+            className={`px-4 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors cursor-pointer ${styles.buttonClass}`}
           >
             {confirmText}
           </button>
@@ -253,4 +227,3 @@ export default function Modal({
     </div>
   );
 }
-

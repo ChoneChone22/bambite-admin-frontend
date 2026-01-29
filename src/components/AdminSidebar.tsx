@@ -23,7 +23,9 @@ interface NavGroup {
 const navigationGroups: NavGroup[] = [
   {
     title: "Overview",
-    items: [{ name: "Dashboard", href: "/admin/dashboard" }],
+    items: [
+      { name: "Dashboard", href: "/admin/dashboard" },
+    ],
   },
   {
     title: "Products",
@@ -36,6 +38,10 @@ const navigationGroups: NavGroup[] = [
   {
     title: "Orders",
     items: [{ name: "Orders", href: "/admin/dashboard/orders" }],
+  },
+  {
+    title: "User Management",
+    items: [{ name: "Users", href: "/admin/dashboard/users" }],
   },
   {
     title: "Staff Management",
@@ -135,7 +141,7 @@ export default function AdminSidebar() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-gray-200">
+    <div className="flex flex-col h-full bg-card border-r border-border">
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-4 space-y-2 pt-6">
         {navigationGroups.map((group) => {
@@ -149,24 +155,9 @@ export default function AdminSidebar() {
                 onClick={() => toggleGroup(group.title)}
                 className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all font-semibold text-sm ${
                   hasActiveItem
-                    ? "text-white"
-                    : "hover:bg-gray-50"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-foreground hover:bg-accent hover:text-accent-foreground"
                 }`}
-                style={
-                  hasActiveItem
-                    ? { backgroundColor: "#2C5BBB", color: "#ffffff" }
-                    : { color: "#374151" }
-                }
-                onMouseEnter={(e) => {
-                  if (!hasActiveItem) {
-                    e.currentTarget.style.backgroundColor = "#f9fafb";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!hasActiveItem) {
-                    e.currentTarget.style.backgroundColor = "transparent";
-                  }
-                }}
               >
                 <span>{group.title}</span>
                 <svg
@@ -198,26 +189,9 @@ export default function AdminSidebar() {
                         href={item.href}
                         className={`block px-4 py-2 rounded-lg transition-all text-sm ${
                           isActive
-                            ? "text-white shadow-sm font-medium"
-                            : "hover:bg-gray-50"
+                            ? "bg-primary text-primary-foreground shadow-sm font-medium"
+                            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                         }`}
-                        style={
-                          isActive
-                            ? { backgroundColor: "#2C5BBB", color: "#ffffff" }
-                            : { color: "#6b7280" }
-                        }
-                        onMouseEnter={(e) => {
-                          if (!isActive) {
-                            e.currentTarget.style.backgroundColor = "#f9fafb";
-                            e.currentTarget.style.color = "#374151";
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isActive) {
-                            e.currentTarget.style.backgroundColor = "transparent";
-                            e.currentTarget.style.color = "#6b7280";
-                          }
-                        }}
                       >
                         {item.name}
                       </Link>
@@ -230,13 +204,44 @@ export default function AdminSidebar() {
         })}
       </nav>
 
-      {/* Logout */}
-      <div className="p-4 border-t border-gray-200">
+      {/* Account Settings */}
+      <div className="p-4 border-t border-border space-y-2">
+        <Link
+          href="/admin/change-password"
+          className="w-full px-4 py-3 rounded-lg hover:bg-accent hover:text-accent-foreground transition-all font-semibold text-left flex items-center text-foreground"
+        >
+          <svg
+            className="w-5 h-5 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+            />
+          </svg>
+          Change Password
+        </Link>
         <button
           onClick={handleLogout}
-          className="w-full px-4 py-3 rounded-lg hover:bg-gray-50 transition-all font-semibold text-left cursor-pointer"
-          style={{ color: "#000000" }}
+          className="w-full px-4 py-3 rounded-lg hover:bg-accent hover:text-accent-foreground transition-all font-semibold text-left cursor-pointer flex items-center text-foreground"
         >
+          <svg
+            className="w-5 h-5 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+            />
+          </svg>
           Logout
         </button>
       </div>

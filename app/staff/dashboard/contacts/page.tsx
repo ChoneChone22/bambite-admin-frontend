@@ -13,6 +13,7 @@ import { formatDateTime, getErrorMessage } from "@/src/lib/utils";
 import { useModal } from "@/src/hooks/useModal";
 import { useTablePagination } from "@/src/hooks";
 import TablePagination from "@/src/components/TablePagination";
+import LoadingSpinner from "@/src/components/LoadingSpinner";
 
 const CONTACT_REASONS: { value: ContactReason; label: string }[] = [
   { value: "general_inquiry", label: "General Inquiry" },
@@ -152,7 +153,7 @@ export default function ContactsManagementPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[--primary]"></div>
+        <LoadingSpinner size="md" />
       </div>
     );
   }
@@ -162,13 +163,13 @@ export default function ContactsManagementPage() {
       {modal.ModalComponent}
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold" style={{ color: "#000000" }}>
+        <h1 className="text-3xl font-bold text-foreground">
           Contact Management
         </h1>
       </div>
 
       {error && (
-        <div className="bg-red-50 p-4 rounded-lg mb-6" style={{ color: "#b91c1c" }}>
+        <div className="bg-red-50 p-4 rounded-lg mb-6 text-foreground">
           {error}
         </div>
       )}
@@ -234,44 +235,43 @@ export default function ContactsManagementPage() {
       </div>
 
       {/* Contacts Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-card rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-background">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Email
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Reason
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Message Preview
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-gray-200">
               {paginatedData.map((contact) => (
-                <tr key={contact.id} className="hover:bg-gray-50">
+                <tr key={contact.id} className="hover:bg-background">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div
                       className="text-sm font-medium"
-                      style={{ color: "#000000" }}
                     >
                       {contact.name}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm" style={{ color: "#000000" }}>
+                    <div className="text-sm text-foreground">
                       {contact.email}
                     </div>
                   </td>
@@ -283,15 +283,13 @@ export default function ContactsManagementPage() {
                   </td>
                   <td className="px-6 py-4">
                     <div
-                      className="text-sm truncate max-w-xs"
-                      style={{ color: "#6b7280" }}
+                      className="text-sm truncate max-w-xs text-foreground"
                     >
                       {contact.message || "No message"}
                     </div>
                   </td>
                   <td
-                    className="px-6 py-4 whitespace-nowrap text-sm"
-                    style={{ color: "#6b7280" }}
+                    className="px-6 py-4 whitespace-nowrap text-sm text-foreground"
                   >
                     {contact.createdAt
                       ? formatDateTime(contact.createdAt)
@@ -319,8 +317,7 @@ export default function ContactsManagementPage() {
                 <tr>
                   <td
                     colSpan={6}
-                    className="px-6 py-4 text-center"
-                    style={{ color: "#6b7280" }}
+                    className="px-6 py-4 text-center text-foreground"
                   >
                     No contacts found
                   </td>
@@ -346,31 +343,38 @@ export default function ContactsManagementPage() {
 
       {/* Contact Detail Modal */}
       {selectedContact && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)", backdropFilter: "blur(2px)" }}
+        <div
+          className="no-glass fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.75)",
+            backdropFilter: "none",
+            WebkitBackdropFilter: "none",
+          }}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setSelectedContact(null);
             }
           }}
         >
-          <div 
-            className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          <div
+            className="rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-border"
+            style={{
+              backgroundColor: "hsl(var(--card))",
+              backdropFilter: "none",
+              WebkitBackdropFilter: "none",
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2
                   className="text-2xl font-bold"
-                  style={{ color: "#000000" }}
                 >
                   Contact Details
                 </h2>
                 <button
                   onClick={() => setSelectedContact(null)}
-                  style={{ color: "#6b7280" }}
-                  className="hover:text-gray-900 transition-colors"
+                  className="text-foreground hover:text-foreground transition-colors"
                 >
                   ✕
                 </button>
@@ -379,36 +383,33 @@ export default function ContactsManagementPage() {
               <div className="space-y-4">
                 <div>
                   <label
-                    className="block text-sm font-medium mb-1"
-                    style={{ color: "#374151" }}
+                    className="block text-sm font-medium mb-1 text-foreground"
                   >
                     Name
                   </label>
-                  <p className="text-sm" style={{ color: "#000000" }}>
+                  <p className="text-sm text-foreground">
                     {selectedContact?.name || "N/A"}
                   </p>
                 </div>
 
                 <div>
                   <label
-                    className="block text-sm font-medium mb-1"
-                    style={{ color: "#374151" }}
+                    className="block text-sm font-medium mb-1 text-foreground"
                   >
                     Email
                   </label>
-                  <p className="text-sm" style={{ color: "#000000" }}>
+                  <p className="text-sm text-foreground">
                     {selectedContact?.email || "N/A"}
                   </p>
                 </div>
 
                 <div>
                   <label
-                    className="block text-sm font-medium mb-1"
-                    style={{ color: "#374151" }}
+                    className="block text-sm font-medium mb-1 text-foreground"
                   >
                     Reason
                   </label>
-                  <p className="text-sm" style={{ color: "#000000" }}>
+                  <p className="text-sm text-foreground">
                     {selectedContact?.reason
                       ? CONTACT_REASONS.find((r) => r.value === selectedContact.reason)
                           ?.label || selectedContact.reason
@@ -418,24 +419,22 @@ export default function ContactsManagementPage() {
 
                 <div>
                   <label
-                    className="block text-sm font-medium mb-1"
-                    style={{ color: "#374151" }}
+                    className="block text-sm font-medium mb-1 text-foreground"
                   >
                     Message
                   </label>
-                  <p className="text-sm whitespace-pre-wrap" style={{ color: "#000000" }}>
+                  <p className="text-sm whitespace-pre-wrap text-foreground">
                     {selectedContact?.message || "No message"}
                   </p>
                 </div>
 
                 <div>
                   <label
-                    className="block text-sm font-medium mb-1"
-                    style={{ color: "#374151" }}
+                    className="block text-sm font-medium mb-1 text-foreground"
                   >
                     Submitted At
                   </label>
-                  <p className="text-sm" style={{ color: "#6b7280" }}>
+                  <p className="text-sm text-foreground">
                     {selectedContact?.createdAt
                       ? formatDateTime(selectedContact.createdAt)
                       : "N/A"}
@@ -446,7 +445,7 @@ export default function ContactsManagementPage() {
               <div className="mt-6 flex gap-4">
                 <button
                   onClick={() => setSelectedContact(null)}
-                  className="btn-secondary flex-1"
+                  className="btn-secondary flex-1 cursor-pointer"
                 >
                   Close
                 </button>
@@ -455,8 +454,7 @@ export default function ContactsManagementPage() {
                     handleDelete(selectedContact.id);
                     setSelectedContact(null);
                   }}
-                  className="btn-primary flex-1"
-                  style={{ backgroundColor: "#DC2626" }}
+                  className="btn-destructive flex-1 cursor-pointer"
                 >
                   Delete
                 </button>

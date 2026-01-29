@@ -194,7 +194,7 @@ export default function AnimationsManagementPage() {
               role="switch"
               aria-checked={animationEnabled}
               onClick={handleToggleTrigger}
-              className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
               style={{
                 backgroundColor: animationEnabled ? "#2563eb" : "#e5e7eb",
               }}
@@ -409,7 +409,7 @@ export default function AnimationsManagementPage() {
                   id="name"
                   name="name"
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="e.g., Christmas Animation"
                 />
                 {errors.name && touched.name && (
@@ -442,7 +442,7 @@ export default function AnimationsManagementPage() {
                       setFieldValue("image", file);
                     }
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   style={{ color: "#111827" }}
                 />
                 {errors.image && touched.image && (
@@ -467,15 +467,14 @@ export default function AnimationsManagementPage() {
                     setShowModal(false);
                     setEditingAnimation(null);
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-                  style={{ backgroundColor: "#ffffff", color: "#374151" }}
+                  className="btn-secondary cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  className="btn-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? "Saving..." : editingAnimation ? "Update" : "Create"}
                 </button>

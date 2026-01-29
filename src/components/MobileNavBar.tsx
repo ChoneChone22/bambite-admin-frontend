@@ -1,6 +1,7 @@
 /**
  * Mobile Navigation Bar Component
  * Top navigation bar for mobile devices with hamburger menu
+ * Theme-aware for light/dark mode
  */
 
 "use client";
@@ -18,16 +19,23 @@ export default function MobileNavBar({
 }: MobileNavBarProps) {
 
   return (
-    <nav className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+    <nav 
+      className="md:hidden fixed top-0 left-0 right-0 z-50 shadow-sm"
+      style={{
+        backgroundColor: 'hsl(var(--card))',
+        borderBottom: '1px solid hsl(var(--border))',
+        opacity: 1
+      }}
+    >
       <div className="flex items-center justify-between px-4 py-3">
         {/* Hamburger Menu Button */}
         <button
           onClick={onMenuClick}
-          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          className="p-2 rounded-lg hover:bg-accent transition-colors"
           aria-label="Open menu"
         >
           <svg
-            className="w-6 h-6 text-gray-700"
+            className="w-6 h-6 text-foreground"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -43,7 +51,7 @@ export default function MobileNavBar({
 
         {/* Title */}
         <div className="flex-1 text-center">
-          <h1 className="text-lg font-bold" style={{ color: "#2C5BBB" }}>
+          <h1 className="text-lg font-bold text-primary">
             {title}
           </h1>
         </div>

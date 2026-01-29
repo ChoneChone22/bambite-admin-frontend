@@ -21,6 +21,7 @@ import { useModal } from "@/src/hooks/useModal";
 import { useTablePagination } from "@/src/hooks";
 import TablePagination from "@/src/components/TablePagination";
 import FormModal from "@/src/components/FormModal";
+import LoadingSpinner from "@/src/components/LoadingSpinner";
 
 // Validation Schema
 const interviewSchema = Yup.object().shape({
@@ -183,7 +184,7 @@ export default function InterviewsManagementPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[--primary]"></div>
+        <LoadingSpinner size="md" />
       </div>
     );
   }
@@ -193,7 +194,7 @@ export default function InterviewsManagementPage() {
       {modal.ModalComponent}
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold" style={{ color: "#000000" }}>
+        <h1 className="text-3xl font-bold text-foreground">
           Interview Management
         </h1>
         <button onClick={handleCreate} className="btn-primary cursor-pointer">
@@ -202,7 +203,7 @@ export default function InterviewsManagementPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 p-4 rounded-lg mb-6" style={{ color: "#b91c1c" }}>
+        <div className="bg-red-50 p-4 rounded-lg mb-6 text-foreground">
           {error}
         </div>
       )}
@@ -235,8 +236,7 @@ export default function InterviewsManagementPage() {
         {dateFilter && (
           <button
             onClick={() => setDateFilter("")}
-            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-colors"
-            style={{ color: "#374151" }}
+            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-colors text-foreground"
           >
             Clear Date Filter
           </button>
@@ -244,52 +244,51 @@ export default function InterviewsManagementPage() {
       </div>
 
       {/* Interviews Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-card rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-background">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Applicant
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Job Post
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Meeting Date & Time
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Meeting URL
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-gray-200">
               {paginatedData.map((interview) => (
-                <tr key={interview.id} className="hover:bg-gray-50">
+                <tr key={interview.id} className="hover:bg-background">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div
                       className="text-sm font-medium"
-                      style={{ color: "#000000" }}
                     >
                       {interview.applyJob?.name || "N/A"}
                     </div>
-                    <div className="text-sm" style={{ color: "#6b7280" }}>
+                    <div className="text-sm text-foreground">
                       {interview.applyJob?.email || ""}
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm" style={{ color: "#000000" }}>
+                    <div className="text-sm text-foreground">
                       {interview.applyJob?.jobPost?.title || "N/A"}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm" style={{ color: "#000000" }}>
+                    <div className="text-sm text-foreground">
                       {interview.meetingDate}
                     </div>
-                    <div className="text-sm" style={{ color: "#6b7280" }}>
+                    <div className="text-sm text-foreground">
                       {interview.meetingTime} (UTC)
                     </div>
                   </td>
@@ -298,8 +297,7 @@ export default function InterviewsManagementPage() {
                       href={interview.meetingUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:underline truncate max-w-xs block"
-                      style={{ color: "#2563eb" }}
+                      className="text-sm text-blue-600 hover:underline truncate max-w-xs block text-foreground"
                     >
                       {interview.meetingUrl}
                     </a>
@@ -326,8 +324,7 @@ export default function InterviewsManagementPage() {
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-6 py-4 text-center"
-                    style={{ color: "#6b7280" }}
+                    className="px-6 py-4 text-center text-foreground"
                   >
                     No interviews found
                   </td>
@@ -378,8 +375,7 @@ export default function InterviewsManagementPage() {
             <Form className="space-y-4">
               <div>
                 <label
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: "#374151" }}
+                  className="block text-sm font-medium mb-1 text-foreground"
                 >
                   Application *
                 </label>
@@ -402,7 +398,7 @@ export default function InterviewsManagementPage() {
                   </p>
                 )}
                 {approvedApplications.length === 0 && (
-                  <p className="text-sm mt-1" style={{ color: "#6b7280" }}>
+                  <p className="text-sm mt-1 text-foreground">
                     No approved applications available. Approve an application
                     first.
                   </p>
@@ -411,8 +407,7 @@ export default function InterviewsManagementPage() {
 
               <div>
                 <label
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: "#374151" }}
+                  className="block text-sm font-medium mb-1 text-foreground"
                 >
                   Meeting URL *
                 </label>
@@ -432,8 +427,7 @@ export default function InterviewsManagementPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label
-                    className="block text-sm font-medium mb-1"
-                    style={{ color: "#374151" }}
+                    className="block text-sm font-medium mb-1 text-foreground"
                   >
                     Meeting Date * (YYYY-MM-DD)
                   </label>
@@ -451,8 +445,7 @@ export default function InterviewsManagementPage() {
 
                 <div>
                   <label
-                    className="block text-sm font-medium mb-1"
-                    style={{ color: "#374151" }}
+                    className="block text-sm font-medium mb-1 text-foreground"
                   >
                     Meeting Time * (HH:MM UTC)
                   </label>
@@ -466,7 +459,7 @@ export default function InterviewsManagementPage() {
                       {errors.meetingTime}
                     </p>
                   )}
-                  <p className="text-xs mt-1" style={{ color: "#6b7280" }}>
+                  <p className="text-xs mt-1 text-foreground">
                     Time is in UTC
                   </p>
                 </div>
@@ -474,8 +467,7 @@ export default function InterviewsManagementPage() {
 
               <div>
                 <label
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: "#374151" }}
+                  className="block text-sm font-medium mb-1 text-foreground"
                 >
                   Notes (Optional)
                 </label>

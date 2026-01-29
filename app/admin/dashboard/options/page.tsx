@@ -20,6 +20,7 @@ import { useModal } from "@/src/hooks/useModal";
 import { useTablePagination } from "@/src/hooks";
 import TablePagination from "@/src/components/TablePagination";
 import FormModal from "@/src/components/FormModal";
+import LoadingSpinner from "@/src/components/LoadingSpinner";
 
 // Validation Schema
 const optionSchema = Yup.object().shape({
@@ -171,7 +172,7 @@ export default function OptionsManagementPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[--primary]"></div>
+        <LoadingSpinner size="md" />
       </div>
     );
   }
@@ -181,7 +182,7 @@ export default function OptionsManagementPage() {
       {modal.ModalComponent}
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold" style={{ color: "#000000" }}>
+        <h1 className="text-3xl font-bold text-foreground">
           Option Management
         </h1>
         <button onClick={handleCreate} className="btn-primary cursor-pointer">
@@ -205,52 +206,50 @@ export default function OptionsManagementPage() {
       </div>
 
       {/* Options Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-card rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-background">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Display Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Option Values
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Products
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-gray-200">
               {paginatedData.length === 0 ? (
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-6 py-12 text-center text-sm"
-                    style={{ color: "#6b7280" }}
+                    className="px-6 py-12 text-center text-sm text-foreground"
                   >
                     No options found
                   </td>
                 </tr>
               ) : (
                 paginatedData.map((option) => (
-              <tr key={option.id} className="hover:bg-gray-50">
+              <tr key={option.id} className="hover:bg-background">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div
                     className="text-sm font-medium"
-                    style={{ color: "#000000" }}
                   >
                     {option.name}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm" style={{ color: "#374151" }}>
+                  <div className="text-sm text-foreground">
                     {option.displayName}
                   </div>
                 </td>
@@ -267,8 +266,7 @@ export default function OptionsManagementPage() {
                   </div>
                 </td>
                 <td
-                  className="px-6 py-4 whitespace-nowrap text-sm"
-                  style={{ color: "#6b7280" }}
+                  className="px-6 py-4 whitespace-nowrap text-sm text-foreground"
                 >
                   {option._count?.products || 0} product(s)
                 </td>
@@ -328,8 +326,7 @@ export default function OptionsManagementPage() {
             <Form className="space-y-4">
               <div>
                 <label
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: "#374151" }}
+                  className="block text-sm font-medium mb-1 text-foreground"
                 >
                   Option Name (identifier) *
                 </label>
@@ -339,7 +336,7 @@ export default function OptionsManagementPage() {
                   className="input-field"
                   placeholder="e.g., size, color, material"
                 />
-                <p className="text-xs mt-1" style={{ color: "#6b7280" }}>
+                <p className="text-xs mt-1 text-foreground">
                   Lowercase, no spaces. Use underscores if needed (e.g., "product_size")
                 </p>
                 {errors.name && touched.name && (
@@ -349,8 +346,7 @@ export default function OptionsManagementPage() {
 
               <div>
                 <label
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: "#374151" }}
+                  className="block text-sm font-medium mb-1 text-foreground"
                 >
                   Display Name *
                 </label>
@@ -360,7 +356,7 @@ export default function OptionsManagementPage() {
                   className="input-field"
                   placeholder="e.g., Size, Color, Material"
                 />
-                <p className="text-xs mt-1" style={{ color: "#6b7280" }}>
+                <p className="text-xs mt-1 text-foreground">
                   User-friendly name shown in the UI
                 </p>
                 {errors.displayName && touched.displayName && (
@@ -370,8 +366,7 @@ export default function OptionsManagementPage() {
 
               <div>
                 <label
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: "#374151" }}
+                  className="block text-sm font-medium mb-1 text-foreground"
                 >
                   Option Values *
                 </label>
@@ -390,7 +385,7 @@ export default function OptionsManagementPage() {
                             <button
                               type="button"
                               onClick={() => remove(index)}
-                              className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                              className="btn-destructive cursor-pointer"
                             >
                               Remove
                             </button>
@@ -400,8 +395,7 @@ export default function OptionsManagementPage() {
                       <button
                         type="button"
                         onClick={() => push("")}
-                        className="text-sm hover:underline"
-                        style={{ color: "#2563eb" }}
+                        className="text-sm hover:underline text-foreground cursor-pointer"
                       >
                         + Add Value
                       </button>
@@ -432,7 +426,7 @@ export default function OptionsManagementPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="btn-secondary flex-1"
+                  className="btn-secondary flex-1 cursor-pointer"
                 >
                   Cancel
                 </button>

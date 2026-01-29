@@ -20,21 +20,29 @@ export default function Toast({
     return () => clearTimeout(timer);
   }, [duration, onClose]);
 
-  const bgColor = {
-    success: "bg-green-500",
-    error: "bg-red-500",
-    info: "bg-blue-500",
-  }[type];
+  // Solid theme colors, no glass effect (light/dark/mobile)
+  const bgToken = type === "success" ? "--success" : type === "error" ? "--destructive" : "--info";
+  const fgToken = type === "success" ? "--success-foreground" : type === "error" ? "--destructive-foreground" : "--info-foreground";
 
   return (
-    <div className="fixed top-20 right-4 z-50 animate-slide-in">
+    <div
+      className="no-glass fixed top-20 right-4 left-4 sm:left-auto z-50 animate-slide-in"
+    >
       <div
-        className={`${bgColor} text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-3`}
+        className="px-6 py-3 rounded-lg shadow-lg flex items-center space-x-3"
+        style={{
+          backgroundColor: `hsl(var(${bgToken}))`,
+          color: `hsl(var(${fgToken}))`,
+          opacity: 1,
+          backdropFilter: "none",
+          WebkitBackdropFilter: "none",
+        }}
       >
         <span>{message}</span>
         <button
           onClick={onClose}
-          className="text-white hover:text-gray-200 font-bold"
+          className="text-current hover:opacity-80 font-bold transition-opacity cursor-pointer"
+          aria-label="Close notification"
         >
           ×
         </button>

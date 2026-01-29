@@ -12,12 +12,18 @@ export default function LoadingSpinner({
   return (
     <div className="flex items-center justify-center">
       <div
-        className={`${sizeClasses[size]} animate-spin rounded-full border-gray-200`}
+        className={`${sizeClasses[size]} animate-spin rounded-full`}
         style={{
-          borderTopColor: "#2C5BBB",
-          borderRightColor: "#2C5BBB",
-        }}
-      ></div>
+          borderColor: 'hsl(var(--muted))',
+          borderTopColor: 'hsl(var(--primary))',
+          borderRightColor: 'hsl(var(--primary))',
+          borderStyle: 'solid'
+        } as React.CSSProperties}
+        aria-label="Loading"
+        role="status"
+      >
+        <span className="sr-only">Loading...</span>
+      </div>
     </div>
   );
 }

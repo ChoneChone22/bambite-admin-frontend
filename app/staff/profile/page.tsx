@@ -6,6 +6,7 @@ import { Payment } from "@/src/types/api";
 import { formatPrice } from "@/src/lib/utils";
 import { useTablePagination } from "@/src/hooks";
 import TablePagination from "@/src/components/TablePagination";
+import LoadingSpinner from "@/src/components/LoadingSpinner";
 
 // Helper function to format permission code (replace underscores with spaces and capitalize)
 const formatPermissionCode = (code: string): string => {
@@ -126,7 +127,7 @@ export default function StaffProfilePage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[--primary]"></div>
+        <LoadingSpinner size="md" />
       </div>
     );
   }
@@ -135,7 +136,7 @@ export default function StaffProfilePage() {
     return (
       <div>
         <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-1" style={{ color: "#000000" }}>
+          <h1 className="text-3xl font-bold mb-1 text-foreground">
             My Profile
           </h1>
         </div>
@@ -151,7 +152,7 @@ export default function StaffProfilePage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-1" style={{ color: "#000000" }}>
+        <h1 className="text-3xl font-bold mb-1 text-foreground">
           My Profile
         </h1>
         <p className="text-sm text-gray-600">
@@ -202,14 +203,14 @@ export default function StaffProfilePage() {
       {profile.staff?.id && (
         <div className="mt-6 bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold" style={{ color: "#000000" }}>
+            <h2 className="text-lg font-semibold text-foreground">
               Payment History
             </h2>
           </div>
 
           {/* Date Filter */}
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-2" style={{ color: "#374151" }}>
+            <label className="block text-sm font-medium mb-2 text-foreground">
               Filter by Paid Month (YYYY-MM)
             </label>
             <div className="flex gap-2">
@@ -238,7 +239,7 @@ export default function StaffProfilePage() {
           {/* Payments Table */}
           {isLoadingPayments ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[--primary]"></div>
+              <LoadingSpinner size="sm" />
             </div>
           ) : (
             <>
@@ -247,28 +248,28 @@ export default function StaffProfilePage() {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Paid Month
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Payment Method
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Salary
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Bonus
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Tax
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Total Payment
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Status
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Note
                         </th>
                       </tr>
@@ -279,37 +280,31 @@ export default function StaffProfilePage() {
                           <tr key={payment.id} className="hover:bg-gray-50">
                             <td
                               className="px-6 py-4 whitespace-nowrap text-sm"
-                              style={{ color: "#000000" }}
                             >
                               {payment.paidMonth}
                             </td>
                             <td
                               className="px-6 py-4 whitespace-nowrap text-sm capitalize"
-                              style={{ color: "#000000" }}
                             >
                               {payment.paymentMethod?.replace("_", " ") || "—"}
                             </td>
                             <td
                               className="px-6 py-4 whitespace-nowrap text-sm"
-                              style={{ color: "#000000" }}
                             >
                               {formatPrice(payment.staff?.salary || 0)}
                             </td>
                             <td
                               className="px-6 py-4 whitespace-nowrap text-sm"
-                              style={{ color: "#000000" }}
                             >
                               {formatPrice(payment.bonus || 0)}
                             </td>
                             <td
                               className="px-6 py-4 whitespace-nowrap text-sm"
-                              style={{ color: "#000000" }}
                             >
                               {formatPrice(payment.tax || 0)}
                             </td>
                             <td
                               className="px-6 py-4 whitespace-nowrap text-sm font-semibold"
-                              style={{ color: "#000000" }}
                             >
                               {formatPrice(payment.totalPayment || 0)}
                             </td>
@@ -325,8 +320,7 @@ export default function StaffProfilePage() {
                               </span>
                             </td>
                             <td
-                              className="px-6 py-4 text-sm max-w-xs truncate"
-                              style={{ color: "#4b5563" }}
+                              className="px-6 py-4 text-sm max-w-xs truncate text-foreground"
                               title={payment.note || ""}
                             >
                               {payment.note || "—"}
@@ -373,7 +367,7 @@ function ProfileRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between text-sm">
       <span className="text-gray-600">{label}</span>
-      <span className="font-medium" style={{ color: "#000000" }}>
+      <span className="font-medium text-foreground">
         {value}
       </span>
     </div>
@@ -382,7 +376,7 @@ function ProfileRow({ label, value }: { label: string; value: string }) {
 
 function SectionHeading({ title }: { title: string }) {
   return (
-    <h2 className="text-sm font-semibold mt-4 mb-1" style={{ color: "#000000" }}>
+    <h2 className="text-sm font-semibold mt-4 mb-1 text-foreground">
       {title}
     </h2>
   );

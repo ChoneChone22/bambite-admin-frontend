@@ -1,13 +1,16 @@
 /**
  * Staff Dashboard Home Page
- * Overview and statistics (permission-based access)
+ * Overview and statistics (permission-based access) with real-time updates.
  */
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import api from "@/src/services/api";
 import { tokenManager } from "@/src/lib/tokenManager";
+import { getErrorMessage } from "@/src/lib/utils";
+import { useRealtime } from "@/src/hooks/useRealtime";
+import LoadingSpinner from "@/src/components/LoadingSpinner";
 
 interface Stats {
   totalProducts: number;
@@ -15,6 +18,8 @@ interface Stats {
   totalStaff: number;
   totalPayroll: number;
 }
+
+const DASHBOARD_POLL_INTERVAL_MS = 60_000;
 
 export default function StaffDashboardPage() {
   const [stats, setStats] = useState<Stats>({
@@ -27,107 +32,104 @@ export default function StaffDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [permissions, setPermissions] = useState<string[]>([]);
 
+  const applyStats = useCallback((dashboardStats: Awaited<ReturnType<typeof api.dashboard.getStats>>, permissionCodes: string[]) => {
+    const newStats: Stats = {
+      totalProducts: 0,
+      totalOrders: 0,
+      totalStaff: 0,
+      totalPayroll: 0,
+    };
+    if (permissionCodes.includes("PRODUCT_MANAGEMENT")) {
+      newStats.totalProducts = dashboardStats.products?.total || 0;
+    }
+    if (permissionCodes.includes("ORDERS_MANAGEMENT")) {
+      newStats.totalOrders = dashboardStats.orders?.total || 0;
+    }
+    if (permissionCodes.includes("STAFF_MANAGEMENT")) {
+      newStats.totalStaff = dashboardStats.staff?.total || 0;
+    }
+    return newStats;
+  }, []);
+
+  const fetchStats = useCallback(async (permissionCodes: string[]) => {
+    try {
+      setError(null);
+      const dashboardStats = await api.dashboard.getStats();
+      setStats(applyStats(dashboardStats, permissionCodes));
+    } catch (err: unknown) {
+      console.error("Failed to fetch dashboard data:", err);
+      const errorMessage = getErrorMessage(err);
+      const axiosError = err as { response?: { status?: number } };
+      if (axiosError?.response?.status === 401) {
+        setError("Authentication required. Please login again.");
+      } else if (axiosError?.response?.status === 403) {
+        setError("Access denied. Admin or Staff accounts only.");
+      } else {
+        setError(
+          errorMessage || "Failed to load dashboard statistics. Please ensure the backend is running."
+        );
+      }
+    }
+  }, [applyStats]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch staff profile to get permissions
+        setIsLoading(true);
+        setError(null);
         const profile = await api.staffAccounts.getProfile();
         const permissionCodes = (profile.permissions || [])
           .map((p) => (p.code || "").toUpperCase().replace(/\s+/g, "_"))
           .filter((code) => code.length > 0);
         setPermissions(permissionCodes);
-
-        // Fetch stats based on permissions
-        const statsPromises: Promise<any>[] = [];
-
-        // Products stat (requires PRODUCT_MANAGEMENT)
-        if (permissionCodes.includes("PRODUCT_MANAGEMENT")) {
-          statsPromises.push(
-            api.products.getAll({}).then((productsResponse) => {
-              // Extract products array from response object { data: Product[], meta?: {...} }
-              const productsArray = Array.isArray(productsResponse)
-                ? productsResponse
-                : productsResponse.data || [];
-              return {
-                type: "products",
-                value: productsArray.length,
-              };
-            })
-          );
-        }
-
-        // Orders stat (requires ORDERS_MANAGEMENT)
-        if (permissionCodes.includes("ORDERS_MANAGEMENT")) {
-          statsPromises.push(
-            api.orders.getAll({}).then((orders) => ({
-              type: "orders",
-              value: Array.isArray(orders) ? orders.length : 0,
-            }))
-          );
-        }
-
-        // Staff and Payroll stats (requires STAFF_MANAGEMENT)
-        if (permissionCodes.includes("STAFF_MANAGEMENT")) {
-          statsPromises.push(
-            api.staff.getPayrollSummary().then((payroll) => ({
-              type: "payroll",
-              value: payroll,
-            }))
-          );
-        }
-
-        // Wait for all permission-based stats
-        const results = await Promise.allSettled(statsPromises);
-
-        // Update stats based on results
-        const newStats: Stats = {
-          totalProducts: 0,
-          totalOrders: 0,
-          totalStaff: 0,
-          totalPayroll: 0,
-        };
-
-        results.forEach((result) => {
-          if (result.status === "fulfilled") {
-            const { type, value } = result.value;
-            if (type === "products") {
-              newStats.totalProducts = value;
-            } else if (type === "orders") {
-              newStats.totalOrders = value;
-            } else if (type === "payroll") {
-              newStats.totalStaff = value.staffCount || 0;
-              newStats.totalPayroll = value.totalPayroll || 0;
-            }
-          }
-        });
-
-        setStats(newStats);
-
-        // Check if any requests failed
-        const failedRequests = results.filter((r) => r.status === "rejected");
-        if (failedRequests.length > 0) {
-          console.error("Failed requests:", failedRequests);
-          setError(
-            "Some statistics could not be loaded. Please check if the backend is running and you have the required permissions."
-          );
-        }
-      } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
-        setError(
-          "Failed to load dashboard statistics. Please ensure the backend is running."
-        );
+        await fetchStats(permissionCodes);
+      } catch (err: unknown) {
+        console.error("Failed to fetch dashboard data:", err);
+        setError(getErrorMessage(err) || "Failed to load dashboard.");
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchData();
-  }, []);
+  }, [fetchStats]);
+
+  const permissionsRef = useRef(permissions);
+  permissionsRef.current = permissions;
+
+  const refetchStats = useCallback(() => {
+    fetchStats(permissionsRef.current);
+  }, [fetchStats]);
+
+  const { connected } = useRealtime({
+    onNewOrder: refetchStats,
+    onOrderUpdate: refetchStats,
+    onInventoryUpdate: refetchStats,
+    subscribeToOrdersList: true,
+    enabled: true,
+  });
+
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    if (connected || permissions.length === 0) {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+      return;
+    }
+    pollRef.current = setInterval(() => fetchStats(permissionsRef.current), DASHBOARD_POLL_INTERVAL_MS);
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, [connected, permissions.length, fetchStats]);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[--primary]"></div>
+        <LoadingSpinner size="md" />
       </div>
     );
   }
@@ -139,10 +141,10 @@ export default function StaffDashboardPage() {
     <div>
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-1" style={{ color: "#000000" }}>
+        <h1 className="text-3xl font-bold mb-1 text-foreground">
           Staff Dashboard
         </h1>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted-foreground">
           Welcome back, {user?.staff?.name || user?.email || "Staff Member"}
         </p>
       </div>
@@ -171,13 +173,12 @@ export default function StaffDashboardPage() {
       {hasAnyPermission && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {permissions.includes("PRODUCT_MANAGEMENT") && (
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Total Products</p>
+                  <p className="text-sm text-muted-foreground mb-1">Total Products</p>
                   <p
                     className="text-3xl font-bold"
-                    style={{ color: "#000000" }}
                   >
                     {stats.totalProducts}
                   </p>
@@ -188,13 +189,12 @@ export default function StaffDashboardPage() {
           )}
 
           {permissions.includes("ORDERS_MANAGEMENT") && (
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Total Orders</p>
+                  <p className="text-sm text-muted-foreground mb-1">Total Orders</p>
                   <p
                     className="text-3xl font-bold"
-                    style={{ color: "#000000" }}
                   >
                     {stats.totalOrders}
                   </p>
@@ -206,13 +206,12 @@ export default function StaffDashboardPage() {
 
           {permissions.includes("STAFF_MANAGEMENT") && (
             <>
-              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600 mb-1">Total Staff</p>
+                    <p className="text-sm text-muted-foreground mb-1">Total Staff</p>
                     <p
                       className="text-3xl font-bold"
-                      style={{ color: "#000000" }}
                     >
                       {stats.totalStaff}
                     </p>
@@ -221,15 +220,15 @@ export default function StaffDashboardPage() {
                 </div>
               </div>
 
-              {/* <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              {/* <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600 mb-1">Total Payroll</p>
-                    <p className="text-3xl font-bold" style={{ color: "#000000" }}>
+                    <p className="text-sm text-muted-foreground mb-1">Total Payroll</p>
+                    <p className="text-3xl font-bold text-foreground">
                       {typeof stats.totalPayroll === "number"
-                        ? new Intl.NumberFormat("en-US", {
+                        ? new Intl.NumberFormat("th-TH", {
                             style: "currency",
-                            currency: "USD",
+                            currency: "THB",
                             minimumFractionDigits: 0,
                             maximumFractionDigits: 0,
                           }).format(stats.totalPayroll)
@@ -246,10 +245,9 @@ export default function StaffDashboardPage() {
 
       {/* Quick Actions */}
       {hasAnyPermission && (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
           <h2
             className="text-xl font-semibold mb-4"
-            style={{ color: "#000000" }}
           >
             Quick Actions
           </h2>
@@ -257,12 +255,11 @@ export default function StaffDashboardPage() {
             {permissions.includes("PRODUCT_MANAGEMENT") && (
               <a
                 href="/staff/dashboard/products"
-                className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
+                className="p-6 border-2 border-border rounded-lg hover:shadow-md transition-all text-center bg-card"
                 style={{ "--hover-border": "#2C5BBB" } as React.CSSProperties}
               >
                 <p
                   className="font-semibold text-lg"
-                  style={{ color: "#000000" }}
                 >
                   Manage Products
                 </p>
@@ -272,11 +269,10 @@ export default function StaffDashboardPage() {
             {permissions.includes("ORDERS_MANAGEMENT") && (
               <a
                 href="/staff/dashboard/orders"
-                className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
+                className="p-6 border-2 border-border rounded-lg hover:shadow-md transition-all text-center bg-card"
               >
                 <p
                   className="font-semibold text-lg"
-                  style={{ color: "#000000" }}
                 >
                   Manage Orders
                 </p>
@@ -286,11 +282,10 @@ export default function StaffDashboardPage() {
             {permissions.includes("INVENTORY_MANAGEMENT") && (
               <a
                 href="/staff/dashboard/inventory"
-                className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
+                className="p-6 border-2 border-border rounded-lg hover:shadow-md transition-all text-center bg-card"
               >
                 <p
                   className="font-semibold text-lg"
-                  style={{ color: "#000000" }}
                 >
                   Update Inventory
                 </p>
@@ -300,11 +295,10 @@ export default function StaffDashboardPage() {
             {permissions.includes("DEPARTMENT_MANAGEMENT") && (
               <a
                 href="/staff/dashboard/departments"
-                className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
+                className="p-6 border-2 border-border rounded-lg hover:shadow-md transition-all text-center bg-card"
               >
                 <p
                   className="font-semibold text-lg"
-                  style={{ color: "#000000" }}
                 >
                   Manage Departments
                 </p>
@@ -314,11 +308,10 @@ export default function StaffDashboardPage() {
             {permissions.includes("STAFF_MANAGEMENT") && (
               <a
                 href="/staff/dashboard/staff"
-                className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
+                className="p-6 border-2 border-border rounded-lg hover:shadow-md transition-all text-center bg-card"
               >
                 <p
                   className="font-semibold text-lg"
-                  style={{ color: "#000000" }}
                 >
                   Manage Staff
                 </p>
@@ -328,11 +321,10 @@ export default function StaffDashboardPage() {
             {permissions.includes("STAFF_ACCOUNT_MANAGEMENT") && (
               <a
                 href="/staff/dashboard/staff-accounts"
-                className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
+                className="p-6 border-2 border-border rounded-lg hover:shadow-md transition-all text-center bg-card"
               >
                 <p
                   className="font-semibold text-lg"
-                  style={{ color: "#000000" }}
                 >
                   Manage Staff Accounts
                 </p>
@@ -342,11 +334,10 @@ export default function StaffDashboardPage() {
             {permissions.includes("STAFF_PAYMENT_MANAGEMENT") && (
               <a
                 href="/staff/dashboard/payments"
-                className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
+                className="p-6 border-2 border-border rounded-lg hover:shadow-md transition-all text-center bg-card"
               >
                 <p
                   className="font-semibold text-lg"
-                  style={{ color: "#000000" }}
                 >
                   Manage Payments
                 </p>
@@ -356,11 +347,10 @@ export default function StaffDashboardPage() {
             {permissions.includes("PRODUCT_CATEGORY_MANAGEMENT") && (
               <a
                 href="/staff/dashboard/categories"
-                className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
+                className="p-6 border-2 border-border rounded-lg hover:shadow-md transition-all text-center bg-card"
               >
                 <p
                   className="font-semibold text-lg"
-                  style={{ color: "#000000" }}
                 >
                   Manage Categories
                 </p>
@@ -370,11 +360,10 @@ export default function StaffDashboardPage() {
             {permissions.includes("PRODUCT_OPTIONS_MANAGEMENT") && (
               <a
                 href="/staff/dashboard/options"
-                className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
+                className="p-6 border-2 border-border rounded-lg hover:shadow-md transition-all text-center bg-card"
               >
                 <p
                   className="font-semibold text-lg"
-                  style={{ color: "#000000" }}
                 >
                   Manage Options
                 </p>
@@ -385,33 +374,30 @@ export default function StaffDashboardPage() {
               <>
                 <a
                   href="/staff/dashboard/job-posts"
-                  className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
+                  className="p-6 border-2 border-border rounded-lg hover:shadow-md transition-all text-center bg-card"
                 >
                   <p
                     className="font-semibold text-lg"
-                    style={{ color: "#000000" }}
                   >
                     Manage Job Posts
                   </p>
                 </a>
                 <a
                   href="/staff/dashboard/job-applications"
-                  className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
+                  className="p-6 border-2 border-border rounded-lg hover:shadow-md transition-all text-center bg-card"
                 >
                   <p
                     className="font-semibold text-lg"
-                    style={{ color: "#000000" }}
                   >
                     Manage Applications
                   </p>
                 </a>
                 <a
                   href="/staff/dashboard/interviews"
-                  className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
+                  className="p-6 border-2 border-border rounded-lg hover:shadow-md transition-all text-center bg-card"
                 >
                   <p
                     className="font-semibold text-lg"
-                    style={{ color: "#000000" }}
                   >
                     Manage Interviews
                   </p>
@@ -422,11 +408,10 @@ export default function StaffDashboardPage() {
             {permissions.includes("CONTACT_MANAGEMENT") && (
               <a
                 href="/staff/dashboard/contacts"
-                className="p-6 border-2 border-gray-200 rounded-lg hover:shadow-md transition-all text-center bg-white"
+                className="p-6 border-2 border-border rounded-lg hover:shadow-md transition-all text-center bg-card"
               >
                 <p
                   className="font-semibold text-lg"
-                  style={{ color: "#000000" }}
                 >
                   Manage Contacts
                 </p>
@@ -437,14 +422,13 @@ export default function StaffDashboardPage() {
       )}
 
       {/* Profile Link (Always Available) */}
-      <div className="mt-6 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h2 className="text-xl font-semibold mb-4" style={{ color: "#000000" }}>
+      <div className="mt-6 bg-card p-6 rounded-lg shadow-sm border border-border">
+        <h2 className="text-xl font-semibold mb-4 text-foreground">
           Account
         </h2>
         <a
           href="/staff/profile"
           className="inline-block px-6 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all font-semibold"
-          style={{ color: "#000000" }}
         >
           View My Profile
         </a>

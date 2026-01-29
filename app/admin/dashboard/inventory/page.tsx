@@ -15,6 +15,7 @@ import { formatDateTime } from "@/src/lib/utils";
 import { useModal } from "@/src/hooks/useModal";
 import { useTablePagination } from "@/src/hooks";
 import TablePagination from "@/src/components/TablePagination";
+import LoadingSpinner from "@/src/components/LoadingSpinner";
 
 // Validation Schema
 const inventorySchema = Yup.object().shape({
@@ -177,7 +178,7 @@ export default function InventoryControlPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[--primary]"></div>
+        <LoadingSpinner size="md" />
       </div>
     );
   }
@@ -187,7 +188,7 @@ export default function InventoryControlPage() {
       {modal.ModalComponent}
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold" style={{ color: "#000000" }}>
+        <h1 className="text-3xl font-bold text-foreground">
           Inventory Control
         </h1>
         <button
@@ -200,10 +201,9 @@ export default function InventoryControlPage() {
 
       {/* Stock Adjustment Form */}
       {showForm && (
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
+        <div className="bg-card rounded-lg shadow p-6 mb-8">
           <h2
             className="text-xl font-semibold mb-4"
-            style={{ color: "#000000" }}
           >
             New Stock Adjustment
           </h2>
@@ -223,8 +223,7 @@ export default function InventoryControlPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label
-                      className="block text-sm font-medium mb-1"
-                      style={{ color: "#374151" }}
+                      className="block text-sm font-medium mb-1 text-foreground"
                     >
                       Product *
                     </label>
@@ -245,8 +244,7 @@ export default function InventoryControlPage() {
 
                   <div>
                     <label
-                      className="block text-sm font-medium mb-1"
-                      style={{ color: "#374151" }}
+                      className="block text-sm font-medium mb-1 text-foreground"
                     >
                       Reason *
                     </label>
@@ -268,8 +266,7 @@ export default function InventoryControlPage() {
 
                 <div>
                     <label
-                      className="block text-sm font-medium mb-1"
-                      style={{ color: "#374151" }}
+                      className="block text-sm font-medium mb-1 text-foreground"
                     >
                       Quantity Change *
                     </label>
@@ -279,7 +276,7 @@ export default function InventoryControlPage() {
                     className="input-field"
                     placeholder="Use positive for increase, negative for decrease"
                   />
-                  <p className="text-xs mt-1" style={{ color: "#6b7280" }}>
+                  <p className="text-xs mt-1 text-foreground">
                     Current quantity:{" "}
                     {values.productId
                       ? products.find((p) => p.id === values.productId)
@@ -300,8 +297,7 @@ export default function InventoryControlPage() {
 
                 <div>
                     <label
-                      className="block text-sm font-medium mb-1"
-                      style={{ color: "#374151" }}
+                      className="block text-sm font-medium mb-1 text-foreground"
                     >
                       Notes (Optional)
                     </label>
@@ -351,59 +347,55 @@ export default function InventoryControlPage() {
       </div>
 
       {/* Current Stock Overview */}
-      <div className="bg-white rounded-lg shadow mb-8 overflow-hidden">
-        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-          <h2 className="text-xl font-semibold" style={{ color: "#000000" }}>
+      <div className="bg-card rounded-lg shadow mb-8 overflow-hidden">
+        <div className="px-6 py-4 bg-background border-b border-border">
+          <h2 className="text-xl font-semibold text-foreground">
             Current Stock Levels
           </h2>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-background">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Product
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Category
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Stock Quantity
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Status
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-gray-200">
               {paginatedProducts.length === 0 ? (
                 <tr>
                   <td
                     colSpan={4}
-                    className="px-6 py-12 text-center text-sm"
-                    style={{ color: "#6b7280" }}
+                    className="px-6 py-12 text-center text-sm text-foreground"
                   >
                     No products found
                   </td>
                 </tr>
               ) : (
                 paginatedProducts.map((product) => (
-                <tr key={product.id} className="hover:bg-gray-50">
+                <tr key={product.id} className="hover:bg-background">
                   <td
                     className="px-6 py-4 whitespace-nowrap text-sm font-medium"
-                    style={{ color: "#000000" }}
                   >
                     {product.name}
                   </td>
                   <td
-                    className="px-6 py-4 whitespace-nowrap text-sm"
-                    style={{ color: "#6b7280" }}
+                    className="px-6 py-4 whitespace-nowrap text-sm text-foreground"
                   >
                     {product.category?.name || "N/A"}
                   </td>
                   <td
                     className="px-6 py-4 whitespace-nowrap text-sm font-semibold"
-                    style={{ color: "#000000" }}
                   >
                     {product.stockQuantity}
                   </td>
@@ -443,56 +435,54 @@ export default function InventoryControlPage() {
       </div>
 
       {/* Inventory Change History */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-          <h2 className="text-xl font-semibold" style={{ color: "#000000" }}>
+      <div className="bg-card rounded-lg shadow overflow-hidden">
+        <div className="px-6 py-4 bg-background border-b border-border">
+          <h2 className="text-xl font-semibold text-foreground">
             Recent Inventory Changes
           </h2>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-background">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Product
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Reason
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Change
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Previous
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   New
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Notes
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-gray-200">
               {paginatedChanges.length === 0 ? (
                 <tr>
                   <td
                     colSpan={7}
-                    className="px-6 py-12 text-center text-sm"
-                    style={{ color: "#6b7280" }}
+                    className="px-6 py-12 text-center text-sm text-foreground"
                   >
                     No inventory changes found
                   </td>
                 </tr>
               ) : (
                 paginatedChanges.map((change) => (
-                <tr key={change.id} className="hover:bg-gray-50">
+                <tr key={change.id} className="hover:bg-background">
                   <td
-                    className="px-6 py-4 whitespace-nowrap text-sm"
-                    style={{ color: "#6b7280" }}
+                    className="px-6 py-4 whitespace-nowrap text-sm text-foreground"
                   >
                     {change.createdAt
                       ? formatDateTime(change.createdAt)
@@ -500,17 +490,16 @@ export default function InventoryControlPage() {
                   </td>
                   <td
                     className="px-6 py-4 whitespace-nowrap text-sm font-medium"
-                    style={{ color: "#000000" }}
                   >
                     {change.product?.name || "Unknown"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {change.reason ? (
-                      <span className="px-2 py-1 text-xs font-medium rounded bg-gray-100" style={{ color: "#1f2937" }}>
+                      <span className="px-2 py-1 text-xs font-medium rounded bg-gray-100 text-foreground">
                         {change.reason}
                       </span>
                     ) : (
-                      <span className="text-sm" style={{ color: "#6b7280" }}>-</span>
+                      <span className="text-sm text-foreground">-</span>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -527,17 +516,15 @@ export default function InventoryControlPage() {
                   </td>
                   <td
                     className="px-6 py-4 whitespace-nowrap text-sm"
-                    style={{ color: "#000000" }}
                   >
                     {change.previousQuantity}
                   </td>
                   <td
                     className="px-6 py-4 whitespace-nowrap text-sm font-semibold"
-                    style={{ color: "#000000" }}
                   >
                     {change.newQuantity}
                   </td>
-                  <td className="px-6 py-4 text-sm" style={{ color: "#6b7280" }}>
+                  <td className="px-6 py-4 text-sm text-foreground">
                     {change.notes || "-"}
                   </td>
                 </tr>

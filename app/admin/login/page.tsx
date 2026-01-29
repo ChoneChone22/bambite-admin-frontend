@@ -4,14 +4,20 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Formik, Form, Field, ErrorMessage } from "formik";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ThemeToggle } from "@/src/components/theme-toggle";
 import axiosInstance from "@/src/lib/axios";
 import { tokenManager } from "@/src/lib/tokenManager";
 import { loginSchema } from "@/src/lib/validations";
 import { LoginFormValues } from "@/src/types";
 import { ApiResponse, AuthResponse, UserRole } from "@/src/types/api";
 import LoadingSpinner from "@/src/components/LoadingSpinner";
-import Toast from "@/src/components/Toast";
 import { getErrorMessage } from "@/src/lib/utils";
+import { AlertCircle, CheckCircle, Lock } from "lucide-react";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -74,21 +80,37 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-700 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      {/* Theme Toggle - Top Right */}
+      <div className="fixed top-4 right-4">
+        <ThemeToggle />
+      </div>
+
+      {/* Toast Alerts */}
       {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4">
+          <Alert variant={toast.type === "error" ? "destructive" : "default"} className="shadow-lg">
+            {toast.type === "success" ? (
+              <CheckCircle className="h-4 w-4" />
+            ) : (
+              <AlertCircle className="h-4 w-4" />
+            )}
+            <AlertDescription>{toast.message}</AlertDescription>
+          </Alert>
+        </div>
       )}
 
       <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="text-center text-3xl font-bold text-white">
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <div className="rounded-full bg-primary/10 p-4">
+              <Lock className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <h2 className="text-3xl font-bold text-foreground">
             Admin Portal
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-300">
+          <p className="mt-2 text-sm text-muted-foreground">
             Sign in to access the admin dashboard
           </p>
         </div>
@@ -98,81 +120,82 @@ export default function AdminLoginPage() {
           validationSchema={loginSchema}
           onSubmit={handleSubmit}
         >
-          {({ isSubmitting }) => (
-            <Form className="mt-8 space-y-6 bg-white p-8 rounded-lg shadow-xl">
-              <div className="space-y-4">
-                {/* Email */}
-                <div>
-                  <label
-                    htmlFor="email"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+          {({ isSubmitting, values, handleChange, handleBlur, touched, errors }) => (
+            <Card>
+              <CardHeader>
+                <CardTitle>Welcome Back</CardTitle>
+                <CardDescription>Enter your credentials to continue</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Form className="space-y-4">
+                  {/* Email */}
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Admin Email</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="admin@bambite.com"
+                      value={values.email}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className={touched.email && errors.email ? "border-destructive" : ""}
+                    />
+                    {touched.email && errors.email && (
+                      <p className="text-sm text-destructive">{errors.email}</p>
+                    )}
+                  </div>
+
+                  {/* Password */}
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      name="password"
+                      type="password"
+                      placeholder="Enter your password"
+                      value={values.password}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className={touched.password && errors.password ? "border-destructive" : ""}
+                    />
+                    {touched.password && errors.password && (
+                      <p className="text-sm text-destructive">{errors.password}</p>
+                    )}
+                  </div>
+
+                  {/* Submit Button */}
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full"
+                    size="lg"
                   >
-                    Admin Email
-                  </label>
-                  <Field
-                    id="email"
-                    name="email"
-                    type="email"
-                    className="input-field"
-                    placeholder="admin@bambite.com"
-                  />
-                  <ErrorMessage
-                    name="email"
-                    component="div"
-                    className="text-red-500 text-sm mt-1"
-                  />
-                </div>
+                    {isSubmitting ? (
+                      <>
+                        <LoadingSpinner size="sm" />
+                        <span className="ml-2">Signing in...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="mr-2 h-4 w-4" />
+                        Admin Sign In
+                      </>
+                    )}
+                  </Button>
 
-                {/* Password */}
-                <div>
-                  <label
-                    htmlFor="password"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Password
-                  </label>
-                  <Field
-                    id="password"
-                    name="password"
-                    type="password"
-                    className="input-field"
-                    placeholder="Enter your password"
-                  />
-                  <ErrorMessage
-                    name="password"
-                    component="div"
-                    className="text-red-500 text-sm mt-1"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <LoadingSpinner size="sm" />
-                      <span className="ml-2">Signing in...</span>
-                    </>
-                  ) : (
-                    "🔐 Admin Sign In"
-                  )}
-                </button>
-              </div>
-
-              <div className="text-center">
-                <Link
-                  href="/admin/forgot-password"
-                  className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  Forgot Password?
-                </Link>
-              </div>
-
-            </Form>
+                  {/* Forgot Password Link */}
+                  <div className="text-center pt-2">
+                    <Link
+                      href="/admin/forgot-password"
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Forgot Password?
+                    </Link>
+                  </div>
+                </Form>
+              </CardContent>
+            </Card>
           )}
         </Formik>
       </div>

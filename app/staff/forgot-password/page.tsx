@@ -29,7 +29,6 @@ export default function StaffForgotPasswordPage() {
     type: "success" | "error";
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
 
   // Pre-fill email from query params if available
   const initialEmail = searchParams?.get("email") || "";
@@ -41,12 +40,17 @@ export default function StaffForgotPasswordPage() {
 
       await api.staffAccounts.forgotPassword({ email: values.email });
 
-      setSuccess(true);
+      // Show success toast and auto-redirect to reset-password page
       setToast({
         message:
           "If an account exists with this email, a password reset OTP has been sent. Please check your email.",
         type: "success",
       });
+
+      // Auto-redirect after a brief delay to show the success message
+      setTimeout(() => {
+        router.push(`/staff/reset-password?email=${encodeURIComponent(values.email)}`);
+      }, 1500);
     } catch (error: any) {
       const errorMessage = getErrorMessage(error);
       if (error?.response?.status === 429) {
@@ -66,67 +70,8 @@ export default function StaffForgotPasswordPage() {
     }
   };
 
-  if (success) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-700 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        {toast && (
-          <Toast
-            message={toast.message}
-            type={toast.type}
-            onClose={() => setToast(null)}
-          />
-        )}
-
-        <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-xl">
-          <div className="text-center">
-            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-              <svg
-                className="h-6 w-6 text-green-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900">Check Your Email</h2>
-            <p className="mt-2 text-sm text-gray-600">
-              If an account exists with this email, a password reset OTP has been sent.
-              Please check your email.
-            </p>
-            <p className="mt-2 text-xs text-gray-500">
-              The OTP code will expire in 15 minutes.
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <Link
-              href={`/staff/reset-password?email=${encodeURIComponent(
-                searchParams?.get("email") || ""
-              )}`}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-            >
-              Enter OTP Code
-            </Link>
-            <Link
-              href="/staff/login"
-              className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-            >
-              Back to Login
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-700 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       {toast && (
         <Toast
           message={toast.message}
@@ -140,7 +85,7 @@ export default function StaffForgotPasswordPage() {
           <h2 className="text-center text-3xl font-bold text-white">
             Forgot Password
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-300">
+          <p className="mt-2 text-center text-sm text-muted-foreground">
             Enter your email address to receive a password reset OTP
           </p>
         </div>
@@ -151,11 +96,11 @@ export default function StaffForgotPasswordPage() {
           onSubmit={handleSubmit}
         >
           {() => (
-            <Form className="mt-8 space-y-6 bg-white p-8 rounded-lg shadow-xl">
+            <Form className="mt-8 space-y-6 bg-card p-8 rounded-lg shadow-xl">
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-muted-foreground mb-1"
                 >
                   Staff Email
                 </label>
@@ -163,7 +108,7 @@ export default function StaffForgotPasswordPage() {
                   id="email"
                   name="email"
                   type="email"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-gray-500 focus:border-transparent"
                   placeholder="staff@bambite.com"
                   disabled={isSubmitting}
                 />
@@ -194,7 +139,7 @@ export default function StaffForgotPasswordPage() {
               <div className="text-center">
                 <Link
                   href="/staff/login"
-                  className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   ← Back to Login
                 </Link>

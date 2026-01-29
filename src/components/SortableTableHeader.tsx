@@ -1,18 +1,15 @@
 /**
  * Sortable Table Header Component
- * Reusable component for sortable column headers with visual indicators
+ * Reusable header with sort indicators
+ * Theme-aware for light/dark mode
  */
-
-import { SortDirection } from "@/src/hooks/useTableSort";
 
 interface SortableTableHeaderProps {
   label: string;
   sortKey: string;
   currentSortKey: string | null;
-  sortDirection: SortDirection;
+  sortDirection: "asc" | "desc" | null;
   onSort: (key: string) => void;
-  align?: "left" | "right" | "center";
-  className?: string;
 }
 
 export default function SortableTableHeader({
@@ -21,68 +18,43 @@ export default function SortableTableHeader({
   currentSortKey,
   sortDirection,
   onSort,
-  align = "left",
-  className = "",
 }: SortableTableHeaderProps) {
   const isActive = currentSortKey === sortKey;
-  const alignmentClass =
-    align === "right"
-      ? "text-right"
-      : align === "center"
-      ? "text-center"
-      : "text-left";
 
   return (
     <th
-      className={`px-6 py-3 text-xs font-medium text-gray-700 uppercase tracking-wider ${alignmentClass} ${className} cursor-pointer select-none hover:bg-gray-100 transition-colors`}
+      className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-accent transition-colors text-muted-foreground group"
       onClick={() => onSort(sortKey)}
-      role="columnheader"
-      aria-sort={
-        isActive
-          ? sortDirection === "asc"
-            ? "ascending"
-            : sortDirection === "desc"
-            ? "descending"
-            : "none"
-          : "none"
-      }
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onSort(sortKey);
-        }
-      }}
     >
       <div className="flex items-center gap-2">
-        <span>{label}</span>
+        <span className="group-hover:text-foreground">{label}</span>
         <span className="flex flex-col">
-          {isActive && sortDirection === "asc" && (
-            <span
-              className="text-[--primary]"
-              style={{ color: "#2C5BBB" }}
-              aria-label="sorted ascending"
-            >
-              ↑
-            </span>
-          )}
-          {isActive && sortDirection === "desc" && (
-            <span
-              className="text-[--primary]"
-              style={{ color: "#2C5BBB" }}
-              aria-label="sorted descending"
-            >
-              ↓
-            </span>
-          )}
-          {!isActive && (
-            <span className="text-gray-400 opacity-50" aria-hidden="true">
-              ↕
-            </span>
-          )}
+          {/* Up arrow */}
+          <svg
+            className={`w-3 h-3 -mb-1 transition-colors ${
+              isActive && sortDirection === "asc"
+                ? "text-primary"
+                : "text-muted-foreground/40 group-hover:text-muted-foreground"
+            }`}
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" />
+          </svg>
+          {/* Down arrow */}
+          <svg
+            className={`w-3 h-3 transition-colors ${
+              isActive && sortDirection === "desc"
+                ? "text-primary"
+                : "text-muted-foreground/40 group-hover:text-muted-foreground"
+            }`}
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" />
+          </svg>
         </span>
       </div>
     </th>
   );
 }
-

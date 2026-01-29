@@ -1,7 +1,12 @@
 /**
  * Reusable Table Pagination Component
  * Handles rows per page selection and page navigation
+ * Theme-aware for light/dark mode
  */
+
+"use client";
+
+import { useState } from "react";
 
 interface TablePaginationProps {
   currentPage: number;
@@ -59,18 +64,32 @@ export default function TablePagination({
   const canGoPrevious = currentPage > 1;
   const canGoNext = currentPage < totalPages;
 
+  const [prevHover, setPrevHover] = useState(false);
+  const [nextHover, setNextHover] = useState(false);
+  const [hoveredPage, setHoveredPage] = useState<number | null>(null);
+
   return (
-    <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-gray-200">
+    <div
+      className="flex items-center justify-between px-6 py-4"
+      style={{
+        backgroundColor: "hsl(var(--card))",
+        borderTop: "1px solid hsl(var(--border))",
+      }}
+    >
       {/* Rows per page selector */}
       <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-700">Rows per page:</span>
+        <span className="text-sm" style={{ color: "hsl(var(--foreground))" }}>
+          Rows per page:
+        </span>
         <select
           value={rowsPerPage}
           onChange={(e) => onRowsPerPageChange(Number(e.target.value))}
-          className="border border-gray-300 rounded-md px-3 py-1.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-[--primary] focus:border-transparent"
+          className="rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent cursor-pointer"
           style={{
             minWidth: "70px",
-            cursor: "pointer",
+            backgroundColor: "hsl(var(--background))",
+            color: "hsl(var(--foreground))",
+            border: "1px solid hsl(var(--input))",
           }}
           aria-label="Rows per page"
         >
@@ -82,7 +101,7 @@ export default function TablePagination({
               </option>
             ))}
         </select>
-        <span className="text-sm text-gray-500">
+        <span className="text-sm" style={{ color: "hsl(var(--muted-foreground))" }}>
           {totalRows === 0
             ? "No rows"
             : `Showing ${startRow}-${endRow} of ${totalRows}`}
@@ -95,11 +114,25 @@ export default function TablePagination({
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={!canGoPrevious}
-          className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+          onMouseEnter={() => canGoPrevious && setPrevHover(true)}
+          onMouseLeave={() => setPrevHover(false)}
+          className="px-3 py-1.5 text-sm font-medium rounded-md transition-colors disabled:pointer-events-none"
+          style={
             canGoPrevious
-              ? "!text-gray-500 bg-white border border-gray-300 hover:bg-gray-50 cursor-pointer"
-              : "!text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed"
-          }`}
+              ? {
+                  backgroundColor: prevHover ? "hsl(var(--accent))" : "hsl(var(--background))",
+                  color: prevHover ? "hsl(var(--accent-foreground))" : "hsl(var(--foreground))",
+                  border: "1px solid hsl(var(--border))",
+                  cursor: "pointer",
+                }
+              : {
+                  backgroundColor: "hsl(var(--muted))",
+                  color: "hsl(var(--muted-foreground))",
+                  border: "1px solid hsl(var(--border))",
+                  cursor: "not-allowed",
+                  opacity: 0.5,
+                }
+          }
           aria-label="Previous page"
         >
           &lt;
@@ -109,16 +142,28 @@ export default function TablePagination({
         <div className="flex items-center gap-1">
           {pageNumbers.map((pageNum) => {
             const isActive = pageNum === currentPage;
+            const isHovered = !isActive && hoveredPage === pageNum;
             return (
               <button
                 key={pageNum}
                 onClick={() => onPageChange(pageNum)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                onMouseEnter={() => setHoveredPage(pageNum)}
+                onMouseLeave={() => setHoveredPage(null)}
+                className="px-3 py-1.5 text-sm font-medium rounded-md transition-colors cursor-pointer"
+                style={
                   isActive
-                    ? "text-white cursor-pointer"
-                    : "!text-gray-500 bg-white border border-gray-300 hover:bg-gray-50 cursor-pointer"
-                }`}
-                style={isActive ? { backgroundColor: "#2C5BBB" } : {}}
+                    ? {
+                        backgroundColor: "hsl(var(--primary))",
+                        color: "hsl(var(--primary-foreground))",
+                        border: "1px solid transparent",
+                        opacity: hoveredPage === pageNum ? 0.9 : 1,
+                      }
+                    : {
+                        backgroundColor: isHovered ? "hsl(var(--accent))" : "hsl(var(--background))",
+                        color: isHovered ? "hsl(var(--accent-foreground))" : "hsl(var(--foreground))",
+                        border: "1px solid hsl(var(--border))",
+                      }
+                }
                 aria-label={`Go to page ${pageNum}`}
                 aria-current={isActive ? "page" : undefined}
               >
@@ -132,11 +177,25 @@ export default function TablePagination({
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={!canGoNext}
-          className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+          onMouseEnter={() => canGoNext && setNextHover(true)}
+          onMouseLeave={() => setNextHover(false)}
+          className="px-3 py-1.5 text-sm font-medium rounded-md transition-colors disabled:pointer-events-none"
+          style={
             canGoNext
-              ? "!text-gray-500 bg-white border border-gray-300 hover:bg-gray-50 cursor-pointer"
-              : "!text-gray-400 bg-gray-100 border border-gray-200 cursor-not-allowed"
-          }`}
+              ? {
+                  backgroundColor: nextHover ? "hsl(var(--accent))" : "hsl(var(--background))",
+                  color: nextHover ? "hsl(var(--accent-foreground))" : "hsl(var(--foreground))",
+                  border: "1px solid hsl(var(--border))",
+                  cursor: "pointer",
+                }
+              : {
+                  backgroundColor: "hsl(var(--muted))",
+                  color: "hsl(var(--muted-foreground))",
+                  border: "1px solid hsl(var(--border))",
+                  cursor: "not-allowed",
+                  opacity: 0.5,
+                }
+          }
           aria-label="Next page"
         >
           &gt;

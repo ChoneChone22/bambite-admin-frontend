@@ -2,13 +2,23 @@
  * Utility Functions for Bambite E-commerce
  */
 
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
 /**
- * Format price to USD currency
+ * Merge Tailwind CSS classes with proper precedence
+ */
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+/**
+ * Format price to Thai Baht (฿) currency
  */
 export const formatPrice = (price: number): string => {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("th-TH", {
     style: "currency",
-    currency: "USD",
+    currency: "THB",
   }).format(price);
 };
 
@@ -87,6 +97,46 @@ export const calculateCartItemCount = (
   if (!items || !Array.isArray(items)) return 0;
   return items.reduce((count, item) => count + item.quantity, 0);
 };
+
+/**
+ * Format order item selected options for display.
+ * Resolves option IDs to display names when optionMap is provided (admin/staff dashboard).
+ * Falls back to values only when optionMap is not available.
+ * @param snapshot - selectedOptionsSnapshot from order item
+ * @param optionMap - Map of optionId -> displayName (from GET /api/v1/options)
+ */
+export function formatOrderItemOptions(
+  snapshot: Record<string, string> | null | undefined,
+  optionMap?: Map<string, string>
+): string | null {
+  if (!snapshot || Object.keys(snapshot).length === 0) return null;
+  return Object.entries(snapshot)
+    .map(([optId, value]) => {
+      const label = optionMap?.get(optId) || optId;
+      return `${label}: ${value}`;
+    })
+    .join(", ");
+}
+
+/**
+ * Build order items from cart for checkout.
+ * Includes selectedOptions for products that have options.
+ */
+export function buildOrderItemsFromCart(
+  cartItems: Array<{
+    productId: string;
+    quantity: number;
+    selectedOptions?: Record<string, string> | null;
+  }>
+): Array<{ productId: string; quantity: number; selectedOptions?: Record<string, string> }> {
+  return cartItems.map((item) => {
+    const base = { productId: item.productId, quantity: item.quantity };
+    if (item.selectedOptions && Object.keys(item.selectedOptions).length > 0) {
+      return { ...base, selectedOptions: item.selectedOptions };
+    }
+    return base;
+  });
+}
 
 /**
  * Validate email format

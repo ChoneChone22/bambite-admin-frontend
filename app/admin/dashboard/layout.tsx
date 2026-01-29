@@ -11,6 +11,7 @@ import { tokenManager } from "@/src/lib/tokenManager";
 import AdminSidebar from "@/src/components/AdminSidebar";
 import MobileNavBar from "@/src/components/MobileNavBar";
 import MobileSidebar from "@/src/components/MobileSidebar";
+import LoadingSpinner from "@/src/components/LoadingSpinner";
 
 export default function AdminDashboardLayout({
   children,
@@ -86,7 +87,7 @@ export default function AdminDashboardLayout({
   if (isLoading || !isAuthenticated) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[--primary]"></div>
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
@@ -94,7 +95,7 @@ export default function AdminDashboardLayout({
   const user = tokenManager.getUser();
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-background">
       {/* Mobile Navigation Bar */}
       <MobileNavBar
         onMenuClick={() => setIsMobileMenuOpen(true)}
@@ -111,12 +112,12 @@ export default function AdminDashboardLayout({
       </MobileSidebar>
 
       {/* Desktop Sidebar - Admin only */}
-      <aside className="w-64 flex-shrink-0 hidden md:block">
+      <aside className="w-64 flex-shrink-0 hidden md:block border-r border-border">
         <AdminSidebar />
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto pt-16 md:pt-0">
+      <main className="flex-1 overflow-y-auto pt-16 md:pt-0 bg-background">
         <div className="p-4 md:p-8">{children}</div>
       </main>
     </div>

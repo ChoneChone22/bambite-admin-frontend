@@ -222,7 +222,7 @@ export default function StaffFAQsManagementPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-red-600 text-lg">Access Denied</p>
-          <p className="text-gray-600 mt-2">You do not have permission to access this page</p>
+          <p className="text-muted-foreground mt-2">You do not have permission to access this page</p>
         </div>
       </div>
     );
@@ -241,8 +241,8 @@ export default function StaffFAQsManagementPage() {
       {modal.ModalComponent}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">FAQ Management</h1>
-          <p className="text-gray-600 mt-1">Manage frequently asked questions</p>
+          <h1 className="text-3xl font-bold text-foreground">FAQ Management</h1>
+          <p className="text-muted-foreground mt-1">Manage frequently asked questions</p>
         </div>
         <button
           onClick={openCreateModal}
@@ -258,8 +258,8 @@ export default function StaffFAQsManagementPage() {
       )}
 
       {faqs.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg shadow">
-          <p className="text-gray-500 text-lg">No FAQs found</p>
+        <div className="text-center py-12 bg-card rounded-lg shadow">
+          <p className="text-muted-foreground text-lg">No FAQs found</p>
           <button
             onClick={openCreateModal}
             className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -268,42 +268,42 @@ export default function StaffFAQsManagementPage() {
           </button>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-card rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-background">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Order
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Question
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Answer
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-card divide-y divide-gray-200">
                 {paginatedData.map((faq) => {
                   const index = faqs.findIndex((f) => f.id === faq.id);
                   return (
                   <React.Fragment key={faq.id}>
-                    <tr className="hover:bg-gray-50">
+                    <tr className="hover:bg-background">
                       <td className="px-4 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-900">{faq.order}</span>
+                          <span className="text-sm font-medium text-foreground">{faq.order}</span>
                           <div className="flex flex-col gap-1">
                             <button
                               onClick={() => handleMoveOrder(faq.id, "up")}
                               disabled={index === 0}
-                              className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                              className="text-gray-400 hover:text-muted-foreground disabled:opacity-30 disabled:cursor-not-allowed"
                               title="Move up"
                             >
                               ↑
@@ -311,7 +311,7 @@ export default function StaffFAQsManagementPage() {
                             <button
                               onClick={() => handleMoveOrder(faq.id, "down")}
                               disabled={index === faqs.length - 1}
-                              className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                              className="text-gray-400 hover:text-muted-foreground disabled:opacity-30 disabled:cursor-not-allowed"
                               title="Move down"
                             >
                               ↓
@@ -320,19 +320,19 @@ export default function StaffFAQsManagementPage() {
                         </div>
                       </td>
                       <td className="px-4 py-4">
-                        <div className="text-sm font-medium text-gray-900 max-w-md truncate">
+                        <div className="text-sm font-medium text-foreground max-w-md truncate">
                           {faq.question}
                         </div>
                       </td>
                       <td className="px-4 py-4">
-                        <div className="text-sm text-gray-500 max-w-md truncate">{faq.answer}</div>
+                        <div className="text-sm text-muted-foreground max-w-md truncate">{faq.answer}</div>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span
                           className={`px-2 py-1 text-xs font-semibold rounded-full ${
                             faq.isActive
                               ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
+                              : "bg-gray-100 text-foreground"
                           }`}
                         >
                           {faq.isActive ? "Active" : "Inactive"}
@@ -380,44 +380,44 @@ export default function StaffFAQsManagementPage() {
                     </tr>
                     {expandedFAQId === faq.id && (
                       <tr key={`${faq.id}-details`}>
-                        <td colSpan={5} className="px-4 py-4 bg-gray-50">
-                          <div className="bg-white rounded-lg border border-gray-200 p-6">
-                            <h3 className="text-lg font-semibold mb-4" style={{ color: "#000000" }}>
+                        <td colSpan={5} className="px-4 py-4 bg-background">
+                          <div className="bg-card rounded-lg border border-border p-6">
+                            <h3 className="text-lg font-semibold mb-4 text-foreground">
                               FAQ Details
                             </h3>
                             <div className="space-y-4">
                               <div>
-                                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                                <label className="text-sm font-medium text-muted-foreground mb-2 block">
                                   Question
                                 </label>
-                                <div className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                <div className="text-sm text-foreground bg-background p-3 rounded-lg border border-border">
                                   {faq.question}
                                 </div>
                               </div>
                               <div>
-                                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                                <label className="text-sm font-medium text-muted-foreground mb-2 block">
                                   Answer
                                 </label>
-                                <div className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg border border-gray-200 whitespace-pre-wrap">
+                                <div className="text-sm text-foreground bg-background p-3 rounded-lg border border-border whitespace-pre-wrap">
                                   {faq.answer}
                                 </div>
                               </div>
                               <div className="grid grid-cols-2 gap-4 pt-2">
                                 <div>
-                                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                                  <label className="text-sm font-medium text-muted-foreground mb-1 block">
                                     Order
                                   </label>
-                                  <div className="text-sm text-gray-900">{faq.order}</div>
+                                  <div className="text-sm text-foreground">{faq.order}</div>
                                 </div>
                                 <div>
-                                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                                  <label className="text-sm font-medium text-muted-foreground mb-1 block">
                                     Status
                                   </label>
                                   <span
                                     className={`px-2 py-1 text-xs font-semibold rounded-full ${
                                       faq.isActive
                                         ? "bg-green-100 text-green-800"
-                                        : "bg-gray-100 text-gray-800"
+                                        : "bg-gray-100 text-foreground"
                                     }`}
                                   >
                                     {faq.isActive ? "Active" : "Inactive"}
@@ -426,10 +426,10 @@ export default function StaffFAQsManagementPage() {
                               </div>
                               {faq.createdAt && (
                                 <div>
-                                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                                  <label className="text-sm font-medium text-muted-foreground mb-1 block">
                                     Created At
                                   </label>
-                                  <div className="text-sm text-gray-600">
+                                  <div className="text-sm text-muted-foreground">
                                     {new Date(faq.createdAt).toLocaleString("en-US", {
                                       year: "numeric",
                                       month: "long",
@@ -500,7 +500,7 @@ export default function StaffFAQsManagementPage() {
           {({ isSubmitting, errors, touched }) => (
             <Form className="space-y-4">
               <div>
-                <label htmlFor="question" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="question" className="block text-sm font-medium text-muted-foreground mb-1">
                   Question *
                 </label>
                 <Field
@@ -508,7 +508,7 @@ export default function StaffFAQsManagementPage() {
                   name="question"
                   as="textarea"
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="Enter question..."
                 />
                 {errors.question && touched.question && (
@@ -517,7 +517,7 @@ export default function StaffFAQsManagementPage() {
               </div>
 
               <div>
-                <label htmlFor="answer" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="answer" className="block text-sm font-medium text-muted-foreground mb-1">
                   Answer *
                 </label>
                 <Field
@@ -525,7 +525,7 @@ export default function StaffFAQsManagementPage() {
                   name="answer"
                   as="textarea"
                   rows={6}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="Enter answer..."
                 />
                 {errors.answer && touched.answer && (
@@ -535,7 +535,7 @@ export default function StaffFAQsManagementPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="order" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="order" className="block text-sm font-medium text-muted-foreground mb-1">
                     Order
                   </label>
                   <Field
@@ -543,7 +543,7 @@ export default function StaffFAQsManagementPage() {
                     name="order"
                     type="number"
                     min="0"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="0"
                   />
                   {errors.order && touched.order && (
@@ -556,9 +556,9 @@ export default function StaffFAQsManagementPage() {
                     id="isActive"
                     name="isActive"
                     type="checkbox"
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-blue-600 focus:ring-primary border-border rounded"
                   />
-                  <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700">
+                  <label htmlFor="isActive" className="ml-2 block text-sm text-muted-foreground">
                     Active
                   </label>
                 </div>
@@ -571,15 +571,14 @@ export default function StaffFAQsManagementPage() {
                     setShowModal(false);
                     setEditingFAQ(null);
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-                  style={{ backgroundColor: "#ffffff", color: "#374151" }}
+                  className="btn-secondary cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="btn-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? "Saving..." : editingFAQ ? "Update" : "Create"}
                 </button>

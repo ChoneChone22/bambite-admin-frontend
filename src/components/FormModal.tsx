@@ -71,46 +71,42 @@ export default function FormModal({
       aria-modal="true"
       aria-labelledby="form-modal-title"
     >
-      {/* Backdrop with glass effect - light overlay with subtle blur */}
+      {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-white/30 backdrop-blur-[2px] transition-opacity duration-300 ease-out"
+        className="fixed inset-0 transition-opacity duration-300 ease-out"
+        style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }}
         onClick={handleBackdropClick}
       />
 
       {/* Modal */}
       <div
         ref={modalRef}
-        className={`relative rounded-lg shadow-2xl ${maxWidthClasses[maxWidth]} w-full max-h-[90vh] overflow-y-auto transform animate-slideUp border border-gray-100 z-10`}
-        style={{ backgroundColor: "#ffffff" }}
+        className={`relative rounded-lg shadow-2xl ${maxWidthClasses[maxWidth]} w-full max-h-[90vh] overflow-y-auto transform animate-slideUp z-10`}
+        style={{ 
+          backgroundColor: 'hsl(var(--card))',
+          border: '1px solid hsl(var(--border))'
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div 
-          className="sticky top-0 border-b border-gray-200 px-8 py-6 z-10"
-          style={{ backgroundColor: "#ffffff" }}
+          className="sticky top-0 px-8 py-6 z-10"
+          style={{
+            backgroundColor: 'hsl(var(--card))',
+            borderBottom: '1px solid hsl(var(--border))'
+          }}
         >
           <div className="flex items-center justify-between">
             <h2
               id="form-modal-title"
-              className="text-2xl font-bold"
-              style={{ color: "#000000" }}
+              className="text-2xl font-bold text-foreground"
             >
               {title}
             </h2>
             <button
               type="button"
               onClick={onClose}
-              className="transition-colors focus:outline-none focus:ring-2 focus:ring-[--primary] rounded-md p-1 cursor-pointer"
-              style={{ 
-                color: "#9ca3af",
-                cursor: "pointer"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = "#4b5563";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = "#9ca3af";
-              }}
+              className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring rounded-md p-1 cursor-pointer"
               aria-label="Close modal"
             >
               <svg
@@ -136,4 +132,3 @@ export default function FormModal({
     </div>
   );
 }
-

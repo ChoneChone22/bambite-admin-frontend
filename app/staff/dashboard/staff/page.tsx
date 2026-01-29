@@ -17,6 +17,7 @@ import SortableTableHeader from "@/src/components/SortableTableHeader";
 import TablePagination from "@/src/components/TablePagination";
 import { useModal } from "@/src/hooks/useModal";
 import FormModal from "@/src/components/FormModal";
+import LoadingSpinner from "@/src/components/LoadingSpinner";
 
 // Validation Schema
 const staffSchema = Yup.object().shape({
@@ -28,7 +29,7 @@ const staffSchema = Yup.object().shape({
     .required("Position is required"),
   salary: Yup.number()
     .positive("Salary must be greater than 0")
-    .max(1000000, "Salary must not exceed $1,000,000")
+    .max(1000000, "Salary must not exceed ฿1,000,000")
     .required("Salary is required"),
   tax: Yup.number().min(0, "Tax cannot be negative").default(0),
   totalBonus: Yup.number().min(0, "Bonus cannot be negative").default(0),
@@ -212,7 +213,7 @@ export default function StaffManagementPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[--primary]"></div>
+        <LoadingSpinner size="md" />
       </div>
     );
   }
@@ -222,7 +223,7 @@ export default function StaffManagementPage() {
       {modal.ModalComponent}
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold" style={{ color: "#000000" }}>
+        <h1 className="text-3xl font-bold text-foreground">
           Staff Management
         </h1>
         <button onClick={handleCreate} className="btn-primary cursor-pointer">
@@ -243,7 +244,7 @@ export default function StaffManagementPage() {
           <div>
             <p className="text-blue-100 text-sm mb-1">Total Payroll Cost</p>
             <p className="text-3xl font-bold">
-              ${(payrollSummary.totalPayroll || 0).toLocaleString()}
+              ฿{(payrollSummary.totalPayroll || 0).toLocaleString()}
             </p>
           </div>
         </div>
@@ -261,9 +262,9 @@ export default function StaffManagementPage() {
       </div>
 
       {/* Staff Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-card rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="bg-background">
             <tr>
               <SortableTableHeader
                 label="Employee ID"
@@ -295,37 +296,33 @@ export default function StaffManagementPage() {
                 sortDirection={getSortDirection("position")}
                 onSort={(key) => handleSort(key as keyof Staff)}
               />
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-card divide-y divide-gray-200">
             {paginatedData.map((member) => (
-              <tr key={member.id} className="hover:bg-gray-50">
+              <tr key={member.id} className="hover:bg-background">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div
                     className="text-sm font-medium"
-                    style={{ color: "#000000" }}
                   >
                     {member.employeeId || "—"}
                   </div>
                 </td>
                 <td
                   className="px-6 py-4 whitespace-nowrap text-sm"
-                  style={{ color: "#000000" }}
                 >
                   {member.department?.name || "—"}
                 </td>
                 <td
                   className="px-6 py-4 whitespace-nowrap text-sm"
-                  style={{ color: "#000000" }}
                 >
                   {member.name || member.user?.email || "—"}
                 </td>
                 <td
                   className="px-6 py-4 whitespace-nowrap text-sm"
-                  style={{ color: "#000000" }}
                 >
                   {member.position}
                 </td>
@@ -396,7 +393,7 @@ export default function StaffManagementPage() {
           {({ errors, touched, isSubmitting }) => (
             <Form className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
                   Full Name *
                 </label>
                 <Field
@@ -411,7 +408,7 @@ export default function StaffManagementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
                   Position *
                 </label>
                 <Field
@@ -426,7 +423,7 @@ export default function StaffManagementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
                   Department *
                 </label>
                 <Field as="select" name="departmentId" className="input-field">
@@ -446,8 +443,8 @@ export default function StaffManagementPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Salary ($) *
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">
+                    Salary (฿) *
                   </label>
                   <Field
                     name="salary"
@@ -463,8 +460,8 @@ export default function StaffManagementPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Bonus ($)
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">
+                    Bonus (฿)
                   </label>
                   <Field
                     name="totalBonus"
@@ -483,8 +480,8 @@ export default function StaffManagementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tax ($)
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
+                  Tax (฿)
                 </label>
                 <Field
                   name="tax"
@@ -500,7 +497,7 @@ export default function StaffManagementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
                   Status *
                 </label>
                 <Field as="select" name="status" className="input-field">
@@ -528,7 +525,7 @@ export default function StaffManagementPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="btn-secondary flex-1"
+                  className="btn-secondary flex-1 cursor-pointer"
                 >
                   Cancel
                 </button>

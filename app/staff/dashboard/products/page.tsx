@@ -23,6 +23,7 @@ import { useModal } from "@/src/hooks/useModal";
 import { useTablePagination } from "@/src/hooks";
 import TablePagination from "@/src/components/TablePagination";
 import FormModal from "@/src/components/FormModal";
+import LoadingSpinner from "@/src/components/LoadingSpinner";
 
 // Validation Schema
 const productSchema = Yup.object().shape({
@@ -424,7 +425,7 @@ export default function ProductsManagementPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[--primary]"></div>
+        <LoadingSpinner size="md" />
       </div>
     );
   }
@@ -433,7 +434,7 @@ export default function ProductsManagementPage() {
     <div>
       {modal.ModalComponent}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold" style={{ color: "#000000" }}>
+        <h1 className="text-3xl font-bold text-foreground">
           Product Management
         </h1>
         <button onClick={handleCreate} className="btn-primary cursor-pointer">
@@ -456,42 +457,41 @@ export default function ProductsManagementPage() {
         />
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-card rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-background">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Product
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Category
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Price
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Stock
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-gray-200">
               {paginatedData.length === 0 ? (
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-6 py-12 text-center text-sm"
-                    style={{ color: "#6b7280" }}
+                    className="px-6 py-12 text-center text-sm text-foreground"
                   >
                     No products found
                   </td>
                 </tr>
               ) : (
                 paginatedData.map((product) => (
-              <tr key={product.id} className="hover:bg-gray-50">
+              <tr key={product.id} className="hover:bg-background">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <img
@@ -506,21 +506,18 @@ export default function ProductsManagementPage() {
                     <div className="ml-4">
                       <div
                         className="text-sm font-medium"
-                        style={{ color: "#000000" }}
                       >
                         {product.name}
                       </div>
                       {product.thaiName && (
                         <div
-                          className="text-sm font-medium mt-0.5"
-                          style={{ color: "#4b5563" }}
+                          className="text-sm font-medium mt-0.5 text-foreground"
                         >
                           {product.thaiName}
                         </div>
                       )}
                       <div
-                        className="text-sm truncate max-w-xs"
-                        style={{ color: "#6b7280" }}
+                        className="text-sm truncate max-w-xs text-foreground"
                       >
                         {product.description || product.ingredients || "No description"}
                       </div>
@@ -534,7 +531,6 @@ export default function ProductsManagementPage() {
                 </td>
                 <td
                   className="px-6 py-4 whitespace-nowrap text-sm"
-                  style={{ color: "#000000" }}
                 >
                   {formatPrice(product.price)}
                 </td>
@@ -614,8 +610,7 @@ export default function ProductsManagementPage() {
             <Form className="space-y-4">
               <div>
                 <label
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: "#374151" }}
+                  className="block text-sm font-medium mb-1 text-foreground"
                 >
                   Product Name *
                 </label>
@@ -632,8 +627,7 @@ export default function ProductsManagementPage() {
 
               <div>
                 <label
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: "#374151" }}
+                  className="block text-sm font-medium mb-1 text-foreground"
                 >
                   Thai Name (ชื่อภาษาไทย)
                 </label>
@@ -651,8 +645,7 @@ export default function ProductsManagementPage() {
 
               <div>
                 <label
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: "#374151" }}
+                  className="block text-sm font-medium mb-1 text-foreground"
                 >
                   Description
                 </label>
@@ -670,8 +663,7 @@ export default function ProductsManagementPage() {
 
               <div>
                 <label
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: "#374151" }}
+                  className="block text-sm font-medium mb-1 text-foreground"
                 >
                   Category *
                 </label>
@@ -690,8 +682,7 @@ export default function ProductsManagementPage() {
 
               <div>
                 <label
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: "#374151" }}
+                  className="block text-sm font-medium mb-1 text-foreground"
                 >
                   Ingredients
                 </label>
@@ -709,8 +700,7 @@ export default function ProductsManagementPage() {
 
               <div>
                 <label
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: "#374151" }}
+                  className="block text-sm font-medium mb-1 text-foreground"
                 >
                   Options
                 </label>
@@ -723,13 +713,13 @@ export default function ProductsManagementPage() {
                         value={option.id}
                         className="mr-2"
                       />
-                      <span className="text-sm" style={{ color: "#374151" }}>
+                      <span className="text-sm text-foreground">
                         {option.displayName} ({option.optionLists.join(", ")})
                       </span>
                     </label>
                   ))}
                   {options.length === 0 && (
-                    <p className="text-sm" style={{ color: "#6b7280" }}>
+                    <p className="text-sm text-foreground">
                       No options available.
                     </p>
                   )}
@@ -739,10 +729,9 @@ export default function ProductsManagementPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label
-                    className="block text-sm font-medium mb-1"
-                    style={{ color: "#374151" }}
+                    className="block text-sm font-medium mb-1 text-foreground"
                   >
-                    Price ($) *
+                    Price (฿) *
                   </label>
                   <Field
                     name="price"
@@ -759,8 +748,7 @@ export default function ProductsManagementPage() {
 
                 <div>
                   <label
-                    className="block text-sm font-medium mb-1"
-                    style={{ color: "#374151" }}
+                    className="block text-sm font-medium mb-1 text-foreground"
                   >
                     Stock Quantity *
                   </label>
@@ -781,13 +769,12 @@ export default function ProductsManagementPage() {
 
               <div>
                 <label
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: "#374151" }}
+                  className="block text-sm font-medium mb-1 text-foreground"
                 >
                   Images {!editingProduct && "*"}
                 </label>
                 {editingProduct && (
-                  <p className="text-xs mb-2" style={{ color: "#6b7280" }}>
+                  <p className="text-xs mb-2 text-foreground">
                     <strong>Add new images:</strong> Select new images to add them to existing ones. 
                     <br />
                     <strong>Remove images:</strong> Click the × button on any image to remove it.
@@ -805,14 +792,14 @@ export default function ProductsManagementPage() {
                 {errors.images && touched.images && (
                   <p className="text-red-600 text-sm mt-1">{errors.images}</p>
                 )}
-                <p className="text-xs mt-1" style={{ color: "#6b7280" }}>
+                <p className="text-xs mt-1 text-foreground">
                   Accepted formats: JPEG, PNG, WebP. Max size: 5MB per image.
                 </p>
 
                 {/* Image Previews */}
                 {imagePreviews.length > 0 && (
                   <div className="mt-4">
-                    <p className="text-sm font-medium mb-2" style={{ color: "#374151" }}>
+                    <p className="text-sm font-medium mb-2 text-foreground">
                       Image Previews ({imagePreviews.length} {imagePreviews.length === 1 ? 'image' : 'images'})
                     </p>
                     <div className="grid grid-cols-4 gap-4">
@@ -837,15 +824,13 @@ export default function ProductsManagementPage() {
                           </button>
                           {preview.isExisting ? (
                             <span 
-                              className="absolute bottom-1 left-1 bg-blue-500 text-white text-xs px-2 py-0.5 rounded font-medium"
-                              style={{ backgroundColor: "#3b82f6" }}
+                              className="absolute bottom-1 left-1 bg-blue-500 text-white text-xs px-2 py-0.5 rounded font-medium bg-card"
                             >
                               Existing
                             </span>
                           ) : (
                             <span 
-                              className="absolute bottom-1 left-1 bg-green-500 text-white text-xs px-2 py-0.5 rounded font-medium"
-                              style={{ backgroundColor: "#10b981" }}
+                              className="absolute bottom-1 left-1 bg-green-500 text-white text-xs px-2 py-0.5 rounded font-medium bg-card"
                             >
                               New
                             </span>
@@ -854,9 +839,9 @@ export default function ProductsManagementPage() {
                       ))}
                     </div>
                     {editingProduct && imagePreviews.filter(p => p.isExisting).length > 0 && (
-                      <p className="text-xs mt-2" style={{ color: "#6b7280" }}>
-                        <span style={{ color: "#3b82f6" }}>Blue border</span> = Existing images •{" "}
-                        <span style={{ color: "#10b981" }}>Green border</span> = New images to add
+                      <p className="text-xs mt-2 text-foreground">
+                        <span className="text-foreground">Blue border</span> = Existing images •{" "}
+                        <span className="text-foreground">Green border</span> = New images to add
                       </p>
                     )}
                   </div>
@@ -881,7 +866,7 @@ export default function ProductsManagementPage() {
                     setShowModal(false);
                     setImagePreviews([]);
                   }}
-                  className="btn-secondary flex-1"
+                  className="btn-secondary flex-1 cursor-pointer"
                 >
                   Cancel
                 </button>

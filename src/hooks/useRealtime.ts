@@ -18,7 +18,8 @@ interface UseRealtimeOptions {
   onNewOrder?: (data: NewOrderEvent) => void;
   onInventoryUpdate?: (data: InventoryUpdateEvent) => void;
   onCartUpdate?: (data: CartUpdateEvent) => void;
-  subscribeToOrder?: string; // Order ID
+  subscribeToOrder?: string; // Order ID (single order)
+  subscribeToOrdersList?: boolean; // Admin/Staff: new orders + all order updates (channel 'order' without id)
   subscribeToProduct?: string; // Product ID
   subscribeToCart?: boolean;
   enabled?: boolean;
@@ -31,6 +32,7 @@ export function useRealtime(options: UseRealtimeOptions = {}) {
     onInventoryUpdate,
     onCartUpdate,
     subscribeToOrder,
+    subscribeToOrdersList,
     subscribeToProduct,
     subscribeToCart,
     enabled = true,
@@ -115,11 +117,12 @@ export function useRealtime(options: UseRealtimeOptions = {}) {
     if (subscribeToOrder) {
       realtimeService.subscribeOrder(subscribeToOrder);
     }
-
+    if (subscribeToOrdersList) {
+      realtimeService.subscribeOrdersList();
+    }
     if (subscribeToProduct) {
       realtimeService.subscribeProduct(subscribeToProduct);
     }
-
     if (subscribeToCart) {
       realtimeService.subscribeCart();
     }
@@ -128,6 +131,9 @@ export function useRealtime(options: UseRealtimeOptions = {}) {
     return () => {
       if (subscribeToOrder) {
         realtimeService.unsubscribe("order", subscribeToOrder);
+      }
+      if (subscribeToOrdersList) {
+        realtimeService.unsubscribe("order");
       }
       if (subscribeToProduct) {
         realtimeService.unsubscribe("product", subscribeToProduct);
@@ -141,6 +147,7 @@ export function useRealtime(options: UseRealtimeOptions = {}) {
   }, [
     enabled,
     subscribeToOrder,
+    subscribeToOrdersList,
     subscribeToProduct,
     subscribeToCart,
     onOrderUpdate,

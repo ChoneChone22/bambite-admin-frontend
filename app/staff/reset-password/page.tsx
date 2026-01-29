@@ -47,14 +47,24 @@ export default function StaffResetPasswordPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [otpError, setOtpError] = useState("");
+  const [showPasswordFields, setShowPasswordFields] = useState(false);
 
-  // Pre-fill email from query params if available
+  // Get email from query params (required)
   const initialEmail = searchParams?.get("email") || "";
 
   useEffect(() => {
     // Clear OTP error when OTP changes
     setOtpError("");
+    // Reset password fields visibility when OTP changes
+    setShowPasswordFields(false);
   }, [searchParams]);
+
+  // Show password fields when OTP is complete (6 digits)
+  useEffect(() => {
+    if (initialEmail && searchParams) {
+      // This will be handled by the OTP input onChange
+    }
+  }, [initialEmail, searchParams]);
 
   const handleSubmit = async (values: {
     email: string;
@@ -110,7 +120,7 @@ export default function StaffResetPasswordPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-700 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         {toast && (
           <Toast
             message={toast.message}
@@ -119,7 +129,7 @@ export default function StaffResetPasswordPage() {
           />
         )}
 
-        <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-xl">
+        <div className="max-w-md w-full space-y-8 bg-card p-8 rounded-lg shadow-xl">
           <div className="text-center">
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
               <svg
@@ -136,10 +146,10 @@ export default function StaffResetPasswordPage() {
                 />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-2xl font-bold text-foreground">
               Password Reset Successful
             </h2>
-            <p className="mt-2 text-sm text-gray-600">
+            <p className="mt-2 text-sm text-muted-foreground">
               Your password has been reset successfully. Redirecting to login...
             </p>
           </div>
@@ -149,7 +159,7 @@ export default function StaffResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-700 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       {toast && (
         <Toast
           message={toast.message}
@@ -163,160 +173,187 @@ export default function StaffResetPasswordPage() {
           <h2 className="text-center text-3xl font-bold text-white">
             Reset Password
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-300">
+          <p className="mt-2 text-center text-sm text-muted-foreground">
             Enter the 6-digit OTP code sent to your email
           </p>
         </div>
 
-        <Formik
-          initialValues={{
-            email: initialEmail,
-            otp: "",
-            newPassword: "",
-            confirmPassword: "",
-          }}
-          validationSchema={resetPasswordSchema}
-          onSubmit={handleSubmit}
-        >
-          {({ values, setFieldValue, errors, touched }) => (
-            <Form className="mt-8 space-y-6 bg-white p-8 rounded-lg shadow-xl">
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Staff Email
-                </label>
-                <Field
-                  id="email"
-                  name="email"
-                  type="email"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                  placeholder="staff@bambite.com"
-                  disabled={isSubmitting}
-                />
-                <ErrorMessage
-                  name="email"
-                  component="div"
-                  className="text-red-500 text-sm mt-1"
-                />
-              </div>
+        {!initialEmail ? (
+          <div className="mt-8 space-y-6 bg-card p-8 rounded-lg shadow-xl">
+            <div className="text-center">
+              <p className="text-red-600 mb-4">
+                Email address is required. Please start from the forgot password page.
+              </p>
+              <Link
+                href="/staff/forgot-password"
+                className="text-sm text-blue-600 hover:text-blue-800 transition-colors inline-block"
+              >
+                Go to Forgot Password
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <Formik
+            initialValues={{
+              email: initialEmail,
+              otp: "",
+              newPassword: "",
+              confirmPassword: "",
+            }}
+            validationSchema={resetPasswordSchema}
+            onSubmit={handleSubmit}
+          >
+            {({ values, setFieldValue, errors, touched }) => {
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  OTP Code (6 digits)
-                </label>
-                <OTPInput
-                  value={values.otp}
-                  onChange={(otp) => setFieldValue("otp", otp)}
-                  error={otpError || (touched.otp && errors.otp ? errors.otp : undefined)}
-                  disabled={isSubmitting}
-                  autoFocus={!!initialEmail}
-                />
-                <p className="mt-2 text-xs text-gray-500">
-                  Enter the 6-digit code sent to your email. Expires in 15 minutes.
-                </p>
-                <Link
-                  href={`/staff/forgot-password?email=${encodeURIComponent(
-                    values.email
-                  )}`}
-                  className="mt-1 text-xs text-blue-600 hover:text-blue-800 transition-colors inline-block"
-                >
-                  Request New OTP
-                </Link>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="newPassword"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  New Password
-                </label>
-                <Field
-                  id="newPassword"
-                  name="newPassword"
-                  type="password"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                  placeholder="Enter new password"
-                  disabled={isSubmitting}
-                />
-                <ErrorMessage
-                  name="newPassword"
-                  component="div"
-                  className="text-red-500 text-sm mt-1"
-                />
-                <PasswordStrength password={values.newPassword} />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="confirmPassword"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Confirm Password
-                </label>
-                <Field
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                  placeholder="Confirm new password"
-                  disabled={isSubmitting}
-                />
-                <ErrorMessage
-                  name="confirmPassword"
-                  component="div"
-                  className="text-red-500 text-sm mt-1"
-                />
-                {values.confirmPassword &&
-                  values.newPassword !== values.confirmPassword && (
-                    <p className="text-red-500 text-sm mt-1">
-                      Passwords do not match
+              return (
+                <Form className="mt-8 space-y-6 bg-card p-8 rounded-lg shadow-xl">
+                  {/* Email as read-only text */}
+                  <div>
+                    <label className="block text-sm font-medium text-muted-foreground mb-1">
+                      Staff Email
+                    </label>
+                    <div className="w-full px-3 py-2 border border-border rounded-lg bg-background text-muted-foreground">
+                      {values.email}
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      This email will be used for password reset
                     </p>
-                  )}
-              </div>
+                  </div>
 
-              <div>
-                <button
-                  type="submit"
-                  disabled={
-                    isSubmitting ||
-                    values.otp.length !== 6 ||
-                    values.newPassword !== values.confirmPassword
-                  }
-                  className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <LoadingSpinner size="sm" />
-                      <span className="ml-2">Resetting...</span>
-                    </>
-                  ) : (
-                    "Reset Password"
-                  )}
-                </button>
-              </div>
+                  {/* OTP Input */}
+                  <div>
+                    <label className="block text-sm font-medium text-muted-foreground mb-2">
+                      OTP Code (6 digits)
+                    </label>
+                    <OTPInput
+                      value={values.otp}
+                      onChange={(otp) => {
+                        setFieldValue("otp", otp);
+                        // Show password fields when OTP is complete
+                        if (otp.length === 6) {
+                          setShowPasswordFields(true);
+                        } else {
+                          setShowPasswordFields(false);
+                        }
+                      }}
+                      error={otpError || (touched.otp && errors.otp ? errors.otp : undefined)}
+                      disabled={isSubmitting}
+                      autoFocus={!!initialEmail}
+                    />
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Enter the 6-digit code sent to your email. Expires in 15 minutes.
+                    </p>
+                    <Link
+                      href={`/staff/forgot-password?email=${encodeURIComponent(
+                        values.email
+                      )}`}
+                      className="mt-1 text-xs text-blue-600 hover:text-blue-800 transition-colors inline-block"
+                    >
+                      Request New OTP
+                    </Link>
+                  </div>
 
-              <div className="text-center space-y-2">
-                <Link
-                  href={`/staff/forgot-password?email=${encodeURIComponent(
-                    values.email
-                  )}`}
-                  className="text-sm text-blue-600 hover:text-blue-800 transition-colors block"
-                >
-                  Request New OTP
-                </Link>
-                <Link
-                  href="/staff/login"
-                  className="text-sm text-gray-600 hover:text-gray-900 transition-colors block"
-                >
-                  ← Back to Login
-                </Link>
-              </div>
-            </Form>
-          )}
-        </Formik>
+                  {/* Password Fields - Progressive Disclosure */}
+                  {showPasswordFields && (
+                    <div className="space-y-4 transition-opacity duration-300 ease-in">
+                      <div>
+                        <label
+                          htmlFor="newPassword"
+                          className="block text-sm font-medium text-muted-foreground mb-1"
+                        >
+                          New Password
+                        </label>
+                        <Field
+                          id="newPassword"
+                          name="newPassword"
+                          type="password"
+                          className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                          placeholder="Enter new password"
+                          disabled={isSubmitting}
+                          autoFocus
+                        />
+                        <ErrorMessage
+                          name="newPassword"
+                          component="div"
+                          className="text-red-500 text-sm mt-1"
+                        />
+                        <PasswordStrength password={values.newPassword} />
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="confirmPassword"
+                          className="block text-sm font-medium text-muted-foreground mb-1"
+                        >
+                          Confirm Password
+                        </label>
+                        <Field
+                          id="confirmPassword"
+                          name="confirmPassword"
+                          type="password"
+                          className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                          placeholder="Confirm new password"
+                          disabled={isSubmitting}
+                        />
+                        <ErrorMessage
+                          name="confirmPassword"
+                          component="div"
+                          className="text-red-500 text-sm mt-1"
+                        />
+                        {values.confirmPassword &&
+                          values.newPassword !== values.confirmPassword && (
+                            <p className="text-red-500 text-sm mt-1">
+                              Passwords do not match
+                            </p>
+                          )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Submit Button */}
+                  <div>
+                    <button
+                      type="submit"
+                      disabled={
+                        isSubmitting ||
+                        values.otp.length !== 6 ||
+                        !showPasswordFields ||
+                        values.newPassword !== values.confirmPassword
+                      }
+                      className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <LoadingSpinner size="sm" />
+                          <span className="ml-2">Resetting...</span>
+                        </>
+                      ) : (
+                        "Reset Password"
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="text-center space-y-2">
+                    <Link
+                      href={`/staff/forgot-password?email=${encodeURIComponent(
+                        values.email
+                      )}`}
+                      className="text-sm text-blue-600 hover:text-blue-800 transition-colors block"
+                    >
+                      Request New OTP
+                    </Link>
+                    <Link
+                      href="/staff/login"
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors block"
+                    >
+                      ← Back to Login
+                    </Link>
+                  </div>
+                </Form>
+              );
+            }}
+          </Formik>
+        )}
       </div>
     </div>
   );

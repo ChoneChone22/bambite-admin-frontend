@@ -17,6 +17,7 @@ import SortableTableHeader from "@/src/components/SortableTableHeader";
 import TablePagination from "@/src/components/TablePagination";
 import { useModal } from "@/src/hooks/useModal";
 import FormModal from "@/src/components/FormModal";
+import LoadingSpinner from "@/src/components/LoadingSpinner";
 
 const staffAccountSchema = Yup.object().shape({
   staffId: Yup.string().required("Staff is required"),
@@ -58,6 +59,10 @@ const permissionGroups: PermissionGroup[] = [
   {
     title: "Orders",
     permissionCodes: ["orders_management"],
+  },
+  {
+    title: "User Management",
+    permissionCodes: ["user_management"],
   },
   {
     title: "Staff Management",
@@ -288,7 +293,7 @@ export default function StaffAccountManagementPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[--primary]"></div>
+        <LoadingSpinner size="md" />
       </div>
     );
   }
@@ -298,7 +303,7 @@ export default function StaffAccountManagementPage() {
       {modal.ModalComponent}
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold" style={{ color: "#000000" }}>
+        <h1 className="text-3xl font-bold text-foreground">
           Staff Account Management
         </h1>
         <button onClick={handleCreate} className="btn-primary cursor-pointer">
@@ -324,10 +329,10 @@ export default function StaffAccountManagementPage() {
       </div>
 
       {/* Accounts Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-card rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-background">
               <tr>
                 <SortableTableHeader
                   label="Staff"
@@ -360,26 +365,25 @@ export default function StaffAccountManagementPage() {
                   )}
                   onSort={(key) => handleSort(key as keyof StaffAccount)}
                 />
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Permissions
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-gray-200">
               {paginatedData.map((account) => (
-                <tr key={account.id} className="hover:bg-gray-50">
+                <tr key={account.id} className="hover:bg-background">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div
                       className="text-sm font-medium"
-                      style={{ color: "#000000" }}
                     >
                       {account.staff?.name || account.staff?.employeeId || "—"}
                     </div>
                     {account.staff?.department && (
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-muted-foreground">
                         {account.staff.department.name} (
                         {account.staff.department.shortName})
                       </div>
@@ -387,7 +391,6 @@ export default function StaffAccountManagementPage() {
                   </td>
                   <td
                     className="px-6 py-4 whitespace-nowrap text-sm"
-                    style={{ color: "#000000" }}
                   >
                     {account.email}
                   </td>
@@ -396,7 +399,7 @@ export default function StaffAccountManagementPage() {
                       className={`px-3 py-1 text-xs font-medium rounded-full ${
                         account.staff?.status === "active"
                           ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-700"
+                          : "bg-gray-100 text-muted-foreground"
                       }`}
                     >
                       {account.staff?.status === "active"
@@ -409,7 +412,7 @@ export default function StaffAccountManagementPage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {account.permissions && account.permissions.length > 0 ? (
                       <span>
                         {account.permissions
@@ -458,7 +461,7 @@ export default function StaffAccountManagementPage() {
 
         {accounts.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500">No staff accounts found.</p>
+            <p className="text-muted-foreground">No staff accounts found.</p>
           </div>
         )}
       </div>
@@ -502,7 +505,7 @@ export default function StaffAccountManagementPage() {
                 <Form className="space-y-4">
                   {!editingAccount && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-muted-foreground mb-1">
                         Staff *
                       </label>
                       <Field as="select" name="staffId" className="input-field">
@@ -525,7 +528,7 @@ export default function StaffAccountManagementPage() {
                   )}
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-muted-foreground mb-1">
                       Email *
                     </label>
                     <Field
@@ -542,7 +545,7 @@ export default function StaffAccountManagementPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-muted-foreground mb-1">
                       Password (optional)
                     </label>
                     <Field
@@ -563,12 +566,12 @@ export default function StaffAccountManagementPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-muted-foreground mb-2">
                       Permissions
                     </label>
-                    <div className="border border-gray-300 rounded-lg p-2 max-h-64 overflow-y-auto bg-gray-50">
+                    <div className="border border-border rounded-lg p-2 max-h-64 overflow-y-auto bg-background">
                       {permissions.length === 0 ? (
-                        <p className="text-sm text-gray-500 p-4">
+                        <p className="text-sm text-muted-foreground p-4">
                           No permissions available.
                         </p>
                       ) : (
@@ -594,8 +597,7 @@ export default function StaffAccountManagementPage() {
                                 <button
                                   type="button"
                                   onClick={toggleGroup}
-                                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all font-semibold text-sm hover:bg-gray-100"
-                                  style={{ color: "#374151" }}
+                                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all font-semibold text-sm hover:bg-accent text-foreground"
                                 >
                                   <span>{group.title}</span>
                                   <svg
@@ -625,11 +627,11 @@ export default function StaffAccountManagementPage() {
                                       return (
                                         <label
                                           key={perm.id}
-                                          className="flex items-start gap-3 p-2 rounded hover:bg-white cursor-pointer transition-colors"
+                                          className="flex items-start gap-3 p-2 rounded hover:bg-card cursor-pointer transition-colors"
                                         >
                                           <input
                                             type="checkbox"
-                                            className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                            className="mt-1 w-4 h-4 text-blue-600 border-border rounded focus:ring-primary"
                                             checked={!!checked}
                                             onChange={(e) => {
                                               const current =
@@ -650,7 +652,7 @@ export default function StaffAccountManagementPage() {
                                             }}
                                           />
                                           <div className="flex-1">
-                                            <div className="text-sm font-semibold text-gray-900">
+                                            <div className="text-sm font-semibold text-foreground">
                                               {formatPermissionCode(
                                                 perm.code || ""
                                               )}
@@ -684,7 +686,7 @@ export default function StaffAccountManagementPage() {
                     <button
                       type="button"
                       onClick={() => setShowModal(false)}
-                      className="btn-secondary flex-1"
+                      className="btn-secondary flex-1 cursor-pointer"
                     >
                       Cancel
                     </button>

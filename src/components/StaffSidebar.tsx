@@ -15,6 +15,7 @@
  * - PRODUCT_CATEGORY_MANAGEMENT → Categories
  * - PRODUCT_OPTIONS_MANAGEMENT → Options
  * - ORDERS_MANAGEMENT → Orders
+ * - USER_MANAGEMENT → Users (customer accounts)
  * - STAFF_MANAGEMENT → Staff
  * - STAFF_ACCOUNT_MANAGEMENT → Staff Accounts
  * - STAFF_PAYMENT_MANAGEMENT → Payments
@@ -82,6 +83,16 @@ const navigationGroups: NavGroup[] = [
         name: "Orders",
         href: "/staff/dashboard/orders",
         permission: "ORDERS_MANAGEMENT",
+      },
+    ],
+  },
+  {
+    title: "User Management",
+    items: [
+      {
+        name: "Users",
+        href: "/staff/dashboard/users",
+        permission: "USER_MANAGEMENT",
       },
     ],
   },
@@ -332,7 +343,7 @@ export default function StaffSidebar() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-gray-200">
+    <div className="flex flex-col h-full bg-card border-r border-border">
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-4 space-y-2 pt-6">
         {visibleGroups.length > 0 ? (
@@ -352,28 +363,13 @@ export default function StaffSidebar() {
                 {/* Group Header */}
                 <button
                   onClick={() => toggleGroup(group.title)}
-                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all font-semibold text-sm"
-                  style={
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all font-semibold text-sm ${
                     hasActiveItem
-                      ? { backgroundColor: "#2C5BBB", color: "#ffffff" }
-                      : { color: "#374151", backgroundColor: "transparent" }
-                  }
-                  onMouseEnter={(e) => {
-                    if (!hasActiveItem) {
-                      e.currentTarget.style.backgroundColor = "#f9fafb";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!hasActiveItem) {
-                      e.currentTarget.style.backgroundColor = "transparent";
-                    }
-                  }}
+                      ? "bg-primary text-primary-foreground"
+                      : "text-foreground hover:bg-accent hover:text-accent-foreground"
+                  }`}
                 >
-                  <span
-                    style={{ color: hasActiveItem ? "#ffffff" : "#374151" }}
-                  >
-                    {group.title}
-                  </span>
+                  <span>{group.title}</span>
                   <svg
                     className={`w-4 h-4 transition-transform duration-200 ${
                       isExpanded ? "transform rotate-90" : ""
@@ -381,10 +377,7 @@ export default function StaffSidebar() {
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
-                    style={{
-                      minWidth: "16px",
-                      color: hasActiveItem ? "#ffffff" : "#374151",
-                    }}
+                    style={{ minWidth: "16px" }}
                   >
                     <path
                       strokeLinecap="round"
@@ -411,32 +404,11 @@ export default function StaffSidebar() {
                         <Link
                           key={item.name}
                           href={item.href}
-                          className="block px-4 py-2 rounded-lg transition-all text-sm"
-                          style={
+                          className={`block px-4 py-2 rounded-lg transition-all text-sm ${
                             isActive
-                              ? {
-                                  backgroundColor: "#2C5BBB",
-                                  color: "#ffffff",
-                                  fontWeight: "500",
-                                }
-                              : {
-                                  color: "#6b7280",
-                                  backgroundColor: "transparent",
-                                }
-                          }
-                          onMouseEnter={(e) => {
-                            if (!isActive) {
-                              e.currentTarget.style.backgroundColor = "#f9fafb";
-                              e.currentTarget.style.color = "#374151";
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!isActive) {
-                              e.currentTarget.style.backgroundColor =
-                                "transparent";
-                              e.currentTarget.style.color = "#6b7280";
-                            }
-                          }}
+                              ? "bg-primary text-primary-foreground shadow-sm font-medium"
+                              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                          }`}
                         >
                           {item.name}
                         </Link>
@@ -450,29 +422,60 @@ export default function StaffSidebar() {
         ) : (
           // Fallback: Should never happen since "My Profile" is always visible
           // But handle edge case gracefully
-          <div className="px-4 py-3 text-sm" style={{ color: "#6b7280" }}>
+          <div className="px-4 py-3 text-sm text-muted-foreground">
             No routes available
           </div>
         )}
       </nav>
 
-      {/* User Info & Logout */}
-      <div className="p-4 border-t border-gray-200 space-y-2">
+      {/* User Info & Account Actions */}
+      <div className="p-4 border-t border-border space-y-2">
         {user?.staff && (
           <div className="px-4 py-2 text-sm">
-            <p className="font-medium" style={{ color: "#000000" }}>
+            <p className="font-medium text-foreground">
               {user.staff.name || "Staff Member"}
             </p>
-            <p className="text-gray-600 text-xs">
+            <p className="text-muted-foreground text-xs">
               {user.staff.employeeId || ""}
             </p>
           </div>
         )}
+        <Link
+          href="/staff/change-password"
+          className="w-full px-4 py-3 rounded-lg hover:bg-accent hover:text-accent-foreground transition-all font-semibold text-left flex items-center text-foreground"
+        >
+          <svg
+            className="w-5 h-5 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+            />
+          </svg>
+          Change Password
+        </Link>
         <button
           onClick={handleLogout}
-          className="w-full px-4 py-3 rounded-lg hover:bg-gray-50 transition-all font-semibold text-left cursor-pointer"
-          style={{ color: "#000000" }}
+          className="w-full px-4 py-3 rounded-lg hover:bg-accent hover:text-accent-foreground transition-all font-semibold text-left cursor-pointer flex items-center text-foreground"
         >
+          <svg
+            className="w-5 h-5 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+            />
+          </svg>
           Logout
         </button>
       </div>

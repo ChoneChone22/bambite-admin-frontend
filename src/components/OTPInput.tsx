@@ -1,6 +1,7 @@
 /**
  * OTP Input Component
  * 6-digit OTP input with auto-advance, paste support, and keyboard navigation
+ * Theme-aware for light/dark mode
  */
 
 "use client";
@@ -100,10 +101,10 @@ export default function OTPInput({
             className={`
               w-12 h-12 text-center text-lg font-semibold
               border-2 rounded-lg
-              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+              focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary
               transition-colors
-              bg-white text-gray-900
-              ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "border-gray-300"}
+              bg-background text-foreground
+              ${error ? "border-destructive focus:border-destructive focus:ring-destructive" : "border-border"}
               ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-text"}
             `}
             aria-label={`OTP digit ${index + 1}`}
@@ -112,7 +113,7 @@ export default function OTPInput({
         ))}
       </div>
       {error && (
-        <p className="mt-2 text-sm text-red-600 text-center">{error}</p>
+        <p className="mt-2 text-sm text-destructive text-center">{error}</p>
       )}
     </div>
   );

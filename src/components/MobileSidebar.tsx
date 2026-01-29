@@ -1,6 +1,7 @@
 /**
  * Mobile Sidebar Drawer Component
  * Slide-in drawer for mobile navigation
+ * Theme-aware for light/dark mode
  */
 
 "use client";
@@ -43,10 +44,11 @@ export default function MobileSidebar({
 
   return (
     <>
-      {/* Backdrop - matches modal backdrop style */}
+      {/* Backdrop - dark mode compatible */}
       {isOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-white/30 backdrop-blur-[2px] z-40 transition-opacity duration-300 ease-out"
+          className="md:hidden fixed inset-0 z-40 transition-opacity duration-300 ease-out"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }}
           onClick={onClose}
           aria-hidden="true"
         />
@@ -54,22 +56,31 @@ export default function MobileSidebar({
 
       {/* Drawer */}
       <div
-        className={`md:hidden fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${
+        className={`md:hidden fixed top-0 left-0 h-full w-80 max-w-[85vw] shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
+        style={{
+          backgroundColor: 'hsl(var(--card))',
+          opacity: 1
+        }}
       >
         {/* Close Button */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="text-xl font-bold" style={{ color: "#2C5BBB" }}>
+        <div 
+          className="flex items-center justify-between p-4"
+          style={{
+            borderBottom: '1px solid hsl(var(--border))'
+          }}
+        >
+          <h2 className="text-xl font-bold text-primary">
             Menu
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-lg hover:bg-accent transition-colors"
             aria-label="Close menu"
           >
             <svg
-              className="w-6 h-6 text-gray-700"
+              className="w-6 h-6 text-foreground"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

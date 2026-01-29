@@ -22,21 +22,19 @@ export function showToast(
     existingToast.remove();
   }
 
-  // Create toast element
+  // Create toast element - solid background, no glass (light/dark/mobile)
   const toast = document.createElement("div");
   toast.id = "global-toast";
-  toast.className = "fixed top-20 right-4 z-[9999] animate-slide-in";
+  toast.className = "no-glass fixed top-20 right-4 left-4 sm:left-auto z-[9999] animate-slide-in";
 
-  const bgColor = {
-    success: "bg-green-500",
-    error: "bg-red-500",
-    info: "bg-blue-500",
-  }[type];
+  const bgVar = type === "success" ? "--success" : type === "error" ? "--destructive" : "--info";
+  const fgVar = type === "success" ? "--success-foreground" : type === "error" ? "--destructive-foreground" : "--info-foreground";
+  const innerStyle = `background-color: hsl(var(${bgVar})); color: hsl(var(${fgVar})); opacity: 1; backdrop-filter: none; -webkit-backdrop-filter: none;`;
 
   toast.innerHTML = `
-    <div class="${bgColor} text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-3">
+    <div class="px-6 py-3 rounded-lg shadow-lg flex items-center space-x-3" style="${innerStyle}">
       <span>${message}</span>
-      <button onclick="this.closest('#global-toast').remove()" class="text-white hover:text-gray-200 font-bold cursor-pointer">
+      <button onclick="this.closest('#global-toast').remove()" class="text-current hover:opacity-80 font-bold cursor-pointer">
         ×
       </button>
     </div>

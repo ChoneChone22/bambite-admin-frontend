@@ -10,6 +10,9 @@ export { useTablePagination } from "./useTablePagination";
 export type { PaginationConfig, UseTablePaginationOptions } from "./useTablePagination";
 export { useModal } from "./useModal";
 export type { ModalOptions } from "./useModal";
+export { useRealtime } from "./useRealtime";
+export { useRealtimeOrders } from "./useRealtimeOrders";
+export type { UseRealtimeOrdersOptions } from "./useRealtimeOrders";
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";

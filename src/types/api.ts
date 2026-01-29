@@ -45,13 +45,23 @@ export enum PaymentMethod {
 
 export interface User {
   id: string;
-  email: string;
-  phoneNumber: string;
-  address: string;
-  role: UserRole;
+  name?: string | null;
+  email?: string | null;
+  phoneNumber?: string | null;
   profileImageUrl?: string | null;
+  isGuest: boolean;
+  guestToken?: string | null;
+  expiresAt?: string | null;
+  emailVerified: boolean;
+  emailVerifiedAt?: string | null;
+  role?: UserRole; // For admin/staff authentication (staff.user context), not for customer users
   createdAt?: string;
   updatedAt?: string;
+  _count?: {
+    orderHistories: number;
+    favourites: number;
+    reviews: number;
+  };
 }
 
 // ==================== Category Model ====================
@@ -105,6 +115,14 @@ export interface Product {
   updatedAt?: string;
 }
 
+/** Product option metadata for display (cart/order items) */
+export interface ProductOptionDisplay {
+  id: string;
+  name: string;
+  displayName: string;
+  optionLists: string[];
+}
+
 export interface CartItem {
   id: string;
   productId: string;
@@ -115,6 +133,10 @@ export interface CartItem {
   subtotal: number;
   stockQuantity: number;
   category?: Category; // Category object: { id, name, status } - optional for backward compatibility
+  /** User's chosen options (optionId -> selected value) */
+  selectedOptions?: Record<string, string> | null;
+  /** Option metadata for display (Size, Color, etc.) */
+  productOptions?: ProductOptionDisplay[];
 }
 
 export interface OrderItem {
@@ -126,6 +148,8 @@ export interface OrderItem {
   netPrice?: string;
   price?: number;
   product?: Product;
+  /** Options the customer chose at order time (optionId -> selected value) */
+  selectedOptionsSnapshot?: Record<string, string> | null;
   createdAt?: string;
 }
 
@@ -138,6 +162,17 @@ export interface Order {
   total?: number; // Computed value
   userId?: string;
   user?: User;
+  /** Top-level contact from API (order confirmation) */
+  email?: string;
+  phoneNumber?: string;
+  billingRegion?: string | null;
+  billingStreetAddress?: string | null;
+  billingCity?: string | null;
+  billingState?: string | null;
+  billingPostcode?: string | null;
+  billingPhone?: string | null;
+  billingEmail?: string | null;
+  billingAddressId?: string | null;
   orderedDate?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -276,17 +311,12 @@ export interface UpdateProductRequest {
 export interface AddToCartRequest {
   productId: string;
   quantity: number;
+  /** Required for products with options. { optionId: selectedValue } */
+  selectedOptions?: Record<string, string>;
 }
 
 export interface UpdateCartItemRequest {
   quantity: number;
-}
-
-export interface CreateOrderRequest {
-  items: {
-    productId: string;
-    quantity: number;
-  }[];
 }
 
 export interface UpdateOrderStatusRequest {
@@ -332,6 +362,38 @@ export interface UpdateStaffAccountRequest {
   password?: string;
   permissionIds?: string[];
   isActive?: boolean;
+}
+
+// User Management (Customer accounts only)
+export interface UserFilters {
+  isGuest?: boolean; // Filter by guest status
+  emailVerified?: boolean; // Filter by email verification status
+  search?: string; // Search by email, phone, or name
+  page?: number;
+  limit?: number;
+}
+
+export interface CreateUserRequest {
+  name?: string;
+  email: string;
+  password: string;
+  phoneNumber?: string;
+  profileImageUrl?: string;
+}
+
+export interface UpdateUserRequest {
+  name?: string;
+  email?: string;
+  phoneNumber?: string;
+  profileImageUrl?: string;
+  // Note: Password updates should use separate change-password endpoint for security
+}
+
+export interface UserStats {
+  totalUsers: number;
+  guestUsers: number;
+  verifiedUsers: number;
+  unverifiedUsers: number;
 }
 
 export interface CreatePaymentRequest {
@@ -864,13 +926,30 @@ export interface FAQFilters {
 
 export interface ThemeColors {
   primary: string;
-  secondary: string;
-  accent: string;
+  foreground: string;
   background: string;
-  text: string;
+  nav: string;
+  header1: string;
+  header2: string;
+  border: string;
+  body: string;
   card: string;
   logo: string;
 }
+
+/** Default theme colors for new themes (production-ready palette) */
+export const DEFAULT_THEME_COLORS: ThemeColors = {
+  primary: "#bba07a",
+  foreground: "#121212",
+  background: "#000000",
+  nav: "#c9c5c5",
+  header1: "#ffffff",
+  header2: "#d1d5db",
+  border: "#dadde1",
+  body: "#000000",
+  card: "#121212",
+  logo: "#ffffff",
+};
 
 export interface Theme {
   id: string;
@@ -971,11 +1050,15 @@ export interface CartUpdateEvent {
 
 // ==================== Updated Order Request ====================
 
+export interface CreateOrderItemRequest {
+  productId: string;
+  quantity: number;
+  /** Required for products with options. { optionId: selectedValue } */
+  selectedOptions?: Record<string, string>;
+}
+
 export interface CreateOrderRequest {
-  items: {
-    productId: string;
-    quantity: number;
-  }[];
+  items: CreateOrderItemRequest[];
   email?: string; // Required for guest users
   phoneNumber?: string; // Required for guest users
   billingAddress?: CreateBillingAddressRequest; // Required for guest users

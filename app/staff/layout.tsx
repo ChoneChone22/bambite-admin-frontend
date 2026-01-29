@@ -11,6 +11,7 @@ import { tokenManager } from "@/src/lib/tokenManager";
 import StaffSidebar from "@/src/components/StaffSidebar";
 import MobileNavBar from "@/src/components/MobileNavBar";
 import MobileSidebar from "@/src/components/MobileSidebar";
+import LoadingSpinner from "@/src/components/LoadingSpinner";
 
 export default function StaffLayout({
   children,
@@ -84,7 +85,7 @@ export default function StaffLayout({
   if (isLoading || !isAuthenticated) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[--primary]"></div>
+        <LoadingSpinner size="lg" />
       </div>
     );
   }

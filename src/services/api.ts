@@ -12,6 +12,10 @@ import {
   ForgotPasswordRequest,
   ResetPasswordRequest,
   User,
+  UserFilters,
+  CreateUserRequest,
+  UpdateUserRequest,
+  UserStats,
   Product,
   CreateProductRequest,
   UpdateProductRequest,
@@ -349,6 +353,22 @@ export const authApi = {
       });
       throw error;
     }
+  },
+
+  /**
+   * Admin Change Password
+   * Requires authentication - admin must be logged in
+   * All admin sessions will be invalidated after password change (forced re-login)
+   */
+  adminChangePassword: async (data: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<{ message: string; email?: string }> => {
+    const response = await axiosInstance.post<ApiResponse<{ message: string; email?: string; logoutRequired?: boolean }>>(
+      "/auth/admin/change-password",
+      data
+    );
+    return response.data.data || { message: response.data.message || "Password changed successfully" };
   },
 
   /**
@@ -808,13 +828,18 @@ export const ordersApi = {
    * Get all orders (with filters for admin)
    */
   getAll: async (filters?: OrderFilters): Promise<Order[]> => {
-    const response = await axiosInstance.get<any>("/orders", {
+    const response = await axiosInstance.get<{
+      status?: string;
+      data?: Order[];
+      meta?: { page: number; limit: number; total: number };
+    }>("/orders", {
       params: filters,
     });
-    // Backend returns data directly in response.data, not nested
-    return Array.isArray(response.data)
-      ? response.data
-      : response.data.data || [];
+    // Backend returns { status: "success", data: Order[], meta?: { page, limit, total } }
+    const raw = response.data;
+    if (Array.isArray(raw)) return raw;
+    if (raw?.data && Array.isArray(raw.data)) return raw.data;
+    return [];
   },
 
   /**
@@ -998,6 +1023,73 @@ export const staffApi = {
     return {
       staffCount: data?.totalStaff || 0,
       totalPayroll: data?.totalNetPay || 0,
+    };
+  },
+};
+
+// ==================== Users API ====================
+
+export const usersApi = {
+  /**
+   * Get all users with optional filters (Admin/Staff with permission)
+   * Returns customer accounts (registered + guest users)
+   * Backend returns: { status: "success", data: User[], meta: { page, limit, total } }
+   */
+  getAll: async (filters?: UserFilters): Promise<User[]> => {
+    const response = await axiosInstance.get<any>("/users", {
+      params: filters || { page: 1, limit: 1000 }, // High limit for client-side pagination
+    });
+    // Backend returns { status: "success", data: User[] }
+    return response.data.data || [];
+  },
+
+  /**
+   * Get single user by ID (Admin/Staff with permission)
+   */
+  getById: async (id: string): Promise<User> => {
+    const response = await axiosInstance.get<any>(`/users/${id}`);
+    return response.data.data;
+  },
+
+  /**
+   * Create new user account (Admin/Staff with permission)
+   * Creates a registered (non-guest) customer account
+   */
+  create: async (data: CreateUserRequest): Promise<User> => {
+    const response = await axiosInstance.post<any>("/users", data);
+    return response.data.data;
+  },
+
+  /**
+   * Update user information (Admin/Staff with permission)
+   * Password updates should use separate change-password endpoint
+   * Backend expects PATCH for user updates.
+   */
+  update: async (id: string, data: UpdateUserRequest): Promise<User> => {
+    const response = await axiosInstance.patch<any>(`/users/${id}`, data);
+    return response.data.data;
+  },
+
+  /**
+   * Delete user (Admin only - use with caution)
+   * Permanently deletes user account and associated data
+   */
+  delete: async (id: string): Promise<void> => {
+    await axiosInstance.delete(`/users/${id}`);
+  },
+
+  /**
+   * Get user statistics (Admin/Staff with permission)
+   * Returns: { totalUsers, guestUsers, verifiedUsers, unverifiedUsers }
+   */
+  getStats: async (): Promise<UserStats> => {
+    const response = await axiosInstance.get<any>("/users/statistics");
+    const data = response.data.data;
+    return {
+      totalUsers: data?.totalUsers || 0,
+      guestUsers: data?.guestUsers || 0,
+      verifiedUsers: data?.verifiedUsers || 0,
+      unverifiedUsers: data?.unverifiedUsers || 0,
     };
   },
 };
@@ -2634,17 +2726,23 @@ export const animationTriggerApi = {
 
 export const realtimeApi = {
   /**
-   * Poll order status
+   * Poll single order (fallback when WebSocket disconnected).
+   * Handles guide shape { data: { order, timestamp } } or legacy { data: Order }.
    */
   getOrderStatus: async (orderId: string): Promise<Order> => {
-    const response = await axiosInstance.get<ApiResponse<Order>>(
+    const response = await axiosInstance.get<ApiResponse<Order> | { data?: { order?: Order; timestamp?: string } }>(
       `/realtime/order/${orderId}`
     );
-    return response.data.data || response.data;
+    const raw = response.data;
+    const data = (raw as { data?: unknown })?.data ?? raw;
+    if (data && typeof data === "object" && "order" in data) {
+      return (data as { order: Order }).order;
+    }
+    return (data as Order) ?? (raw as { data?: Order })?.data ?? ({} as Order);
   },
 
   /**
-   * Poll product inventory
+   * Poll product inventory (PDP / admin). Guide: { data: { product: { id, name, stockQuantity, updatedAt }, timestamp } }
    */
   getProductInventory: async (productId: string): Promise<Product> => {
     const response = await axiosInstance.get<ApiResponse<Product>>(
@@ -2654,7 +2752,7 @@ export const realtimeApi = {
   },
 
   /**
-   * Poll cart updates
+   * Poll cart (user/guest). Guide: { data: { cart, timestamp } }
    */
   getCart: async (): Promise<{ items: CartItem[]; totalItems: number; totalPrice: number }> => {
     const response = await axiosInstance.get<ApiResponse<{
@@ -2666,13 +2764,48 @@ export const realtimeApi = {
   },
 
   /**
-   * Poll admin orders
+   * Poll admin/staff orders list (fallback when WebSocket disconnected).
+   * Response shape per guide: { data: { orders: [...], timestamp } }
    */
   getAdminOrders: async (): Promise<Order[]> => {
-    const response = await axiosInstance.get<ApiResponse<Order[]>>(
-      "/realtime/admin/orders"
+    const response = await axiosInstance.get<{
+      data?: { orders?: Order[]; timestamp?: string } | Order[];
+      status?: string;
+    }>("/realtime/admin/orders");
+    const data = response.data?.data ?? response.data;
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === "object" && "orders" in data) {
+      return (data as { orders: Order[] }).orders ?? [];
+    }
+    return [];
+  },
+};
+
+// ==================== Dashboard Stats API ====================
+
+export interface DashboardStats {
+  products: {
+    total: number;
+  };
+  orders: {
+    total: number;
+  };
+  staff: {
+    total: number;
+  };
+}
+
+export const dashboardApi = {
+  /**
+   * Get dashboard statistics
+   * Access: Admin and all Staff (no permission required)
+   * Returns: { products: { total }, orders: { total }, staff: { total } }
+   */
+  getStats: async (): Promise<DashboardStats> => {
+    const response = await axiosInstance.get<ApiResponse<DashboardStats>>(
+      "/dashboard/stats"
     );
-    return response.data.data || [];
+    return response.data.data || response.data;
   },
 };
 
@@ -2704,6 +2837,8 @@ const api = {
   animations: animationsApi,
   animationTrigger: animationTriggerApi,
   realtime: realtimeApi,
+  dashboard: dashboardApi,
+  users: usersApi,
 };
 
 export default api;

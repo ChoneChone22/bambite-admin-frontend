@@ -21,6 +21,7 @@ import { useModal } from "@/src/hooks/useModal";
 import { useTablePagination } from "@/src/hooks";
 import TablePagination from "@/src/components/TablePagination";
 import FormModal from "@/src/components/FormModal";
+import LoadingSpinner from "@/src/components/LoadingSpinner";
 
 // Validation Schema
 const jobPostSchema = Yup.object().shape({
@@ -208,7 +209,7 @@ export default function JobPostsManagementPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[--primary]"></div>
+        <LoadingSpinner size="md" />
       </div>
     );
   }
@@ -218,7 +219,7 @@ export default function JobPostsManagementPage() {
       {modal.ModalComponent}
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold" style={{ color: "#000000" }}>
+        <h1 className="text-3xl font-bold text-foreground">
           Job Post Management
         </h1>
         <button onClick={handleCreate} className="btn-primary cursor-pointer">
@@ -227,38 +228,37 @@ export default function JobPostsManagementPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 p-4 rounded-lg mb-6" style={{ color: "#b91c1c" }}>
+        <div className="bg-red-50 p-4 rounded-lg mb-6 text-foreground">
           {error}
         </div>
       )}
 
       {/* Job Posts Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-card rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-background">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Title
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Location
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Close Date
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-gray-200">
               {paginatedData.map((jobPost) => (
-                <tr key={jobPost.id} className="hover:bg-gray-50">
+                <tr key={jobPost.id} className="hover:bg-background">
                   <td className="px-6 py-4">
                     <div
                       className="text-sm font-medium"
-                      style={{ color: "#000000" }}
                     >
                       {jobPost.title}
                     </div>
@@ -269,8 +269,7 @@ export default function JobPostsManagementPage() {
                     </span>
                   </td>
                   <td
-                    className="px-6 py-4 whitespace-nowrap text-sm"
-                    style={{ color: "#6b7280" }}
+                    className="px-6 py-4 whitespace-nowrap text-sm text-foreground"
                   >
                     {jobPost.jobDetails.closeDate
                       ? formatDateTime(jobPost.jobDetails.closeDate)
@@ -298,8 +297,7 @@ export default function JobPostsManagementPage() {
                 <tr>
                   <td
                     colSpan={4}
-                    className="px-6 py-4 text-center"
-                    style={{ color: "#6b7280" }}
+                    className="px-6 py-4 text-center text-foreground"
                   >
                     No job posts found
                   </td>
@@ -366,8 +364,7 @@ export default function JobPostsManagementPage() {
             <Form className="space-y-6">
               <div>
                 <label
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: "#374151" }}
+                  className="block text-sm font-medium mb-1 text-foreground"
                 >
                   Job Title *
                 </label>
@@ -384,8 +381,7 @@ export default function JobPostsManagementPage() {
 
               <div>
                 <label
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: "#374151" }}
+                  className="block text-sm font-medium mb-1 text-foreground"
                 >
                   Location (Place Tag) *
                 </label>
@@ -403,7 +399,7 @@ export default function JobPostsManagementPage() {
                   </p>
                 )}
                 {placeTags.length === 0 && (
-                  <p className="text-sm mt-1" style={{ color: "#6b7280" }}>
+                  <p className="text-sm mt-1 text-foreground">
                     No active place tags available. Create a place tag first.
                   </p>
                 )}
@@ -412,8 +408,7 @@ export default function JobPostsManagementPage() {
               {/* Tasks Section */}
               <div className="border-t pt-4">
                 <label
-                  className="block text-sm font-medium mb-2"
-                  style={{ color: "#374151" }}
+                  className="block text-sm font-medium mb-2 text-foreground"
                 >
                   Tasks / Key Responsibilities *
                 </label>
@@ -454,8 +449,7 @@ export default function JobPostsManagementPage() {
                       <button
                         type="button"
                         onClick={() => push("")}
-                        className="text-sm hover:underline cursor-pointer"
-                        style={{ color: "#2563eb" }}
+                        className="text-sm hover:underline cursor-pointer text-foreground"
                       >
                         + Add Task
                       </button>
@@ -472,8 +466,7 @@ export default function JobPostsManagementPage() {
               {/* Required Qualifications Section */}
               <div className="border-t pt-4">
                 <label
-                  className="block text-sm font-medium mb-2"
-                  style={{ color: "#374151" }}
+                  className="block text-sm font-medium mb-2 text-foreground"
                 >
                   Required Qualifications *
                 </label>
@@ -518,8 +511,7 @@ export default function JobPostsManagementPage() {
                       <button
                         type="button"
                         onClick={() => push("")}
-                        className="text-sm hover:underline cursor-pointer"
-                        style={{ color: "#2563eb" }}
+                        className="text-sm hover:underline cursor-pointer text-foreground"
                       >
                         + Add Qualification
                       </button>
@@ -538,15 +530,13 @@ export default function JobPostsManagementPage() {
               <div className="border-t pt-4 space-y-4">
                 <h3
                   className="text-lg font-semibold mb-3"
-                  style={{ color: "#000000" }}
                 >
                   Job Details *
                 </h3>
 
                 <div>
                   <label
-                    className="block text-sm font-medium mb-1"
-                    style={{ color: "#374151" }}
+                    className="block text-sm font-medium mb-1 text-foreground"
                   >
                     Working Hours *
                   </label>
@@ -571,7 +561,7 @@ export default function JobPostsManagementPage() {
                       name="jobDetails.contract"
                       className="mr-2"
                     />
-                    <span className="text-sm" style={{ color: "#374151" }}>
+                    <span className="text-sm text-foreground">
                       Contract Position
                     </span>
                   </label>
@@ -579,8 +569,7 @@ export default function JobPostsManagementPage() {
 
                 <div>
                   <label
-                    className="block text-sm font-medium mb-1"
-                    style={{ color: "#374151" }}
+                    className="block text-sm font-medium mb-1 text-foreground"
                   >
                     Salary Information *
                   </label>
@@ -599,8 +588,7 @@ export default function JobPostsManagementPage() {
 
                 <div>
                   <label
-                    className="block text-sm font-medium mb-1"
-                    style={{ color: "#374151" }}
+                    className="block text-sm font-medium mb-1 text-foreground"
                   >
                     Application Close Date *
                   </label>
@@ -609,7 +597,7 @@ export default function JobPostsManagementPage() {
                     type="datetime-local"
                     className="input-field"
                   />
-                  <p className="text-xs mt-1" style={{ color: "#6b7280" }}>
+                  <p className="text-xs mt-1 text-foreground">
                     The date and time when applications will close
                   </p>
                   {errors.jobDetails && (errors.jobDetails as any).closeDate && (

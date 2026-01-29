@@ -172,7 +172,7 @@ export default function StaffReviewsModerationPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-red-600 text-lg">Access Denied</p>
-          <p className="text-gray-600 mt-2">You do not have permission to access this page</p>
+          <p className="text-muted-foreground mt-2">You do not have permission to access this page</p>
         </div>
       </div>
     );
@@ -190,8 +190,8 @@ export default function StaffReviewsModerationPage() {
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       {modal.ModalComponent}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Review Moderation</h1>
-        <p className="text-gray-600 mt-1">Moderate product reviews</p>
+        <h1 className="text-3xl font-bold text-foreground">Review Moderation</h1>
+        <p className="text-muted-foreground mt-1">Moderate product reviews</p>
       </div>
 
       {error && <Toast message={error} type="error" onClose={() => setError(null)} />}
@@ -202,11 +202,11 @@ export default function StaffReviewsModerationPage() {
       {/* Filters */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
+          <label className="block text-sm font-medium text-muted-foreground mb-2">Filter by Status</label>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as ReviewStatus | "ALL")}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
             style={{ backgroundColor: "#ffffff", color: "#111827" }}
           >
             <option value="ALL">All Reviews</option>
@@ -216,11 +216,11 @@ export default function StaffReviewsModerationPage() {
           </select>
         </div>
         <div className="flex-1">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+          <label className="block text-sm font-medium text-muted-foreground mb-2">Sort By</label>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as ReviewSortBy)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
             style={{ backgroundColor: "#ffffff", color: "#111827" }}
           >
             <option value="newest">Newest First</option>
@@ -231,65 +231,65 @@ export default function StaffReviewsModerationPage() {
       </div>
 
       {paginatedData.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg shadow">
-          <p className="text-gray-500 text-lg">No reviews found</p>
+        <div className="text-center py-12 bg-card rounded-lg shadow">
+          <p className="text-muted-foreground text-lg">No reviews found</p>
         </div>
       ) : (
         <>
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="bg-card rounded-lg shadow overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-background">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Product
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Reviewer
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Rating
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Review
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Helpful
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-card divide-y divide-gray-200">
                   {paginatedData.map((review) => (
-                    <tr key={review.id} className="hover:bg-gray-50">
+                    <tr key={review.id} className="hover:bg-background">
                       <td className="px-4 py-4">
-                        <div className="text-sm font-medium text-gray-900 max-w-xs truncate">
+                        <div className="text-sm font-medium text-foreground max-w-xs truncate">
                           {review.product?.name || "Unknown Product"}
                         </div>
                       </td>
                       <td className="px-4 py-4">
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-foreground">
                           {review.user?.email || review.guestName || "Guest"}
                         </div>
                         {review.guestEmail && (
-                          <div className="text-xs text-gray-500">{review.guestEmail}</div>
+                          <div className="text-xs text-muted-foreground">{review.guestEmail}</div>
                         )}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">{renderStars(review.rating)}</td>
                       <td className="px-4 py-4">
-                        <div className="text-sm text-gray-900 max-w-md">
+                        <div className="text-sm text-foreground max-w-md">
                           {review.message || <span className="text-gray-400">No message</span>}
                         </div>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         {getStatusBadge(review.status)}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-muted-foreground">
                         {review.helpfulVotes} votes
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">

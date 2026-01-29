@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Admin Theme Management Page
- * CRUD operations for themes with color customization
+ * CRUD operations for themes with color customization.
+ * Theme colors: primary, foreground, background, nav, header1, header2, border, body, card, logo.
  */
 
 "use client";
@@ -10,33 +10,49 @@ import { useEffect, useState } from "react";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import api from "@/src/services/api";
-import { Theme, CreateThemeRequest, UpdateThemeRequest, ThemeColors } from "@/src/types/api";
+import {
+  Theme,
+  CreateThemeRequest,
+  UpdateThemeRequest,
+  ThemeColors,
+  DEFAULT_THEME_COLORS,
+} from "@/src/types/api";
 import { getErrorMessage } from "@/src/lib/utils";
 import { useModal } from "@/src/hooks/useModal";
 import FormModal from "@/src/components/FormModal";
 import LoadingSpinner from "@/src/components/LoadingSpinner";
 import Toast from "@/src/components/Toast";
 
-// Validation Schema
+const THEME_COLOR_KEYS: (keyof ThemeColors)[] = [
+  "primary",
+  "foreground",
+  "background",
+  "nav",
+  "header1",
+  "header2",
+  "border",
+  "body",
+  "card",
+  "logo",
+];
+
+const themeColorsSchema = Yup.object().shape(
+  THEME_COLOR_KEYS.reduce(
+    (acc, key) => ({ ...acc, [key]: Yup.string().required(`${key} is required`) }),
+    {} as Record<string, Yup.StringSchema>
+  )
+);
+
 const themeSchema = Yup.object().shape({
   name: Yup.string()
     .min(2, "Theme name must be at least 2 characters")
     .max(100, "Theme name must not exceed 100 characters")
     .required("Theme name is required"),
-  colors: Yup.object().shape({
-    primary: Yup.string().required("Primary color is required"),
-    secondary: Yup.string().required("Secondary color is required"),
-    accent: Yup.string().required("Accent color is required"),
-    background: Yup.string().required("Background color is required"),
-    text: Yup.string().required("Text color is required"),
-    card: Yup.string().required("Card color is required"),
-    logo: Yup.string().required("Logo color is required"),
-  }),
+  colors: themeColorsSchema,
 });
 
 export default function ThemesManagementPage() {
   const [themes, setThemes] = useState<Theme[]>([]);
-  const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -66,8 +82,6 @@ export default function ThemesManagementPage() {
       const response = await api.themes.getAll();
       const themesList = response.themes || [];
       setThemes(themesList);
-      const selected = themesList.find((t) => t.selected);
-      setSelectedTheme(selected || null);
     } catch (err) {
       setError("Failed to fetch themes");
       console.error("Error fetching themes:", err);
@@ -153,7 +167,7 @@ export default function ThemesManagementPage() {
 
   // Tooltip handlers
   const handleColorHover = (
-    e: React.MouseEvent<HTMLDivElement>,
+    e: React.MouseEvent<HTMLElement>,
     colorName: string,
     colorCode: string
   ) => {
@@ -196,10 +210,10 @@ export default function ThemesManagementPage() {
             marginTop: "-8px",
           }}
         >
-          <div className="font-semibold mb-0.5" style={{ color: "#ffffff" }}>
+          <div className="font-semibold mb-0.5 text-foreground">
             {tooltip.colorName}
           </div>
-          <div className="font-mono text-[10px] opacity-90" style={{ color: "#d1d5db" }}>
+          <div className="font-mono text-[10px] opacity-90 text-foreground">
             {tooltip.colorCode}
           </div>
           {/* Arrow */}
@@ -214,8 +228,8 @@ export default function ThemesManagementPage() {
       )}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Theme Management</h1>
-          <p className="text-gray-600 mt-1">Manage application themes and colors</p>
+          <h1 className="text-3xl font-bold text-foreground">Theme Management</h1>
+          <p className="text-muted-foreground mt-1">Manage application themes and colors</p>
         </div>
         <button
           onClick={openCreateModal}
@@ -231,7 +245,7 @@ export default function ThemesManagementPage() {
       )}
 
       {themes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-gray-100">
+        <div className="flex flex-col items-center justify-center py-20 bg-card rounded-2xl border border-gray-100">
           <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center mb-6">
             <svg
               className="w-10 h-10 text-blue-500"
@@ -247,8 +261,8 @@ export default function ThemesManagementPage() {
               />
             </svg>
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No themes yet</h3>
-          <p className="text-gray-500 mb-8 max-w-sm text-center">
+          <h3 className="text-xl font-semibold text-foreground mb-2">No themes yet</h3>
+          <p className="text-muted-foreground mb-8 max-w-sm text-center">
             Create your first theme to customize the application&apos;s appearance
           </p>
           <button
@@ -266,10 +280,10 @@ export default function ThemesManagementPage() {
           {themes.map((theme) => (
             <div
               key={theme.id}
-              className={`group relative bg-white rounded-2xl border transition-all duration-200 ${
+              className={`group relative bg-card rounded-2xl border transition-all duration-200 ${
                 theme.selected
                   ? "border-blue-500 shadow-lg shadow-blue-500/10"
-                  : "border-gray-200 hover:border-gray-300 hover:shadow-md"
+                  : "border-border hover:border-border hover:shadow-md"
               }`}
             >
               {/* Header */}
@@ -277,9 +291,9 @@ export default function ThemesManagementPage() {
                 <div className="flex items-start justify-between mb-6">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-lg font-semibold text-gray-900 truncate">{theme.name}</h3>
+                      <h3 className="text-lg font-semibold text-foreground truncate">{theme.name}</h3>
                       {theme.selected && (
-                        <span className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-blue-50 text-blue-700">
+                        <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-blue-50 text-blue-700">
                           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                             <path
                               fillRule="evenodd"
@@ -292,7 +306,7 @@ export default function ThemesManagementPage() {
                       )}
                     </div>
                     {theme.createdAt && (
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-muted-foreground">
                         {new Date(theme.createdAt).toLocaleDateString("en-US", {
                           month: "short",
                           day: "numeric",
@@ -303,115 +317,97 @@ export default function ThemesManagementPage() {
                   </div>
                 </div>
 
-                {/* Color Palette Preview */}
+                {/* Color Palette Preview — primary, foreground, background, nav, header1, header2, border, body, card, logo */}
                 <div className="space-y-4">
-                  {/* Main Colors */}
-                  <div>
-                    <div className="flex gap-2 mb-2">
+                  <div className="flex flex-wrap gap-2">
+                    {THEME_COLOR_KEYS.map((key) => (
                       <div
-                        className="flex-1 aspect-square rounded-xl overflow-hidden shadow-sm cursor-pointer transition-transform hover:scale-105"
+                        key={key}
+                        className="w-10 h-10 rounded-lg shrink-0 overflow-hidden shadow-sm cursor-pointer transition-transform hover:scale-110 border border-border"
+                        style={{ backgroundColor: theme.colors[key] ?? "#ccc" }}
                         onMouseEnter={(e) =>
-                          handleColorHover(e, "Primary", theme.colors.primary)
+                          handleColorHover(e, key.replace(/([A-Z])/g, " $1").trim(), theme.colors[key] ?? "")
                         }
                         onMouseLeave={handleColorLeave}
-                      >
-                        <div
-                          className="w-full h-full"
-                          style={{ backgroundColor: theme.colors.primary }}
-                        />
-                      </div>
-                      <div
-                        className="flex-1 aspect-square rounded-xl overflow-hidden shadow-sm cursor-pointer transition-transform hover:scale-105"
-                        onMouseEnter={(e) =>
-                          handleColorHover(e, "Secondary", theme.colors.secondary)
-                        }
-                        onMouseLeave={handleColorLeave}
-                      >
-                        <div
-                          className="w-full h-full"
-                          style={{ backgroundColor: theme.colors.secondary }}
-                        />
-                      </div>
-                      <div
-                        className="flex-1 aspect-square rounded-xl overflow-hidden shadow-sm cursor-pointer transition-transform hover:scale-105"
-                        onMouseEnter={(e) =>
-                          handleColorHover(e, "Accent", theme.colors.accent)
-                        }
-                        onMouseLeave={handleColorLeave}
-                      >
-                        <div
-                          className="w-full h-full"
-                          style={{ backgroundColor: theme.colors.accent }}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex gap-2 text-xs text-gray-500">
-                      <span className="flex-1 truncate">{theme.colors.primary}</span>
-                      <span className="flex-1 truncate">{theme.colors.secondary}</span>
-                      <span className="flex-1 truncate">{theme.colors.accent}</span>
-                    </div>
+                        title={`${key}: ${theme.colors[key] ?? ""}`}
+                      />
+                    ))}
                   </div>
 
-                  {/* Background Preview */}
-                  <div className="relative">
+                  {/* Live preview strip: nav, header, body, card, logo */}
+                  <div
+                    className="rounded-xl overflow-hidden border relative"
+                    style={{
+                      backgroundColor: theme.colors.background,
+                      borderColor: theme.colors.border ?? "#e5e7eb",
+                    }}
+                  >
                     <div
-                      className="h-20 rounded-xl p-4 flex items-center justify-between border border-gray-200 relative"
-                      style={{ backgroundColor: theme.colors.background }}
+                      className="h-8 px-3 flex items-center justify-between"
+                      style={{ backgroundColor: theme.colors.nav, color: theme.colors.foreground }}
                       onMouseEnter={(e) =>
-                        handleColorHover(e, "Background", theme.colors.background)
+                        handleColorHover(e, "Nav", theme.colors.nav)
                       }
                       onMouseLeave={handleColorLeave}
                     >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm cursor-pointer transition-transform hover:scale-110"
-                          style={{
-                            backgroundColor: theme.colors.background,
-                            color: theme.colors.logo,
-                            border: `2px solid ${theme.colors.logo}`,
-                          }}
-                          onMouseEnter={(e) => {
-                            e.stopPropagation();
-                            handleColorHover(e, "Logo", theme.colors.logo);
-                          }}
-                          onMouseLeave={handleColorLeave}
-                        >
-                          L
-                        </div>
-                        <div>
-                          <div
-                            className="h-2 w-16 rounded mb-1 cursor-pointer transition-opacity hover:opacity-80"
-                            style={{ backgroundColor: theme.colors.card }}
-                            onMouseEnter={(e) => {
-                              e.stopPropagation();
-                              handleColorHover(e, "Card", theme.colors.card);
-                            }}
-                            onMouseLeave={handleColorLeave}
-                          />
-                          <div
-                            className="h-2 w-12 rounded cursor-pointer transition-opacity hover:opacity-80"
-                            style={{ backgroundColor: theme.colors.card, opacity: 0.6 }}
-                            onMouseEnter={(e) => {
-                              e.stopPropagation();
-                              handleColorHover(e, "Card", theme.colors.card);
-                            }}
-                            onMouseLeave={handleColorLeave}
-                          />
-                        </div>
-                      </div>
-                      <div
-                        className="text-xs font-semibold px-2 py-1 rounded cursor-pointer transition-opacity hover:opacity-80"
-                        style={{
-                          backgroundColor: theme.colors.card,
-                          color: theme.colors.text,
-                        }}
+                      <span className="text-xs font-medium opacity-80">Nav</span>
+                      <span
+                        className="shrink-0 px-2 py-0.5 rounded text-[10px] font-medium"
+                        style={{ backgroundColor: theme.colors.primary, color: theme.colors.foreground }}
                         onMouseEnter={(e) => {
                           e.stopPropagation();
-                          handleColorHover(e, "Text", theme.colors.text);
+                          handleColorHover(e, "Primary", theme.colors.primary);
                         }}
                         onMouseLeave={handleColorLeave}
                       >
-                        Preview
+                        Primary
+                      </span>
+                    </div>
+                    <div
+                      className="h-10 px-3 flex items-center gap-2"
+                      style={{ backgroundColor: theme.colors.header1, color: theme.colors.foreground }}
+                      onMouseEnter={(e) =>
+                        handleColorHover(e, "Header1", theme.colors.header1)
+                      }
+                      onMouseLeave={handleColorLeave}
+                    >
+                      <div
+                        className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold border"
+                        style={{
+                          backgroundColor: theme.colors.background,
+                          color: theme.colors.logo,
+                          borderColor: theme.colors.logo,
+                        }}
+                        onMouseEnter={(e) => {
+                          e.stopPropagation();
+                          handleColorHover(e, "Logo", theme.colors.logo);
+                        }}
+                        onMouseLeave={handleColorLeave}
+                      >
+                        L
+                      </div>
+                      <span className="text-sm font-semibold" style={{ color: theme.colors.header2 }}>
+                        Header
+                      </span>
+                    </div>
+                    <div
+                      className="p-3 min-h-16"
+                      style={{ backgroundColor: theme.colors.body, color: theme.colors.foreground }}
+                      onMouseEnter={(e) =>
+                        handleColorHover(e, "Body", theme.colors.body)
+                      }
+                      onMouseLeave={handleColorLeave}
+                    >
+                      <div
+                        className="rounded-lg p-2 text-xs"
+                        style={{ backgroundColor: theme.colors.card, color: theme.colors.foreground }}
+                        onMouseEnter={(e) => {
+                          e.stopPropagation();
+                          handleColorHover(e, "Card", theme.colors.card);
+                        }}
+                        onMouseLeave={handleColorLeave}
+                      >
+                        Card preview
                       </div>
                     </div>
                   </div>
@@ -419,13 +415,12 @@ export default function ThemesManagementPage() {
               </div>
 
               {/* Actions */}
-              <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+              <div className="px-6 py-4 border-t border-gray-100 bg-background/50">
                 <div className="flex gap-2">
                   {theme.selected ? (
                     <button
                       onClick={() => handleUnselect(theme.id)}
-                      className="flex-1 px-4 py-2 text-sm font-medium bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-                      style={{ color: "#374151" }}
+                      className="flex-1 px-4 py-2 text-sm font-medium bg-card border border-border rounded-lg hover:bg-background transition-colors cursor-pointer text-foreground"
                     >
                       Deselect
                     </button>
@@ -440,15 +435,13 @@ export default function ThemesManagementPage() {
                   )}
                   <button
                     onClick={() => openEditModal(theme)}
-                    className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-                    style={{ color: "#374151" }}
+                    className="px-4 py-2 text-sm font-medium bg-card border border-border rounded-lg hover:bg-background transition-colors cursor-pointer text-foreground"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(theme.id)}
-                    className="px-4 py-2 text-sm font-medium bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
-                    style={{ color: "#dc2626" }}
+                    className="px-4 py-2 text-sm font-medium bg-card border border-red-200 rounded-lg hover:bg-red-50 transition-colors cursor-pointer text-foreground"
                   >
                     Delete
                   </button>
@@ -471,15 +464,9 @@ export default function ThemesManagementPage() {
         <Formik
           initialValues={{
             name: editingTheme?.name || "",
-            colors: editingTheme?.colors || {
-              primary: "#3b82f6",
-              secondary: "#10b981",
-              accent: "#ef4444",
-              background: "#ffffff",
-              text: "#1f2937",
-              card: "#f9fafb",
-              logo: "#000000",
-            },
+            colors: editingTheme?.colors
+              ? { ...DEFAULT_THEME_COLORS, ...editingTheme.colors }
+              : { ...DEFAULT_THEME_COLORS },
           }}
           validationSchema={themeSchema}
           onSubmit={async (values, { setSubmitting }) => {
@@ -489,8 +476,8 @@ export default function ThemesManagementPage() {
               } else {
                 await handleCreate(values);
               }
-            } catch (err) {
-              // Error handled in handleCreate/handleUpdate
+            } catch {
+              // Error displayed via handleCreate/handleUpdate
             } finally {
               setSubmitting(false);
             }
@@ -499,14 +486,14 @@ export default function ThemesManagementPage() {
           {({ isSubmitting, errors, touched, values, setFieldValue }) => (
             <Form className="space-y-4">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="name" className="block text-sm font-medium text-muted-foreground mb-1">
                   Theme Name *
                 </label>
                 <Field
                   id="name"
                   name="name"
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="e.g., Dark Theme"
                 />
                 {errors.name && touched.name && (
@@ -515,11 +502,11 @@ export default function ThemesManagementPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {Object.keys(values.colors).map((colorKey) => (
+                {THEME_COLOR_KEYS.map((colorKey) => (
                   <div key={colorKey}>
                     <label
                       htmlFor={`colors.${colorKey}`}
-                      className="block text-sm font-medium text-gray-700 mb-1 capitalize"
+                      className="block text-sm font-medium text-muted-foreground mb-1 capitalize"
                     >
                       {colorKey.replace(/([A-Z])/g, " $1").trim()} *
                     </label>
@@ -527,69 +514,86 @@ export default function ThemesManagementPage() {
                       <input
                         type="color"
                         id={`colors.${colorKey}`}
-                        value={values.colors[colorKey as keyof ThemeColors]}
+                        value={values.colors[colorKey] ?? "#000000"}
                         onChange={(e) =>
                           setFieldValue(`colors.${colorKey}`, e.target.value)
                         }
-                        className="h-12 w-12 rounded border border-gray-300 cursor-pointer flex-shrink-0"
+                        className="h-12 w-12 rounded border border-border cursor-pointer shrink-0"
                         style={{ minWidth: "3rem", minHeight: "3rem" }}
+                        aria-label={`${colorKey} color`}
                       />
                       <Field
                         id={`colors.${colorKey}-text`}
                         name={`colors.${colorKey}`}
                         type="text"
-                        className="w-24 px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="flex-1 min-w-0 px-3 py-2 border border-border rounded-lg bg-card text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:border-transparent font-mono text-sm"
                         placeholder="#000000"
                       />
                     </div>
-                    {errors.colors && (errors.colors as any)[colorKey] && (
-                      <p className="mt-1 text-sm text-red-600">
-                        {(errors.colors as any)[colorKey]}
-                      </p>
-                    )}
+                    {errors.colors &&
+                      typeof errors.colors === "object" &&
+                      (errors.colors as Record<string, string>)[colorKey] && (
+                        <p className="mt-1 text-sm text-red-600">
+                          {(errors.colors as Record<string, string>)[colorKey]}
+                        </p>
+                      )}
                   </div>
                 ))}
               </div>
 
-              {/* Color Preview */}
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm font-medium text-gray-700 mb-2">Preview:</p>
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <div
-                      className="flex-1 h-12 rounded"
-                      style={{ backgroundColor: values.colors.primary }}
-                    />
-                    <div
-                      className="flex-1 h-12 rounded"
-                      style={{ backgroundColor: values.colors.secondary }}
-                    />
-                    <div
-                      className="flex-1 h-12 rounded"
-                      style={{ backgroundColor: values.colors.accent }}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <div
-                      className="flex-1 h-16 rounded border-2 border-gray-300 flex items-center justify-center"
-                      style={{ backgroundColor: values.colors.background }}
+              {/* Color Preview — matches card preview structure: background, border, nav, primary, header1, header2, logo, body, card, foreground */}
+              <div className="p-4 bg-gray-100 rounded-xl border border-border">
+                <p className="text-sm font-medium text-muted-foreground mb-3">Preview</p>
+                <div
+                  className="rounded-xl overflow-hidden border"
+                  style={{
+                    backgroundColor: values.colors.background,
+                    borderColor: values.colors.border ?? "#e5e7eb",
+                  }}
+                >
+                  <div
+                    className="h-8 px-3 flex items-center justify-between text-xs"
+                    style={{ backgroundColor: values.colors.nav, color: values.colors.foreground }}
+                  >
+                    <span className="font-medium opacity-80">Nav</span>
+                    <span
+                      className="shrink-0 px-2 py-0.5 rounded text-[10px] font-medium"
+                      style={{ backgroundColor: values.colors.primary, color: values.colors.foreground }}
                     >
-                      <div
-                        className="text-2xl font-bold"
-                        style={{ color: values.colors.logo }}
-                      >
-                        Logo
-                      </div>
-                    </div>
+                      Primary
+                    </span>
                   </div>
                   <div
-                    className="h-20 rounded p-4"
-                    style={{
-                      backgroundColor: values.colors.card,
-                      color: values.colors.text,
-                    }}
+                    className="h-10 px-3 flex items-center gap-2"
+                    style={{ backgroundColor: values.colors.header1, color: values.colors.foreground }}
                   >
-                    <p className="text-sm">Sample text on card background</p>
+                    <span
+                      className="w-6 h-6 rounded border flex items-center justify-center text-xs font-bold shrink-0"
+                      style={{
+                        backgroundColor: values.colors.background,
+                        color: values.colors.logo,
+                        borderColor: values.colors.logo,
+                      }}
+                    >
+                      L
+                    </span>
+                    <span className="text-sm font-semibold" style={{ color: values.colors.header2 }}>
+                      Header
+                    </span>
+                  </div>
+                  <div
+                    className="p-3 min-h-16"
+                    style={{ backgroundColor: values.colors.body, color: values.colors.foreground }}
+                  >
+                    <div
+                      className="rounded-lg p-2 text-xs"
+                      style={{
+                        backgroundColor: values.colors.card,
+                        color: values.colors.foreground,
+                      }}
+                    >
+                      Card preview
+                    </div>
                   </div>
                 </div>
               </div>
@@ -601,15 +605,14 @@ export default function ThemesManagementPage() {
                     setShowModal(false);
                     setEditingTheme(null);
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-                  style={{ backgroundColor: "#ffffff", color: "#374151" }}
+                  className="btn-secondary cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  className="btn-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? "Saving..." : editingTheme ? "Update" : "Create"}
                 </button>

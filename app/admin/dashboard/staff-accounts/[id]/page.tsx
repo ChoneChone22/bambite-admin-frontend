@@ -7,6 +7,7 @@ import { StaffAccount, Payment } from "@/src/types/api";
 import { useTablePagination } from "@/src/hooks";
 import TablePagination from "@/src/components/TablePagination";
 import { formatPrice } from "@/src/lib/utils";
+import LoadingSpinner from "@/src/components/LoadingSpinner";
 
 // Helper function to format permission code (replace underscores with spaces and capitalize)
 const formatPermissionCode = (code: string): string => {
@@ -91,7 +92,7 @@ export default function StaffAccountDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[--primary]"></div>
+        <LoadingSpinner size="md" />
       </div>
     );
   }
@@ -113,12 +114,12 @@ export default function StaffAccountDetailPage() {
           >
             ← Back to Staff Accounts
           </button>
-          <h1 className="text-3xl font-bold mb-1" style={{ color: "#000000" }}>
+          <h1 className="text-3xl font-bold mb-1 text-foreground">
             Staff Account Details
           </h1>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm" style={{ color: "#dc2626" }}>{error || "Staff account not found."}</p>
+        <div className="bg-card rounded-lg shadow p-6">
+          <p className="text-sm text-foreground">{error || "Staff account not found."}</p>
         </div>
       </div>
     );
@@ -142,17 +143,17 @@ export default function StaffAccountDetailPage() {
         >
           ← Back to Staff Accounts
         </button>
-        <h1 className="text-3xl font-bold mb-1" style={{ color: "#000000" }}>
+        <h1 className="text-3xl font-bold mb-1 text-foreground">
           Staff Account Details
         </h1>
-        <p className="text-sm" style={{ color: "#4b5563" }}>
+        <p className="text-sm text-foreground">
           View staff account information and permissions
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow p-6 space-y-4">
-          <h2 className="text-lg font-semibold mb-2" style={{ color: "#000000" }}>
+        <div className="bg-card rounded-lg shadow p-6 space-y-4">
+          <h2 className="text-lg font-semibold mb-2 text-foreground">
             Account Information
           </h2>
           <DetailRow label="Email" value={account.email} />
@@ -160,7 +161,7 @@ export default function StaffAccountDetailPage() {
             label="Account Status"
             value={account.staff?.status === "active" ? "Active" : "Inactive"}
             valueClassName={
-              account.staff?.status === "active" ? "text-green-600" : "text-gray-600"
+              account.staff?.status === "active" ? "text-green-600" : "text-muted-foreground"
             }
           />
           {account.mustChangePassword && (
@@ -172,8 +173,8 @@ export default function StaffAccountDetailPage() {
           )}
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6 space-y-4">
-          <h2 className="text-lg font-semibold mb-2" style={{ color: "#000000" }}>
+        <div className="bg-card rounded-lg shadow p-6 space-y-4">
+          <h2 className="text-lg font-semibold mb-2 text-foreground">
             Staff Information
           </h2>
           <DetailRow
@@ -198,28 +199,28 @@ export default function StaffAccountDetailPage() {
                 ? "text-green-600"
                 : staff?.status === "on_leave"
                 ? "text-yellow-600"
-                : "text-gray-600"
+                : "text-muted-foreground"
             }
           />
         </div>
       </div>
 
-      <div className="mt-6 bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4" style={{ color: "#000000" }}>
+      <div className="mt-6 bg-card rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold mb-4 text-foreground">
           Permissions
         </h2>
         {account.permissions && account.permissions.length > 0 ? (
-          <ul className="list-disc list-inside text-sm space-y-2" style={{ color: "#1f2937" }}>
+          <ul className="list-disc list-inside text-sm space-y-2 text-foreground">
             {account.permissions.map((perm) => (
               <li key={perm.id}>
-                <span className="font-medium" style={{ color: "#1f2937" }}>
+                <span className="font-medium text-foreground">
                   {formatPermissionCode(perm.code || "")}
                 </span>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-sm" style={{ color: "#4b5563" }}>
+          <p className="text-sm text-foreground">
             No explicit permissions assigned.
           </p>
         )}
@@ -227,16 +228,16 @@ export default function StaffAccountDetailPage() {
 
       {/* Payment History */}
       {account.staff?.id && (
-        <div className="mt-6 bg-white rounded-lg shadow p-6">
+        <div className="mt-6 bg-card rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold" style={{ color: "#000000" }}>
+            <h2 className="text-lg font-semibold text-foreground">
               Payment History
             </h2>
           </div>
 
           {/* Date Filter */}
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-2" style={{ color: "#374151" }}>
+            <label className="block text-sm font-medium mb-2 text-foreground">
               Filter by Paid Month (YYYY-MM)
             </label>
             <div className="flex gap-2">
@@ -265,78 +266,72 @@ export default function StaffAccountDetailPage() {
           {/* Payments Table */}
           {isLoadingPayments ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[--primary]"></div>
+              <LoadingSpinner size="sm" />
             </div>
           ) : (
             <>
-              <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="bg-card rounded-lg shadow overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-background">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Paid Month
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Payment Method
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Salary
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Bonus
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Tax
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Total Payment
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Status
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                           Note
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="bg-card divide-y divide-gray-200">
                       {paginatedPayments.length > 0 ? (
                         paginatedPayments.map((payment) => (
-                          <tr key={payment.id} className="hover:bg-gray-50">
+                          <tr key={payment.id} className="hover:bg-background">
                             <td
                               className="px-6 py-4 whitespace-nowrap text-sm"
-                              style={{ color: "#000000" }}
                             >
                               {payment.paidMonth}
                             </td>
                             <td
                               className="px-6 py-4 whitespace-nowrap text-sm capitalize"
-                              style={{ color: "#000000" }}
                             >
                               {payment.paymentMethod?.replace("_", " ") || "—"}
                             </td>
                             <td
                               className="px-6 py-4 whitespace-nowrap text-sm"
-                              style={{ color: "#000000" }}
                             >
                               {formatPrice(account.staff?.salary || payment.staff?.salary || 0)}
                             </td>
                             <td
                               className="px-6 py-4 whitespace-nowrap text-sm"
-                              style={{ color: "#000000" }}
                             >
                               {formatPrice(payment.bonus || 0)}
                             </td>
                             <td
                               className="px-6 py-4 whitespace-nowrap text-sm"
-                              style={{ color: "#000000" }}
                             >
                               {formatPrice(payment.tax || 0)}
                             </td>
                             <td
                               className="px-6 py-4 whitespace-nowrap text-sm font-semibold"
-                              style={{ color: "#000000" }}
                             >
                               {formatPrice(payment.totalPayment || 0)}
                             </td>
@@ -352,8 +347,7 @@ export default function StaffAccountDetailPage() {
                               </span>
                             </td>
                             <td
-                              className="px-6 py-4 text-sm max-w-xs truncate"
-                              style={{ color: "#4b5563" }}
+                              className="px-6 py-4 text-sm max-w-xs truncate text-foreground"
                               title={payment.note || ""}
                             >
                               {payment.note || "—"}
@@ -364,7 +358,7 @@ export default function StaffAccountDetailPage() {
                         <tr>
                           <td
                             colSpan={8}
-                            className="px-6 py-12 text-center text-gray-500"
+                            className="px-6 py-12 text-center text-muted-foreground"
                           >
                             No payment records found.
                           </td>
@@ -415,7 +409,7 @@ function DetailRow({
 
   return (
     <div className="flex justify-between text-sm">
-      <span style={{ color: "#4b5563" }}>{label}</span>
+      <span className="text-foreground">{label}</span>
       <span className="font-medium" style={{ color: getValueColor() }}>
         {value}
       </span>

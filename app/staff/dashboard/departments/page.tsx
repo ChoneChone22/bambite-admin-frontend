@@ -15,6 +15,7 @@ import { useModal } from "@/src/hooks/useModal";
 import { useTablePagination } from "@/src/hooks";
 import TablePagination from "@/src/components/TablePagination";
 import FormModal from "@/src/components/FormModal";
+import LoadingSpinner from "@/src/components/LoadingSpinner";
 
 const departmentSchema = Yup.object().shape({
   name: Yup.string()
@@ -170,7 +171,7 @@ export default function DepartmentManagementPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[--primary]"></div>
+        <LoadingSpinner size="md" />
       </div>
     );
   }
@@ -180,7 +181,7 @@ export default function DepartmentManagementPage() {
       {modal.ModalComponent}
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold" style={{ color: "#000000" }}>
+        <h1 className="text-3xl font-bold text-foreground">
           Department Management
         </h1>
         <button onClick={handleCreate} className="btn-primary cursor-pointer">
@@ -189,7 +190,7 @@ export default function DepartmentManagementPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 p-4 rounded-lg mb-6" style={{ color: "#b91c1c" }}>{error}</div>
+        <div className="bg-red-50 p-4 rounded-lg mb-6 text-foreground">{error}</div>
       )}
 
       {/* Search Box */}
@@ -204,53 +205,50 @@ export default function DepartmentManagementPage() {
       </div>
 
       {/* Departments Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-card rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-background">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                   Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                   Short Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-foreground">
                   Staff Count
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "#374151" }}>
+                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-foreground">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-gray-200">
               {paginatedData.length === 0 ? (
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-6 py-12 text-center text-sm"
-                    style={{ color: "#6b7280" }}
+                    className="px-6 py-12 text-center text-sm text-foreground"
                   >
                     No departments found
                   </td>
                 </tr>
               ) : (
                 paginatedData.map((dept) => (
-              <tr key={dept.id} className="hover:bg-gray-50">
+              <tr key={dept.id} className="hover:bg-background">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div
                     className="text-sm font-medium"
-                    style={{ color: "#000000" }}
                   >
                     {dept.name}
                   </div>
                 </td>
                 <td
                   className="px-6 py-4 whitespace-nowrap text-sm font-mono"
-                  style={{ color: "#000000" }}
                 >
                   {dept.shortName}
                 </td>
@@ -269,8 +267,7 @@ export default function DepartmentManagementPage() {
                   </span>
                 </td>
                 <td
-                  className="px-6 py-4 whitespace-nowrap text-sm"
-                  style={{ color: "#6b7280" }}
+                  className="px-6 py-4 whitespace-nowrap text-sm text-foreground"
                 >
                   {staff.filter((s) => s.departmentId === dept.id).length} staff
                 </td>
@@ -325,7 +322,7 @@ export default function DepartmentManagementPage() {
               {({ errors, touched, isSubmitting }) => (
                 <Form className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: "#374151" }}>
+                    <label className="block text-sm font-medium mb-1 text-foreground">
                       Department Name *
                     </label>
                     <Field
@@ -335,12 +332,12 @@ export default function DepartmentManagementPage() {
                       placeholder="e.g., Kitchen"
                     />
                     {errors.name && touched.name && (
-                      <p className="text-sm mt-1" style={{ color: "#dc2626" }}>{errors.name}</p>
+                      <p className="text-sm mt-1 text-foreground">{errors.name}</p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: "#374151" }}>
+                    <label className="block text-sm font-medium mb-1 text-foreground">
                       Short Name (ID Prefix) *
                     </label>
                     <Field
@@ -349,18 +346,18 @@ export default function DepartmentManagementPage() {
                       className="input-field"
                       placeholder="e.g., KIT"
                     />
-                    <p className="text-xs mt-1" style={{ color: "#6b7280" }}>
+                    <p className="text-xs mt-1 text-foreground">
                       Used as prefix for employee IDs (e.g., KIT-0001).
                     </p>
                     {errors.shortName && touched.shortName && (
-                      <p className="text-sm mt-1" style={{ color: "#dc2626" }}>
+                      <p className="text-sm mt-1 text-foreground">
                         {errors.shortName}
                       </p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: "#374151" }}>
+                    <label className="block text-sm font-medium mb-1 text-foreground">
                       Status *
                     </label>
                     <Field as="select" name="status" className="input-field">
@@ -368,7 +365,7 @@ export default function DepartmentManagementPage() {
                       <option value="inactive">Inactive</option>
                     </Field>
                     {errors.status && touched.status && (
-                      <p className="text-sm mt-1" style={{ color: "#dc2626" }}>
+                      <p className="text-sm mt-1 text-foreground">
                         {errors.status}
                       </p>
                     )}

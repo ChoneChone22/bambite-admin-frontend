@@ -16,6 +16,7 @@ import { useModal } from "@/src/hooks/useModal";
 import { useTablePagination } from "@/src/hooks";
 import TablePagination from "@/src/components/TablePagination";
 import FormModal from "@/src/components/FormModal";
+import LoadingSpinner from "@/src/components/LoadingSpinner";
 
 const paymentSchema = Yup.object().shape({
   staffId: Yup.string().required("Staff is required"),
@@ -232,7 +233,7 @@ export default function PaymentManagementPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[--primary]"></div>
+        <LoadingSpinner size="md" />
       </div>
     );
   }
@@ -243,10 +244,10 @@ export default function PaymentManagementPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold" style={{ color: "#000000" }}>
+          <h1 className="text-3xl font-bold text-foreground">
             Payment Management
           </h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Manage salary payments and bonuses for staff.
           </p>
         </div>
@@ -261,25 +262,25 @@ export default function PaymentManagementPage() {
 
       {/* Summary + Filters */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-          <p className="text-sm text-gray-600 mb-1">Total Payments</p>
-          <p className="text-2xl font-bold" style={{ color: "#000000" }}>
+        <div className="bg-card rounded-lg shadow p-4 border border-border">
+          <p className="text-sm text-muted-foreground mb-1">Total Payments</p>
+          <p className="text-2xl font-bold text-foreground">
             {summary.totalPayments}
           </p>
         </div>
-        <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
-          <p className="text-sm text-gray-600 mb-1">Paid Records</p>
-          <p className="text-2xl font-bold" style={{ color: "#000000" }}>
+        <div className="bg-card rounded-lg shadow p-4 border border-border">
+          <p className="text-sm text-muted-foreground mb-1">Paid Records</p>
+          <p className="text-2xl font-bold text-foreground">
             {summary.paidCount}
           </p>
         </div>
       </div>
 
       {/* Search Box */}
-      <div className="bg-white rounded-lg shadow p-4 border border-gray-200 mb-6">
+      <div className="bg-card rounded-lg shadow p-4 border border-border mb-6">
         <div className="flex items-center gap-4">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Search Payments
             </label>
             <input
@@ -301,13 +302,13 @@ export default function PaymentManagementPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-4 border border-gray-200 mb-6">
-        <h2 className="text-lg font-semibold mb-4" style={{ color: "#000000" }}>
+      <div className="bg-card rounded-lg shadow p-4 border border-border mb-6">
+        <h2 className="text-lg font-semibold mb-4 text-foreground">
           Filters
         </h2>
         <div className="flex flex-wrap gap-4 items-end">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Paid Month (YYYY-MM)
             </label>
             <input
@@ -320,7 +321,7 @@ export default function PaymentManagementPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Status
             </label>
             <select
@@ -348,43 +349,42 @@ export default function PaymentManagementPage() {
       </div>
 
       {/* Payments Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-card rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="bg-background">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Staff
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Paid Month
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Method
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Bonus
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Tax
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Total
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-card divide-y divide-gray-200">
             {totalRows === 0 ? (
               <tr>
                 <td
                   colSpan={8}
-                  className="px-6 py-4 text-center text-sm"
-                  style={{ color: "#6b7280" }}
+                  className="px-6 py-4 text-center text-sm text-foreground"
                 >
                   {searchQuery
                     ? "No payments found matching your search."
@@ -393,18 +393,17 @@ export default function PaymentManagementPage() {
               </tr>
             ) : (
               paginatedData.map((payment) => (
-              <tr key={payment.id} className="hover:bg-gray-50">
+              <tr key={payment.id} className="hover:bg-background">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div
                     className="text-sm font-medium"
-                    style={{ color: "#000000" }}
                   >
                     {payment.staff?.name ||
                       payment.staff?.employeeId ||
                       "Unknown"}
                   </div>
                   {payment.staff?.department && (
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-muted-foreground">
                       {payment.staff.department.name} (
                         {payment.staff.department.shortName})
                     </div>
@@ -412,31 +411,26 @@ export default function PaymentManagementPage() {
                 </td>
                 <td
                   className="px-6 py-4 whitespace-nowrap text-sm"
-                  style={{ color: "#000000" }}
                 >
                   {payment.paidMonth}
                 </td>
                 <td
                   className="px-6 py-4 whitespace-nowrap text-sm capitalize"
-                  style={{ color: "#000000" }}
                 >
                   {payment.paymentMethod.replace("_", " ")}
                 </td>
                 <td
                   className="px-6 py-4 whitespace-nowrap text-sm"
-                  style={{ color: "#000000" }}
                 >
                   {formatPrice(payment.bonus || 0)}
                 </td>
                 <td
                   className="px-6 py-4 whitespace-nowrap text-sm"
-                  style={{ color: "#000000" }}
                 >
                   {formatPrice(payment.tax || 0)}
                 </td>
                 <td
                   className="px-6 py-4 whitespace-nowrap text-sm font-semibold"
-                  style={{ color: "#000000" }}
                 >
                   {formatPrice(payment.totalPayment || 0)}
                 </td>
@@ -475,7 +469,7 @@ export default function PaymentManagementPage() {
 
         {totalRows === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500">No payments found.</p>
+            <p className="text-muted-foreground">No payments found.</p>
           </div>
         )}
       </div>
@@ -518,7 +512,7 @@ export default function PaymentManagementPage() {
                 <Form className="space-y-4">
                   {!editingPayment && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-muted-foreground mb-1">
                         Staff *
                       </label>
                       <Field as="select" name="staffId" className="input-field">
@@ -542,7 +536,7 @@ export default function PaymentManagementPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-muted-foreground mb-1">
                         Bonus
                       </label>
                       <Field
@@ -558,7 +552,7 @@ export default function PaymentManagementPage() {
                       )}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-muted-foreground mb-1">
                         Tax
                       </label>
                       <Field
@@ -577,7 +571,7 @@ export default function PaymentManagementPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-muted-foreground mb-1">
                         Paid Month *
                       </label>
                       <Field name="paidMonth" type="month" className="input-field" />
@@ -588,7 +582,7 @@ export default function PaymentManagementPage() {
                       )}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-muted-foreground mb-1">
                         Payment Method
                       </label>
                       <Field
@@ -608,7 +602,7 @@ export default function PaymentManagementPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-muted-foreground mb-1">
                       Note
                     </label>
                     <Field
@@ -628,11 +622,11 @@ export default function PaymentManagementPage() {
                         id="isPaid"
                         name="isPaid"
                         type="checkbox"
-                        className="h-4 w-4 text-[--primary] border-gray-300 rounded"
+                        className="h-4 w-4 text-[--primary] border-border rounded"
                       />
                       <label
                         htmlFor="isPaid"
-                        className="text-sm font-medium text-gray-700"
+                        className="text-sm font-medium text-muted-foreground"
                       >
                         Mark as paid
                       </label>

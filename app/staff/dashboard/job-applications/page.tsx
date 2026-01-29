@@ -21,6 +21,7 @@ import TablePagination from "@/src/components/TablePagination";
 import FormModal from "@/src/components/FormModal";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
+import LoadingSpinner from "@/src/components/LoadingSpinner";
 
 const APPLICATION_STATUSES = [
   { value: "pending", label: "Pending" },
@@ -206,18 +207,27 @@ export default function JobApplicationsManagementPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "approved":
-        return { backgroundColor: "#dcfce7", color: "#166534" };
+        return {
+          backgroundColor: "hsl(var(--success) / 0.2)",
+          color: "hsl(var(--success))",
+        };
       case "rejected":
-        return { backgroundColor: "#fee2e2", color: "#991b1b" };
+        return {
+          backgroundColor: "hsl(var(--destructive) / 0.2)",
+          color: "hsl(var(--destructive))",
+        };
       default:
-        return { backgroundColor: "#fef3c7", color: "#854d0e" };
+        return {
+          backgroundColor: "hsl(var(--warning) / 0.2)",
+          color: "hsl(var(--warning))",
+        };
     }
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[--primary]"></div>
+        <LoadingSpinner size="md" />
       </div>
     );
   }
@@ -227,13 +237,13 @@ export default function JobApplicationsManagementPage() {
       {modal.ModalComponent}
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold" style={{ color: "#000000" }}>
+        <h1 className="text-3xl font-bold text-foreground">
           Job Application Management
         </h1>
       </div>
 
       {error && (
-        <div className="bg-red-50 p-4 rounded-lg mb-6" style={{ color: "#b91c1c" }}>
+        <div className="bg-red-50 p-4 rounded-lg mb-6 text-foreground">
           {error}
         </div>
       )}
@@ -317,44 +327,43 @@ export default function JobApplicationsManagementPage() {
       </div>
 
       {/* Applications Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-card rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-background">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Applicant
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Job Post
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Applied Date
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-gray-200">
               {paginatedData.map((application) => (
-                <tr key={application.id} className="hover:bg-gray-50">
+                <tr key={application.id} className="hover:bg-background">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div
                       className="text-sm font-medium"
-                      style={{ color: "#000000" }}
                     >
                       {application.name}
                     </div>
-                    <div className="text-sm" style={{ color: "#6b7280" }}>
+                    <div className="text-sm text-foreground">
                       {application.email}
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm" style={{ color: "#000000" }}>
+                    <div className="text-sm text-foreground">
                       {application.jobPost?.title || "N/A"}
                     </div>
                   </td>
@@ -395,8 +404,7 @@ export default function JobApplicationsManagementPage() {
                     </select>
                   </td>
                   <td
-                    className="px-6 py-4 whitespace-nowrap text-sm"
-                    style={{ color: "#6b7280" }}
+                    className="px-6 py-4 whitespace-nowrap text-sm text-foreground"
                   >
                     {application.createdAt
                       ? formatDateTime(application.createdAt)
@@ -434,8 +442,7 @@ export default function JobApplicationsManagementPage() {
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-6 py-4 text-center"
-                    style={{ color: "#6b7280" }}
+                    className="px-6 py-4 text-center text-foreground"
                   >
                     No applications found
                   </td>
@@ -462,9 +469,10 @@ export default function JobApplicationsManagementPage() {
       {/* Application Detail Modal */}
       {selectedApplication && !showEmailModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn"
           role="dialog"
           aria-modal="true"
+          aria-labelledby="application-details-title"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setSelectedApplication(null);
@@ -472,39 +480,66 @@ export default function JobApplicationsManagementPage() {
           }}
         >
           <div
-            className="fixed inset-0 bg-white/30 backdrop-blur-[2px] transition-opacity duration-300 ease-out"
+            className="fixed inset-0 transition-opacity duration-300 ease-out"
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.75)" }}
             onClick={() => setSelectedApplication(null)}
           />
           <div
-            className="relative bg-white rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto transform border border-gray-100 z-10"
+            className="relative rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto transform z-10 animate-slideUp"
+            style={{
+              backgroundColor: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
+              opacity: 1,
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2
-                  className="text-2xl font-bold"
-                  style={{ color: "#000000" }}
+            {/* Header */}
+            <div
+              className="sticky top-0 px-6 py-4 flex items-center justify-between z-10"
+              style={{
+                backgroundColor: "hsl(var(--card))",
+                borderBottom: "1px solid hsl(var(--border))",
+              }}
+            >
+              <h2
+                id="application-details-title"
+                className="text-2xl font-bold"
+                style={{ color: "hsl(var(--foreground))" }}
+              >
+                Application Details
+              </h2>
+              <button
+                type="button"
+                onClick={() => setSelectedApplication(null)}
+                className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring rounded-md p-1 cursor-pointer"
+                aria-label="Close modal"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  Application Details
-                </h2>
-                <button
-                  onClick={() => setSelectedApplication(null)}
-                  style={{ color: "#6b7280" }}
-                  className="hover:text-gray-900 transition-colors"
-                >
-                  ✕
-                </button>
-              </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
 
+            <div className="p-6">
               <div className="space-y-4">
                 <div>
                   <label
                     className="block text-sm font-medium mb-1"
-                    style={{ color: "#374151" }}
+                    style={{ color: "hsl(var(--muted-foreground))" }}
                   >
                     Applicant Name
                   </label>
-                  <p className="text-sm" style={{ color: "#000000" }}>
+                  <p className="text-sm" style={{ color: "hsl(var(--foreground))" }}>
                     {selectedApplication.name || "N/A"}
                   </p>
                 </div>
@@ -512,11 +547,11 @@ export default function JobApplicationsManagementPage() {
                 <div>
                   <label
                     className="block text-sm font-medium mb-1"
-                    style={{ color: "#374151" }}
+                    style={{ color: "hsl(var(--muted-foreground))" }}
                   >
                     Email
                   </label>
-                  <p className="text-sm" style={{ color: "#000000" }}>
+                  <p className="text-sm" style={{ color: "hsl(var(--foreground))" }}>
                     {selectedApplication.email || "N/A"}
                   </p>
                 </div>
@@ -524,11 +559,11 @@ export default function JobApplicationsManagementPage() {
                 <div>
                   <label
                     className="block text-sm font-medium mb-1"
-                    style={{ color: "#374151" }}
+                    style={{ color: "hsl(var(--muted-foreground))" }}
                   >
                     Job Post
                   </label>
-                  <p className="text-sm" style={{ color: "#000000" }}>
+                  <p className="text-sm" style={{ color: "hsl(var(--foreground))" }}>
                     {selectedApplication.jobPost?.title || "N/A"}
                   </p>
                 </div>
@@ -536,7 +571,7 @@ export default function JobApplicationsManagementPage() {
                 <div>
                   <label
                     className="block text-sm font-medium mb-1"
-                    style={{ color: "#374151" }}
+                    style={{ color: "hsl(var(--muted-foreground))" }}
                   >
                     Status
                   </label>
@@ -554,11 +589,14 @@ export default function JobApplicationsManagementPage() {
                   <div>
                     <label
                       className="block text-sm font-medium mb-1"
-                      style={{ color: "#374151" }}
+                      style={{ color: "hsl(var(--muted-foreground))" }}
                     >
                       Joining Reason
                     </label>
-                    <p className="text-sm whitespace-pre-wrap" style={{ color: "#000000" }}>
+                    <p
+                      className="text-sm whitespace-pre-wrap"
+                      style={{ color: "hsl(var(--foreground))" }}
+                    >
                       {selectedApplication.joiningReason}
                     </p>
                   </div>
@@ -568,11 +606,14 @@ export default function JobApplicationsManagementPage() {
                   <div>
                     <label
                       className="block text-sm font-medium mb-1"
-                      style={{ color: "#374151" }}
+                      style={{ color: "hsl(var(--muted-foreground))" }}
                     >
                       Additional Information
                     </label>
-                    <p className="text-sm whitespace-pre-wrap" style={{ color: "#000000" }}>
+                    <p
+                      className="text-sm whitespace-pre-wrap"
+                      style={{ color: "hsl(var(--foreground))" }}
+                    >
                       {selectedApplication.additionalQuestion}
                     </p>
                   </div>
@@ -582,11 +623,14 @@ export default function JobApplicationsManagementPage() {
                   <div>
                     <label
                       className="block text-sm font-medium mb-1"
-                      style={{ color: "#374151" }}
+                      style={{ color: "hsl(var(--muted-foreground))" }}
                     >
                       Cover Letter
                     </label>
-                    <p className="text-sm whitespace-pre-wrap" style={{ color: "#000000" }}>
+                    <p
+                      className="text-sm whitespace-pre-wrap"
+                      style={{ color: "hsl(var(--foreground))" }}
+                    >
                       {selectedApplication.coverLetter}
                     </p>
                   </div>
@@ -596,7 +640,7 @@ export default function JobApplicationsManagementPage() {
                   <div>
                     <label
                       className="block text-sm font-medium mb-1"
-                      style={{ color: "#374151" }}
+                      style={{ color: "hsl(var(--muted-foreground))" }}
                     >
                       Resume/CV
                     </label>
@@ -604,8 +648,8 @@ export default function JobApplicationsManagementPage() {
                       href={selectedApplication.uploadedFileUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                      style={{ color: "#2563eb" }}
+                      className="hover:underline"
+                      style={{ color: "hsl(var(--primary))" }}
                     >
                       View PDF
                     </a>
@@ -615,11 +659,11 @@ export default function JobApplicationsManagementPage() {
                 <div>
                   <label
                     className="block text-sm font-medium mb-1"
-                    style={{ color: "#374151" }}
+                    style={{ color: "hsl(var(--muted-foreground))" }}
                   >
                     Applied At
                   </label>
-                  <p className="text-sm" style={{ color: "#6b7280" }}>
+                  <p className="text-sm" style={{ color: "hsl(var(--foreground))" }}>
                     {selectedApplication.createdAt
                       ? formatDateTime(selectedApplication.createdAt)
                       : "N/A"}
@@ -633,13 +677,13 @@ export default function JobApplicationsManagementPage() {
                     setEmailApplication(selectedApplication);
                     setShowEmailModal(true);
                   }}
-                  className="btn-primary flex-1"
+                  className="btn-primary flex-1 cursor-pointer"
                 >
                   Send Email
                 </button>
                 <button
                   onClick={() => setSelectedApplication(null)}
-                  className="btn-secondary flex-1"
+                  className="btn-secondary flex-1 cursor-pointer"
                 >
                   Close
                 </button>
@@ -672,12 +716,11 @@ export default function JobApplicationsManagementPage() {
               <Form className="space-y-4">
                 <div>
                   <label
-                    className="block text-sm font-medium mb-1"
-                    style={{ color: "#374151" }}
+                    className="block text-sm font-medium mb-1 text-foreground"
                   >
                     To
                   </label>
-                  <p className="text-sm" style={{ color: "#000000" }}>
+                  <p className="text-sm text-foreground">
                     {emailApplication.name}
                     {emailApplication.email && emailApplication.email.trim()
                       ? ` (${emailApplication.email})`
@@ -687,8 +730,7 @@ export default function JobApplicationsManagementPage() {
 
                 <div>
                   <label
-                    className="block text-sm font-medium mb-1"
-                    style={{ color: "#374151" }}
+                    className="block text-sm font-medium mb-1 text-foreground"
                   >
                     Message *
                   </label>
@@ -708,8 +750,7 @@ export default function JobApplicationsManagementPage() {
 
                 <div>
                   <label
-                    className="block text-sm font-medium mb-1"
-                    style={{ color: "#374151" }}
+                    className="block text-sm font-medium mb-1 text-foreground"
                   >
                     Internal Notes (Optional)
                   </label>

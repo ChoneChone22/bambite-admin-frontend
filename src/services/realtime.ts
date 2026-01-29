@@ -74,10 +74,19 @@ class RealtimeService {
   }
 
   /**
-   * Subscribe to order updates
+   * Subscribe to order updates (single order)
+   * @param orderId - Order ID for that order's updates
    */
   subscribeOrder(orderId: string): void {
     this.socket?.emit("subscribe", { channel: "order", id: orderId });
+  }
+
+  /**
+   * Subscribe to orders list (admin/staff: new orders + all order updates)
+   * Emit subscribe with { channel: 'order' } — no id for list/feed.
+   */
+  subscribeOrdersList(): void {
+    this.socket?.emit("subscribe", { channel: "order" });
   }
 
   /**

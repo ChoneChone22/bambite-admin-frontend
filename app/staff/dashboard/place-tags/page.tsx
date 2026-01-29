@@ -21,6 +21,7 @@ import { useModal } from "@/src/hooks/useModal";
 import { useTablePagination } from "@/src/hooks";
 import TablePagination from "@/src/components/TablePagination";
 import FormModal from "@/src/components/FormModal";
+import LoadingSpinner from "@/src/components/LoadingSpinner";
 
 // Validation Schema
 const placeTagSchema = Yup.object().shape({
@@ -212,7 +213,7 @@ export default function PlaceTagsManagementPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[--primary]"></div>
+        <LoadingSpinner size="md" />
       </div>
     );
   }
@@ -222,7 +223,7 @@ export default function PlaceTagsManagementPage() {
       {modal.ModalComponent}
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold" style={{ color: "#000000" }}>
+        <h1 className="text-3xl font-bold text-foreground">
           Place Tag Management
         </h1>
         <button onClick={handleCreate} className="btn-primary cursor-pointer">
@@ -231,7 +232,7 @@ export default function PlaceTagsManagementPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 p-4 rounded-lg mb-6" style={{ color: "#b91c1c" }}>
+        <div className="bg-red-50 p-4 rounded-lg mb-6 text-foreground">
           {error}
         </div>
       )}
@@ -304,32 +305,31 @@ export default function PlaceTagsManagementPage() {
       </div>
 
       {/* Place Tags Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-card rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-background">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Job Posts
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-gray-200">
               {paginatedData.map((placeTag) => (
-                <tr key={placeTag.id} className="hover:bg-gray-50">
+                <tr key={placeTag.id} className="hover:bg-background">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div
                       className="text-sm font-medium"
-                      style={{ color: "#000000" }}
                     >
                       {placeTag.name}
                     </div>
@@ -346,8 +346,7 @@ export default function PlaceTagsManagementPage() {
                     </span>
                   </td>
                   <td
-                    className="px-6 py-4 whitespace-nowrap text-sm"
-                    style={{ color: "#6b7280" }}
+                    className="px-6 py-4 whitespace-nowrap text-sm text-foreground"
                   >
                     {placeTag._count?.jobPosts || 0} job post(s)
                   </td>
@@ -383,8 +382,7 @@ export default function PlaceTagsManagementPage() {
                 <tr>
                   <td
                     colSpan={4}
-                    className="px-6 py-4 text-center"
-                    style={{ color: "#6b7280" }}
+                    className="px-6 py-4 text-center text-foreground"
                   >
                     No place tags found
                   </td>
@@ -430,8 +428,7 @@ export default function PlaceTagsManagementPage() {
             <Form className="space-y-4">
               <div>
                 <label
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: "#374151" }}
+                  className="block text-sm font-medium mb-1 text-foreground"
                 >
                   Place Tag Name *
                 </label>
@@ -448,8 +445,7 @@ export default function PlaceTagsManagementPage() {
 
               <div>
                 <label
-                  className="block text-sm font-medium mb-1"
-                  style={{ color: "#374151" }}
+                  className="block text-sm font-medium mb-1 text-foreground"
                 >
                   Status *
                 </label>
